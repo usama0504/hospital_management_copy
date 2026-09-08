@@ -10,7 +10,11 @@ class Patient extends Model
         'name',
         'email',
         'phone',
-         'dob' => 'date',
+        'dob',
         'address',
+    ];
+
+    protected $casts = [
+        'dob' => 'date',
     ];
 }

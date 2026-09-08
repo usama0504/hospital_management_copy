@@ -28,6 +28,8 @@ class AuthController extends Controller
             'password' => Hash::make($request->password),
         ]);
 
+        $user->assignRole('receptionist');
+
         Auth::login($user);
 
         return redirect()->route('dashboard');
