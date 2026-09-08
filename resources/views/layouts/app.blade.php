@@ -21,7 +21,7 @@
             </div>
 
             <!-- Navigation -->
-            <nav class="flex space-x-6 text-gray-600 font-semibold">
+            <nav class="flex items-center space-x-6 text-gray-600 font-semibold">
                 <a href="{{ route('dashboard') }}"
                     class="py-1 px-3 rounded-full hover:bg-indigo-100 {{ request()->routeIs('dashboard') ? 'bg-indigo-200 text-indigo-700' : '' }}">
                     Dashboard
@@ -46,6 +46,23 @@
                     class="py-1 px-3 rounded-full hover:bg-indigo-100 {{ request()->routeIs('reports.*') ? 'bg-indigo-200 text-indigo-700' : '' }}">
                     Reports
                 </a>
+                @role('admin')
+                <a href="{{ route('users.index') }}"
+                    class="py-1 px-3 rounded-full hover:bg-indigo-100 {{ request()->routeIs('users.*') ? 'bg-indigo-200 text-indigo-700' : '' }}">
+                    Manage Users
+                </a>
+                @endrole
+
+                @auth
+                    <span class="text-gray-300">|</span>
+                    <span class="text-sm text-gray-500 font-normal">{{ auth()->user()->name }}</span>
+                    <form action="{{ route('logout') }}" method="POST" class="inline">
+                        @csrf
+                        <button type="submit" class="py-1 px-3 rounded-full text-red-600 hover:bg-red-50">
+                            Logout
+                        </button>
+                    </form>
+                @endauth
             </nav>
         </div>
     </header>

@@ -44,6 +44,20 @@
                             class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-400" />
                     </div>
 
+                    <div class="mb-6">
+                        <label for="role" class="block mb-1 font-medium text-sm text-gray-700">I am a</label>
+                        <select name="role" id="role" required
+                            class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-400">
+                            <option value="receptionist" {{ old('role', 'receptionist') == 'receptionist' ? 'selected' : '' }}>
+                                Receptionist
+                            </option>
+                            <option value="doctor" {{ old('role') == 'doctor' ? 'selected' : '' }}>
+                                Doctor
+                            </option>
+                        </select>
+                        <p class="text-xs text-gray-400 mt-1">Admin accounts can only be created by an existing admin.</p>
+                    </div>
+
                     <button type="submit" class="w-full bg-indigo-600 text-white py-2 rounded hover:bg-indigo-700 transition font-medium">
                         Register
                     </button>

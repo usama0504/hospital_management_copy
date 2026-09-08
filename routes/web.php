@@ -13,6 +13,7 @@ use App\Http\Controllers\DoctorController;
 use App\Http\Controllers\AppointmentController;
 use App\Http\Controllers\BillController;
 use App\Http\Controllers\ReportController;
+use App\Http\Controllers\UserController;
 
 Route::middleware('auth')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
@@ -47,6 +48,13 @@ Route::middleware('auth')->group(function () {
     });
     Route::delete('/bills/{bill}', [BillController::class, 'destroy'])
         ->middleware('role:admin')->name('bills.destroy');
+
+    // User management (approve pending registrations) - admin only
+    Route::middleware('role:admin')->group(function () {
+        Route::get('/users', [UserController::class, 'index'])->name('users.index');
+        Route::post('/users/{id}/approve', [UserController::class, 'approve'])->name('users.approve');
+        Route::delete('/users/{id}', [UserController::class, 'destroy'])->name('users.destroy');
+    });
 });
 
 use App\Http\Controllers\AuthController;
