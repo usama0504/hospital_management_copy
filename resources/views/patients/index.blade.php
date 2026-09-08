@@ -10,9 +10,11 @@
             </div>
 
             <div class="flex justify-between mb-4">
+                @can('manage patients')
                 <a href="{{ route('patients.create') }}" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
                     Add Patient
                 </a>
+                @endcan
             </div>
 
             @if(session('success'))
@@ -41,12 +43,16 @@
                             {{ $patient->dob ? \Illuminate\Support\Carbon::parse($patient->dob)->format('d M, Y') : '-' }}
                         </td>
                         <td class="py-2 px-4 whitespace-nowrap">
+                            @can('manage patients')
                             <a href="{{ route('patients.edit', $patient->id) }}" class="text-blue-600 hover:underline mr-2">Edit</a>
+                            @endcan
+                            @role('admin')
                             <form action="{{ route('patients.destroy', $patient->id) }}" method="POST" class="inline-block" onsubmit="return confirm('Are you sure you want to delete this patient?');">
                                 @csrf
                                 @method('DELETE')
                                 <button type="submit" class="text-red-600 hover:underline">Delete</button>
                             </form>
+                            @endrole
                         </td>
                     </tr>
                     @empty

@@ -10,13 +10,30 @@ class RolesAndPermissionsSeeder extends Seeder
 {
     public function run()
     {
-        Role::firstOrCreate(['name' => 'admin']);
-        Role::firstOrCreate(['name' => 'doctor']);
-        Role::firstOrCreate(['name' => 'receptionist']);
+        $managePatients = Permission::firstOrCreate(['name' => 'manage patients']);
+        $manageDoctors = Permission::firstOrCreate(['name' => 'manage doctors']);
+        $manageAppointments = Permission::firstOrCreate(['name' => 'manage appointments']);
+        $manageBills = Permission::firstOrCreate(['name' => 'manage bills']);
 
-        Permission::firstOrCreate(['name' => 'manage patients']);
-        Permission::firstOrCreate(['name' => 'manage doctors']);
-        Permission::firstOrCreate(['name' => 'manage appointments']);
-        Permission::firstOrCreate(['name' => 'manage bills']);
+        $admin = Role::firstOrCreate(['name' => 'admin']);
+        $doctor = Role::firstOrCreate(['name' => 'doctor']);
+        $receptionist = Role::firstOrCreate(['name' => 'receptionist']);
+
+        // Admin: full access to everything
+        $admin->syncPermissions([
+            $managePatients,
+            $manageDoctors,
+            $manageAppointments,
+            $manageBills,
+        ]);
+
+        // Receptionist: can manage day-to-day records, but not doctors
+        $receptionist->syncPermissions([
+            $managePatients,
+            $manageAppointments,
+            $manageBills,
+        ]);
+
+        // Doctor: view-only role, no manage permissions assigned
     }
 }

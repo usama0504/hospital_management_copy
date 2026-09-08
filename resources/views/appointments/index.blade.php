@@ -10,7 +10,9 @@
             </div>
 
             <div class="flex justify-between mb-4">
+                @can('manage appointments')
                 <a href="{{ route('appointments.create') }}" class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700">Add Appointment</a>
+                @endcan
             </div>
 
             @if(session('success'))
@@ -37,12 +39,16 @@
                         <td class="py-2 px-4">{{ \Illuminate\Support\Carbon::parse($appointment->appointment_date)->format('d M, Y H:i') }}</td>
                         <td class="py-2 px-4">{{ $appointment->status }}</td>
                         <td class="py-2 px-4 whitespace-nowrap">
+                            @can('manage appointments')
                             <a href="{{ route('appointments.edit', $appointment->id) }}" class="text-blue-600 hover:underline mr-2">Edit</a>
+                            @endcan
+                            @role('admin')
                             <form action="{{ route('appointments.destroy', $appointment->id) }}" method="POST" class="inline" onsubmit="return confirm('Are you sure?');">
                                 @csrf
                                 @method('DELETE')
                                 <button type="submit" class="text-red-600 hover:underline">Delete</button>
                             </form>
+                            @endrole
                         </td>
                     </tr>
                     @empty

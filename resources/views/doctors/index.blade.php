@@ -10,7 +10,9 @@
             </div>
 
             <div class="flex justify-between mb-4">
+                @role('admin')
                 <a href="{{ route('doctors.create') }}" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">Add Doctor</a>
+                @endrole
             </div>
 
             @if(session('success'))
@@ -37,12 +39,14 @@
                         <td class="py-2 px-4">{{ $doctor->phone }}</td>
                         <td class="py-2 px-4">{{ $doctor->specialization }}</td>
                         <td class="py-2 px-4">
+                            @role('admin')
                             <a href="{{ route('doctors.edit', $doctor->id) }}" class="text-blue-600 hover:underline mr-2">Edit</a>
                             <form action="{{ route('doctors.destroy', $doctor->id) }}" method="POST" class="inline-block" onsubmit="return confirm('Are you sure to delete?');">
                                 @csrf
                                 @method('DELETE')
                                 <button type="submit" class="text-red-600 hover:underline">Delete</button>
                             </form>
+                            @endrole
                         </td>
                     </tr>
                     @empty

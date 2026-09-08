@@ -10,7 +10,9 @@
             </div>
 
             <div class="flex justify-between mb-4">
+                @can('manage bills')
                 <a href="{{ route('bills.create') }}" class="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700">Add Bill</a>
+                @endcan
             </div>
 
             @if(session('success'))
@@ -37,12 +39,16 @@
                         <td class="py-2 px-4">{{ $bill->status }}</td>
                         <td class="py-2 px-4">{{ \Illuminate\Support\Carbon::parse($bill->bill_date)->format('d M, Y') }}</td>
                         <td class="py-2 px-4 whitespace-nowrap">
+                            @can('manage bills')
                             <a href="{{ route('bills.edit', $bill->id) }}" class="text-blue-600 hover:underline mr-2">Edit</a>
+                            @endcan
+                            @role('admin')
                             <form action="{{ route('bills.destroy', $bill->id) }}" method="POST" class="inline" onsubmit="return confirm('Are you sure?');">
                                 @csrf
                                 @method('DELETE')
                                 <button type="submit" class="text-red-600 hover:underline">Delete</button>
                             </form>
+                            @endrole
                         </td>
                     </tr>
                     @empty
