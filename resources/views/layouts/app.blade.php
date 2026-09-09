@@ -4,11 +4,10 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>{{ config('app.name', 'E-Health Tips') }}</title>
+    <title>{{ config('app.name', 'Health Care') }}</title>
 
     <!-- Fonts -->
-    <link href="https://fonts.bunny.net/css?family=figtree:400,500,600,700,800,900&display=swap" rel="stylesheet" />
-
+   <body class="antialiased text-gray-800" style="font-family: 'Poppins', sans-serif;" x-data="{ sidebarOpen: false }">
     <!-- Styles and Scripts -->
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
@@ -25,7 +24,7 @@
                     <div class="w-9 h-9 rounded-xl bg-orange-500 text-white flex items-center justify-center font-bold shadow-sm shadow-orange-500/30 text-base">
                         🏥
                     </div>
-                    <span class="text-base font-black tracking-tight text-gray-900">E-Health Tips</span>
+                    <span class="text-base font-black tracking-tight text-gray-900">Health Care</span>
                 </div>
                 {{-- <div>
                     <a href="{{ request()->routeIs('login') ? route('register') : route('login') }}" class="text-xs font-bold text-orange-600 hover:text-orange-700 transition">
@@ -56,7 +55,7 @@
                     <div class="w-10 h-10 rounded-2xl bg-orange-500 text-white flex items-center justify-center font-bold shadow-sm shadow-orange-500/30 text-lg">
                         🏥
                     </div>
-                    <span class="text-lg font-black tracking-tight text-gray-900">E-Health Tips</span>
+                    <span class="text-lg font-black tracking-tight text-gray-900">Health Care</span>
                 </div>
 
                 <!-- Sidebar Links -->
@@ -161,7 +160,7 @@
                         </div>
                         @auth
                             <div class="flex items-center gap-3 pl-4 border-l border-gray-100">
-                                <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop&crop=faces"
+                                <img src="https://images.unsplash.com/photo-1618001789159-ffffe6f96ef2?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8NHx8bWVucyUyMHBpY3xlbnwwfHwwfHx8MA%3D%3D"
                                     alt="Admin" class="w-10 h-10 rounded-full object-cover shadow-sm">
                                 <div>
                                     <p class="text-xs font-bold text-gray-900 leading-none">{{ auth()->user()->name }}</p>

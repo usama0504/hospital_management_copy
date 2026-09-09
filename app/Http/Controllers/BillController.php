@@ -5,19 +5,22 @@ namespace App\Http\Controllers;
 use App\Models\Bill;
 use App\Models\Patient;
 use Illuminate\Http\Request;
+use App\Models\Doctor;
 
 class BillController extends Controller
 {
     public function index()
     {
-        $bills = Bill::with('patient')->latest()->paginate(10);
+        $bills = Bill::with('patient','doctor')->latest()->paginate(10);
         return view('bills.index', compact('bills'));
     }
 
     public function create()
     {
         $patients = Patient::all();
-        return view('bills.create', compact('patients'));
+        $doctors = Doctor::all(); // Yeh line lazmi add karein
+
+        return view('bills.create', compact('patients', 'doctors'));
     }
 
     public function store(Request $request)
@@ -36,7 +39,9 @@ class BillController extends Controller
     public function edit(Bill $bill)
     {
         $patients = Patient::all();
-        return view('bills.edit', compact('bill', 'patients'));
+        $doctors = Doctor::all(); // Yeh line lazmi add karein
+
+        return view('bills.edit', compact('bill', 'patients', 'doctors'));
     }
 
     public function update(Request $request, Bill $bill)
@@ -56,5 +61,17 @@ class BillController extends Controller
     {
         $bill->delete();
         return redirect()->route('bills.index')->with('success', 'Bill deleted successfully.');
+    }
+
+    // public function receipt(Bill $bill)
+    // {
+    //     $bill->load('patient');
+    //     return view('bills.receipt', compact('bill'));
+    // }
+    public function receipt(Bill $bill)
+    {
+        $bill->load(['patient', 'doctor']);
+
+        return view('bills.receipt', compact('bill'));
     }
 }

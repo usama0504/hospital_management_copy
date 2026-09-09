@@ -4,6 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Models\Patient;
+use App\Models\Doctor;
 
 class Bill extends Model
 {
@@ -11,6 +13,7 @@ class Bill extends Model
 
     protected $fillable = [
         'patient_id',
+        'doctor_id',
         'amount',
         'status',
         'bill_date',
@@ -23,5 +26,9 @@ class Bill extends Model
     public function patient()
     {
         return $this->belongsTo(Patient::class);
+    }
+    public function doctor()
+    {
+        return $this->belongsTo(Doctor::class);
     }
 }

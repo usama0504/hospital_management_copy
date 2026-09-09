@@ -59,7 +59,7 @@ Route::middleware('auth')->group(function () {
     // 2. Create route (Yeh lazmi {bill} wale route se UPAR honi chahiye)
     Route::get('/bills/create', [BillController::class, 'create'])->name('bills.create');
     Route::post('/bills', [BillController::class, 'store'])->name('bills.store');
-
+Route::get('bills/{bill}/receipt', [BillController::class, 'receipt'])->name('bills.receipt');
     // 3. Edit route
     Route::get('/bills/{bill}/edit', [BillController::class, 'edit'])->name('bills.edit');
     Route::put('/bills/{bill}', [BillController::class, 'update'])->name('bills.update');
