@@ -139,5 +139,52 @@
             </form>
         </div>
 
+        <!-- Update Password Card -->
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden mt-6">
+        <div class="p-6 border-b border-gray-100">
+            <h2 class="text-lg font-bold text-gray-900">Update Password</h2>
+            <p class="text-xs text-gray-400 mt-0.5">Ensure your account is using a long, random password to stay secure.</p>
+        </div>
+
+        @if(session('password_success'))
+            <div class="m-6 mb-0 p-4 rounded-xl bg-emerald-50 text-emerald-600 text-xs font-bold border border-emerald-100">
+                {{ session('password_success') }}
+            </div>
+        @endif
+
+        <form action="{{ route('password.update') }}" method="POST" class="p-6 space-y-4">
+            @csrf
+            @method('PUT')
+
+            <div class="space-y-4">
+                <!-- Current Password -->
+                <div>
+                    <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Current Password</label>
+                    <input type="password" name="current_password" class="w-full rounded-xl border-gray-200 text-sm focus:border-orange-500 focus:ring-orange-500 shadow-sm" required>
+                </div>
+
+                <!-- New Password -->
+                <div>
+                    <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">New Password</label>
+                    <input type="password" name="password" class="w-full rounded-xl border-gray-200 text-sm focus:border-orange-500 focus:ring-orange-500 shadow-sm" required>
+                </div>
+
+                <!-- Confirm Password -->
+                <div>
+                    <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Confirm Password</label>
+                    <input type="password" name="password_confirmation" class="w-full rounded-xl border-gray-200 text-sm focus:border-orange-500 focus:ring-orange-500 shadow-sm" required>
+                </div>
+            </div>
+
+            <div class="pt-4 flex justify-end">
+                <button type="submit" class="px-6 py-2.5 rounded-xl bg-orange-500 text-white font-bold text-xs uppercase tracking-wider hover:bg-orange-600 transition shadow-md shadow-orange-500/20">
+                    Update Password
+                </button>
+            </div>
+        </form>
+    </div>  
+
     </div>
+
+    
 @endsection

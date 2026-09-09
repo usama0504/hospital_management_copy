@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use App\Models\Doctor;
 use App\Models\User;
+use Illuminate\Support\Facades\Hash;
 
 class ProfileController extends Controller
 {
@@ -14,7 +15,7 @@ class ProfileController extends Controller
     public function edit()
     {
         $user = Auth::user();
-        
+
         // Agar user doctor hai toh uska doctor record bhi fetch kar lein
         $doctor = null;
         if (method_exists($user, 'hasRole') && $user->hasRole('doctor')) {
@@ -70,6 +71,20 @@ class ProfileController extends Controller
 
         $user->save();
 
-      return back()->with('success', 'Profile updated successfully!');
+        return back()->with('success', 'Profile updated successfully!');
+    }
+
+    public function updatePassword(Request $request)
+    {
+        $request->validate([
+            'current_password' => ['required', 'current_password'],
+            'password' => ['required', 'string', 'min:8', 'confirmed'],
+        ]);
+
+        $user = User::findOrFail(Auth::id());
+        $user->password = Hash::make($request->password);
+        $user->save();
+
+        return back()->with('password_success', 'Password updated successfully!');
     }
 }

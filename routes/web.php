@@ -51,7 +51,7 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/bills/create', [BillController::class, 'create'])->name('bills.create');
     Route::post('/bills', [BillController::class, 'store'])->name('bills.store');
-Route::get('bills/{bill}/receipt', [BillController::class, 'receipt'])->name('bills.receipt');
+    Route::get('bills/{bill}/receipt', [BillController::class, 'receipt'])->name('bills.receipt');
     // 3. Edit route
     Route::get('/bills/{bill}/edit', [BillController::class, 'edit'])->name('bills.edit');
     Route::put('/bills/{bill}', [BillController::class, 'update'])->name('bills.update');
@@ -84,4 +84,5 @@ Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 Route::middleware(['auth'])->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::put('/profile/password', [ProfileController::class, 'updatePassword'])->name('password.update');
 });
