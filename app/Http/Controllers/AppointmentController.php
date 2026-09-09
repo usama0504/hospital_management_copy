@@ -6,32 +6,83 @@ use App\Models\Appointment;
 use App\Models\Patient;
 use App\Models\Doctor;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class AppointmentController extends Controller
 {
     public function index()
     {
-        $appointments = Appointment::with('patient', 'doctor')->latest()->paginate(10);
+        $user = Auth::user();
+
+        // Agar user Doctor hai, toh sirf uski apni appointments show hon
+        if (method_exists($user, 'hasRole') && $user->hasRole('doctor')) {
+            $doctor = Doctor::where('email', $user->email)->first();
+
+            if ($doctor) {
+                $appointments = Appointment::where('doctor_id', $doctor->id)
+                                ->with('patient', 'doctor')
+                                ->latest()
+                                ->paginate(10);
+            } else {
+                $appointments = collect();
+            }
+        } else {
+            // Admin ya Receptionist ke liye sab appointments show hon
+            $appointments = Appointment::with('patient', 'doctor')->latest()->paginate(10);
+        }
+
         return view('appointments.index', compact('appointments'));
     }
 
     public function create()
     {
         $patients = Patient::all();
-        $doctors = Doctor::all();
+        $user = Auth::user();
+
+        // Agar doctor login hai, toh use baqi doctors ki list ki zaroorat nahi ya wahi select ho ga
+        if (method_exists($user, 'hasRole') && $user->hasRole('doctor')) {
+            $doctors = Doctor::where('email', $user->email)->get();
+        } else {
+            $doctors = Doctor::all();
+        }
+
         return view('appointments.create', compact('patients', 'doctors'));
     }
 
     public function store(Request $request)
     {
+        $user = Auth::user();
+        $doctorId = $request->doctor_id;
+
+        // Agar doctor login hai, toh ensure karein ke doctor_id uski apni hi ho
+        if (method_exists($user, 'hasRole') && $user->hasRole('doctor')) {
+            $doctor = Doctor::where('email', $user->email)->first();
+            if ($doctor) {
+                $doctorId = $doctor->id;
+            }
+        }
+
         $request->validate([
             'patient_id' => 'required|exists:patients,id',
-            'doctor_id' => 'required|exists:doctors,id',
             'appointment_date' => 'required|date',
             'status' => 'required|string',
         ]);
 
-        Appointment::create($request->all());
+        // Agar admin/receptionist hai toh request wala doctor_id validation ke sath chale
+        if (! (method_exists($user, 'hasRole') && $user->hasRole('doctor'))) {
+            $request->validate([
+                'doctor_id' => 'required|exists:doctors,id',
+            ]);
+            $doctorId = $request->doctor_id;
+        }
+
+        Appointment::create([
+            'patient_id' => $request->patient_id,
+            'doctor_id' => $doctorId,
+            'appointment_date' => $request->appointment_date,
+            'status' => $request->status,
+        ]);
+
         return redirect()->route('appointments.index')->with('success', 'Appointment created successfully.');
     }
 

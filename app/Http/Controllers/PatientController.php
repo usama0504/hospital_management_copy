@@ -3,13 +3,37 @@
 namespace App\Http\Controllers;
 
 use App\Models\Patient;
+use App\Models\Doctor;
+use App\Models\Appointment;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class PatientController extends Controller
 {
     public function index()
     {
-        $patients = Patient::latest()->paginate(10);
+        $user = Auth::user();
+
+        // Agar user Doctor hai, toh sirf uske appointment wale patients show hon
+        if (method_exists($user, 'hasRole') && $user->hasRole('doctor')) {
+            // Doctor ko user ki email ke zariye find karein
+            $doctor = Doctor::where('email', $user->email)->first();
+
+            if ($doctor) {
+                // Appointments table se is doctor ki related patient IDs nikal lein
+                $patientIds = Appointment::where('doctor_id', $doctor->id)
+                                ->pluck('patient_id')
+                                ->unique();
+
+                $patients = Patient::whereIn('id', $patientIds)->latest()->paginate(10);
+            } else {
+                $patients = collect(); // Agar doctor profile nahi mili
+            }
+        } else {
+            // Admin ya Receptionist ke liye sab patients show hon
+            $patients = Patient::latest()->paginate(10);
+        }
+
         return view('patients.index', compact('patients'));
     }
 

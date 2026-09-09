@@ -1,6 +1,11 @@
 @extends('layouts.app')
 
 @section('content')
+@php
+    $user = Auth::user();
+    $isDoctor = $user && method_exists($user, 'hasRole') && $user->hasRole('doctor');
+@endphp
+
 <div class="space-y-6">
 
     <!-- Top Grid: Activity Overview & Patient Visit by Department & Popular Doctor List -->
@@ -47,7 +52,8 @@
                         </div>
                     </div>
 
-                    <!-- Earning Card -->
+                    <!-- Earning Card (Hidden for Doctor) -->
+                    @if(!$isDoctor)
                     <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between">
                         <div>
                             <p class="text-2xl font-black text-gray-900">${{ number_format($totalEarnings ?? 0, 2) }}</p>
@@ -57,6 +63,7 @@
                             <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                         </div>
                     </div>
+                    @endif
 
                 </div>
             </div>
@@ -216,7 +223,8 @@
 
     </div>
 
-    <!-- Bottom Row: Recent Billing & Payments Section (Added Logic) -->
+    <!-- Bottom Row: Recent Billing & Payments Section (Hidden for Doctor) -->
+    @if(!$isDoctor)
     <div class="grid grid-cols-1 gap-6">
         <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
             <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
@@ -265,6 +273,7 @@
             </div>
         </div>
     </div>
+    @endif
 
 </div>
 @endsection
