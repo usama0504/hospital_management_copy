@@ -42,10 +42,10 @@
 
                 <div>
                     <h2 class="text-lg font-bold text-gray-900">{{ $user->name }}</h2>
-                    <p class="text-xs text-gray-400">{{ $user->email }}</p>
+                    {{-- <p class="text-xs text-gray-400">{{ $user->email }}</p> --}}
                     <span
                         class="inline-block mt-2 px-2.5 py-0.5 rounded-full bg-orange-50 text-orange-600 text-[10px] font-bold uppercase">
-                        {{ $user->roles->pluck('name')->implode(', ') ?: 'User' }}
+                       {{ $user->roles->first()?->name ?? 'User' }}
                     </span>
                 </div>
             </div>

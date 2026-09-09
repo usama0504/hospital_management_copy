@@ -31,7 +31,7 @@ class ProfileController extends Controller
 
         $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email,' . $user->id],
+            // 'email' => ['string', 'email', 'max:255', 'unique:users,email,' . $user->id],
             'phone' => ['nullable', 'string', 'max:20'],
             'city' => ['nullable', 'string', 'max:100'],
             'address' => ['nullable', 'string', 'max:500'],
@@ -56,7 +56,7 @@ class ProfileController extends Controller
         }
 
         $user->name = $request->name;
-        $user->email = $request->email;
+        // $user->email = $request->email;
         $user->phone = $request->phone;
         $user->city = $request->city;
         $user->address = $request->address;
@@ -70,6 +70,6 @@ class ProfileController extends Controller
 
         $user->save();
 
-        return back()->with('status', 'profile-updated');
+      return back()->with('success', 'Profile updated successfully!');
     }
 }
