@@ -17,21 +17,24 @@ class ReportController extends Controller
 
         $patientsCount = Patient::count();
         $doctorsCount = Doctor::count();
+        
         $appointments = Appointment::query();
-        $bills = Bill::query();
+        $billsQuery = Bill::query();
 
         if ($from) {
             $appointments = $appointments->whereDate('appointment_date', '>=', $from);
-            $bills = $bills->whereDate('bill_date', '>=', $from);
+            $billsQuery = $billsQuery->whereDate('bill_date', '>=', $from);
         }
         if ($to) {
             $appointments = $appointments->whereDate('appointment_date', '<=', $to);
-            $bills = $bills->whereDate('bill_date', '<=', $to);
+            $billsQuery = $billsQuery->whereDate('bill_date', '<=', $to);
         }
 
         $appointmentsCount = $appointments->count();
-        $pendingBillsCount = $bills->whereIn('status', ['Pending', 'Unpaid'])->count();
-        $paidBillsCount = $bills->where('status', 'Paid')->count();
+        
+        // Clone queries for separate status counts so they don't override each other
+        $pendingBillsCount = (clone $billsQuery)->whereIn('status', ['Pending', 'Unpaid'])->count();
+        $paidBillsCount = (clone $billsQuery)->where('status', 'Paid')->count();
 
         return view('reports.index', compact(
             'patientsCount',

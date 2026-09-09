@@ -1,17 +1,25 @@
 @extends('layouts.app')
 
 @section('content')
-    <div class="py-6">
-        <div class="max-w-3xl mx-auto px-6">
+    <div class="py-4">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
             
             <!-- Header Section -->
-            <div class="mb-8">
-                <h2 class="text-3xl font-extrabold text-gray-900">{{ __('Add Appointment') }}</h2>
+            <div class="mb-4 flex items-center justify-between">
+                <div>
+                    <h2 class="text-xl font-black text-gray-900 tracking-tight">{{ __('Add Appointment') }}</h2>
+                    <p class="text-[11px] text-gray-500 font-medium">Schedule a new hospital appointment quickly.</p>
+                </div>
+                <a href="{{ route('appointments.index') }}" class="text-xs font-bold text-gray-500 hover:text-gray-900 transition bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-200">
+                    &larr; Back
+                </a>
             </div>
 
+            <!-- Error Messages Alert -->
             @if($errors->any())
-                <div class="bg-red-100 text-red-700 p-3 rounded mb-4">
-                    <ul class="list-disc pl-5 space-y-1">
+                <div class="mb-4 flex flex-col gap-1 bg-rose-50 border border-rose-200 text-rose-800 p-3 rounded-xl text-xs font-semibold">
+                    <span class="font-bold">Please fix the following errors:</span>
+                    <ul class="list-disc pl-5 space-y-0.5">
                         @foreach($errors->all() as $error)
                             <li>{{ $error }}</li>
                         @endforeach
@@ -19,49 +27,62 @@
                 </div>
             @endif
 
-            <form action="{{ route('appointments.store') }}" method="POST" class="bg-white p-6 rounded shadow">
+            <!-- Form Card Container (2-Column Grid to avoid scrolling) -->
+            <form action="{{ route('appointments.store') }}" method="POST" class="bg-white border border-gray-100 shadow-sm rounded-2xl p-5 sm:p-6 space-y-4">
                 @csrf
-                <div class="mb-4">
-                    <label for="patient_id" class="block mb-1 font-medium">Patient</label>
-                    <select name="patient_id" id="patient_id" required
-                        class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-400">
-                        <option value="">Select Patient</option>
-                        @foreach($patients as $patient)
-                            <option value="{{ $patient->id }}" {{ old('patient_id') == $patient->id ? 'selected' : '' }}>{{ $patient->name }}</option>
-                        @endforeach
-                    </select>
+                
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <!-- Patient Selection -->
+                    <div>
+                        <label for="patient_id" class="block text-[11px] font-bold text-gray-700 uppercase tracking-wider mb-1">Patient</label>
+                        <select name="patient_id" id="patient_id" required
+                            class="w-full bg-gray-50/50 border border-gray-200 rounded-xl px-3.5 py-2.5 text-xs font-medium text-gray-700 focus:outline-none focus:bg-white focus:border-orange-500 focus:ring-2 focus:ring-orange-500/25 transition">
+                            <option value="">Select Patient</option>
+                            @foreach($patients as $patient)
+                                <option value="{{ $patient->id }}" {{ old('patient_id') == $patient->id ? 'selected' : '' }}>{{ $patient->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <!-- Doctor Selection -->
+                    <div>
+                        <label for="doctor_id" class="block text-[11px] font-bold text-gray-700 uppercase tracking-wider mb-1">Doctor</label>
+                        <select name="doctor_id" id="doctor_id" required
+                            class="w-full bg-gray-50/50 border border-gray-200 rounded-xl px-3.5 py-2.5 text-xs font-medium text-gray-700 focus:outline-none focus:bg-white focus:border-orange-500 focus:ring-2 focus:ring-orange-500/25 transition">
+                            <option value="">Select Doctor</option>
+                            @foreach($doctors as $doctor)
+                                <option value="{{ $doctor->id }}" {{ old('doctor_id') == $doctor->id ? 'selected' : '' }}>Dr. {{ $doctor->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <!-- Appointment Date & Time -->
+                    <div>
+                        <label for="appointment_date" class="block text-[11px] font-bold text-gray-700 uppercase tracking-wider mb-1">Appointment Date & Time</label>
+                        <input type="datetime-local" name="appointment_date" id="appointment_date" value="{{ old('appointment_date') }}" required
+                            class="w-full bg-gray-50/50 border border-gray-200 rounded-xl px-3.5 py-2.5 text-xs font-medium text-gray-700 focus:outline-none focus:bg-white focus:border-orange-500 focus:ring-2 focus:ring-orange-500/25 transition" />
+                    </div>
+
+                    <!-- Status Selection -->
+                    <div>
+                        <label for="status" class="block text-[11px] font-bold text-gray-700 uppercase tracking-wider mb-1">Status</label>
+                        <select name="status" id="status" required
+                            class="w-full bg-gray-50/50 border border-gray-200 rounded-xl px-3.5 py-2.5 text-xs font-medium text-gray-700 focus:outline-none focus:bg-white focus:border-orange-500 focus:ring-2 focus:ring-orange-500/25 transition">
+                            <option value="Scheduled" {{ old('status') == 'Scheduled' ? 'selected' : '' }}>Scheduled</option>
+                            <option value="Completed" {{ old('status') == 'Completed' ? 'selected' : '' }}>Completed</option>
+                            <option value="Cancelled" {{ old('status') == 'Cancelled' ? 'selected' : '' }}>Cancelled</option>
+                        </select>
+                    </div>
                 </div>
 
-                <div class="mb-4">
-                    <label for="doctor_id" class="block mb-1 font-medium">Doctor</label>
-                    <select name="doctor_id" id="doctor_id" required
-                        class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-400">
-                        <option value="">Select Doctor</option>
-                        @foreach($doctors as $doctor)
-                            <option value="{{ $doctor->id }}" {{ old('doctor_id') == $doctor->id ? 'selected' : '' }}>{{ $doctor->name }}</option>
-                        @endforeach
-                    </select>
-                </div>
-
-                <div class="mb-4">
-                    <label for="appointment_date" class="block mb-1 font-medium">Appointment Date & Time</label>
-                    <input type="datetime-local" name="appointment_date" id="appointment_date" value="{{ old('appointment_date') }}" required
-                        class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-400" />
-                </div>
-
-                <div class="mb-4">
-                    <label for="status" class="block mb-1 font-medium">Status</label>
-                    <select name="status" id="status" required
-                        class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-400">
-                        <option value="Scheduled" {{ old('status') == 'Scheduled' ? 'selected' : '' }}>Scheduled</option>
-                        <option value="Completed" {{ old('status') == 'Completed' ? 'selected' : '' }}>Completed</option>
-                        <option value="Cancelled" {{ old('status') == 'Cancelled' ? 'selected' : '' }}>Cancelled</option>
-                    </select>
-                </div>
-
-                <div>
-                    <button type="submit" class="bg-indigo-600 text-white rounded px-4 py-2 hover:bg-indigo-700">Save Appointment</button>
-                    <a href="{{ route('appointments.index') }}" class="ml-4 text-gray-600 hover:underline">Cancel</a>
+                <!-- Action Buttons -->
+                <div class="flex items-center gap-3 pt-3 border-t border-gray-100">
+                    <button type="submit" class="inline-flex items-center justify-center bg-orange-500 text-white px-5 py-2.5 rounded-xl font-bold text-xs shadow-md shadow-orange-500/20 hover:bg-orange-600 transition">
+                        Save Appointment
+                    </button>
+                    <a href="{{ route('appointments.index') }}" class="text-xs font-bold text-gray-500 hover:text-gray-900 transition px-3 py-2">
+                        Cancel
+                    </a>
                 </div>
             </form>
 

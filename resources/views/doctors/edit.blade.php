@@ -1,17 +1,25 @@
 @extends('layouts.app')
 
 @section('content')
-    <div class="py-6">
-        <div class="max-w-3xl mx-auto px-6">
+    <div class="py-4">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
             
             <!-- Header Section -->
-            <div class="mb-8">
-                <h2 class="text-3xl font-extrabold text-gray-900">{{ __('Edit Doctor') }}</h2>
+            <div class="mb-4 flex items-center justify-between">
+                <div>
+                    <h2 class="text-xl font-black text-gray-900 tracking-tight">{{ __('Edit Doctor') }}</h2>
+                    <p class="text-[11px] text-gray-500 font-medium">Update the doctor's profile details below.</p>
+                </div>
+                <a href="{{ route('doctors.index') }}" class="text-xs font-bold text-gray-500 hover:text-gray-900 transition bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-200">
+                    &larr; Back
+                </a>
             </div>
 
+            <!-- Error Messages Alert -->
             @if($errors->any())
-                <div class="bg-red-100 text-red-700 p-3 rounded mb-4">
-                    <ul class="list-disc pl-5 space-y-1">
+                <div class="mb-4 flex flex-col gap-1 bg-rose-50 border border-rose-200 text-rose-800 p-3 rounded-xl text-xs font-semibold">
+                    <span class="font-bold">Please fix the following errors:</span>
+                    <ul class="list-disc pl-5 space-y-0.5">
                         @foreach($errors->all() as $error)
                             <li>{{ $error }}</li>
                         @endforeach
@@ -19,39 +27,49 @@
                 </div>
             @endif
 
-            <form action="{{ route('doctors.update', $doctor->id) }}" method="POST" class="bg-white p-6 rounded shadow">
+            <!-- Form Card Container (2-Column Grid) -->
+            <form action="{{ route('doctors.update', $doctor->id) }}" method="POST" class="bg-white border border-gray-100 shadow-sm rounded-2xl p-5 sm:p-6 space-y-4">
                 @csrf
                 @method('PUT')
 
-                <div class="mb-4">
-                    <label for="name" class="block mb-1 font-medium">Name</label>
-                    <input type="text" name="name" id="name" value="{{ old('name', $doctor->name) }}" required
-                        class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-400" />
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <!-- Name Field -->
+                    <div>
+                        <label for="name" class="block text-[11px] font-bold text-gray-700 uppercase tracking-wider mb-1">Name</label>
+                        <input type="text" name="name" id="name" value="{{ old('name', $doctor->name) }}" required
+                            class="w-full bg-gray-50/50 border border-gray-200 rounded-xl px-3.5 py-2.5 text-xs font-medium text-gray-700 focus:outline-none focus:bg-white focus:border-orange-500 focus:ring-2 focus:ring-orange-500/25 transition" />
+                    </div>
+
+                    <!-- Email Field -->
+                    <div>
+                        <label for="email" class="block text-[11px] font-bold text-gray-700 uppercase tracking-wider mb-1">Email</label>
+                        <input type="email" name="email" id="email" value="{{ old('email', $doctor->email) }}" required
+                            class="w-full bg-gray-50/50 border border-gray-200 rounded-xl px-3.5 py-2.5 text-xs font-medium text-gray-700 focus:outline-none focus:bg-white focus:border-orange-500 focus:ring-2 focus:ring-orange-500/25 transition" />
+                    </div>
+
+                    <!-- Phone Field -->
+                    <div>
+                        <label for="phone" class="block text-[11px] font-bold text-gray-700 uppercase tracking-wider mb-1">Phone</label>
+                        <input type="text" name="phone" id="phone" value="{{ old('phone', $doctor->phone) }}" required
+                            class="w-full bg-gray-50/50 border border-gray-200 rounded-xl px-3.5 py-2.5 text-xs font-medium text-gray-700 focus:outline-none focus:bg-white focus:border-orange-500 focus:ring-2 focus:ring-orange-500/25 transition" />
+                    </div>
+
+                    <!-- Specialization Field -->
+                    <div>
+                        <label for="specialization" class="block text-[11px] font-bold text-gray-700 uppercase tracking-wider mb-1">Specialization</label>
+                        <input type="text" name="specialization" id="specialization" value="{{ old('specialization', $doctor->specialization) }}" required
+                            class="w-full bg-gray-50/50 border border-gray-200 rounded-xl px-3.5 py-2.5 text-xs font-medium text-gray-700 focus:outline-none focus:bg-white focus:border-orange-500 focus:ring-2 focus:ring-orange-500/25 transition" />
+                    </div>
                 </div>
 
-                <div class="mb-4">
-                    <label for="email" class="block mb-1 font-medium">Email</label>
-                    <input type="email" name="email" id="email" value="{{ old('email', $doctor->email) }}" required
-                        class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-400" />
-                </div>
-
-                <div class="mb-4">
-                    <label for="phone" class="block mb-1 font-medium">Phone</label>
-                    <input type="text" name="phone" id="phone" value="{{ old('phone', $doctor->phone) }}" required
-                        class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-400" />
-                </div>
-
-                <div class="mb-4">
-                    <label for="specialization" class="block mb-1 font-medium">Specialization</label>
-                    <input type="text" name="specialization" id="specialization" value="{{ old('specialization', $doctor->specialization) }}" required
-                        class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-400" />
-                </div>
-
-                <div>
-                    <button type="submit" class="bg-green-600 text-white rounded px-4 py-2 hover:bg-green-700">
+                <!-- Action Buttons -->
+                <div class="flex items-center gap-3 pt-3 border-t border-gray-100">
+                    <button type="submit" class="inline-flex items-center justify-center bg-orange-500 text-white px-5 py-2.5 rounded-xl font-bold text-xs shadow-md shadow-orange-500/20 hover:bg-orange-600 transition">
                         Update Doctor
                     </button>
-                    <a href="{{ route('doctors.index') }}" class="ml-4 text-gray-600 hover:underline">Cancel</a>
+                    <a href="{{ route('doctors.index') }}" class="text-xs font-bold text-gray-500 hover:text-gray-900 transition px-3 py-2">
+                        Cancel
+                    </a>
                 </div>
             </form>
 
