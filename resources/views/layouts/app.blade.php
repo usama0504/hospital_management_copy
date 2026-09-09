@@ -136,7 +136,7 @@
                     </div>
 
                     <!-- Search Input Bar -->
-                    <div class="w-1/3">
+                    {{-- <div class="w-1/3">
                         <div class="relative">
                             <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-gray-400">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -146,18 +146,18 @@
                             <input type="text" placeholder="Search here..."
                                 class="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200/80 rounded-full text-xs focus:outline-none focus:border-orange-500 transition">
                         </div>
-                    </div>
+                    </div> --}}
 
                     <!-- Admin Profile Section -->
                     <div class="flex items-center gap-4">
-                        <div class="relative">
+                        {{-- <div class="relative">
                             <span class="absolute top-1 right-1 w-2 h-2 rounded-full bg-red-500 ring-2 ring-white"></span>
                             <button class="p-2.5 rounded-full bg-gray-50 text-gray-600 hover:bg-gray-100 transition">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
                                 </svg>
                             </button>
-                        </div>
+                        </div> --}}
                         @auth
                             <div class="flex items-center gap-3 pl-4 border-l border-gray-100">
                                 <img src="https://images.unsplash.com/photo-1618001789159-ffffe6f96ef2?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8NHx8bWVucyUyMHBpY3xlbnwwfHwwfHx8MA%3D%3D"
