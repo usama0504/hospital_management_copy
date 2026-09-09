@@ -1,72 +1,82 @@
 @extends('layouts.app')
 
 @section('content')
-    <div class="py-6">
-        <div class="max-w-md mx-auto px-6">
+    <div class="min-h-[85vh] flex items-center justify-center py-10 px-4 sm:px-6 lg:px-8">
+        <div class="max-w-xl w-full bg-white shadow-xl rounded-2xl border border-gray-100 p-8">
             
-            <div class="bg-white p-6 rounded shadow">
-                <h2 class="text-2xl font-semibold mb-6 text-center text-gray-800">Register</h2>
+            <!-- Heading -->
+            <div class="text-center mb-6">
+                <h2 class="text-2xl font-bold text-gray-900">Create an Account</h2>
+                <p class="text-sm text-gray-500 mt-1">Enter your details to register</p>
+            </div>
 
-                @if($errors->any())
-                    <div class="bg-red-100 text-red-700 p-3 rounded mb-4 text-sm">
-                        <ul class="list-disc pl-5 space-y-1">
-                            @foreach($errors->all() as $error)
-                                <li>{{ $error }}</li>
-                            @endforeach
-                        </ul>
-                    </div>
-                @endif
+            <!-- Validation Errors -->
+            @if($errors->any())
+                <div class="mb-6 bg-red-50 border-l-4 border-red-500 p-4 rounded-r-lg text-sm text-red-700">
+                    <ul class="list-disc pl-4 space-y-1">
+                        @foreach($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
 
-                <form action="{{ route('register') }}" method="POST">
-                    @csrf
+            <form action="{{ route('register') }}" method="POST" class="space-y-4">
+                @csrf
 
-                    <div class="mb-4">
-                        <label for="name" class="block mb-1 font-medium text-sm text-gray-700">Name</label>
+                <!-- Two Column Fields Grid -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <!-- Name -->
+                    <div>
+                        <label for="name" class="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
                         <input type="text" name="name" id="name" value="{{ old('name') }}" required autofocus
-                            class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+                            class="w-full px-4 py-2.5 text-sm rounded-lg border border-gray-300 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition" />
                     </div>
 
-                    <div class="mb-4">
-                        <label for="email" class="block mb-1 font-medium text-sm text-gray-700">Email</label>
+                    <!-- Email -->
+                    <div>
+                        <label for="email" class="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
                         <input type="email" name="email" id="email" value="{{ old('email') }}" required
-                            class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+                            class="w-full px-4 py-2.5 text-sm rounded-lg border border-gray-300 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition" />
                     </div>
 
-                    <div class="mb-4">
-                        <label for="password" class="block mb-1 font-medium text-sm text-gray-700">Password</label>
+                    <!-- Password -->
+                    <div>
+                        <label for="password" class="block text-sm font-medium text-gray-700 mb-1">Password</label>
                         <input type="password" name="password" id="password" required
-                            class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+                            class="w-full px-4 py-2.5 text-sm rounded-lg border border-gray-300 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition" />
                     </div>
 
-                    <div class="mb-6">
-                        <label for="password_confirmation" class="block mb-1 font-medium text-sm text-gray-700">Confirm Password</label>
+                    <!-- Confirm Password -->
+                    <div>
+                        <label for="password_confirmation" class="block text-sm font-medium text-gray-700 mb-1">Confirm Password</label>
                         <input type="password" name="password_confirmation" id="password_confirmation" required
-                            class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+                            class="w-full px-4 py-2.5 text-sm rounded-lg border border-gray-300 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition" />
                     </div>
+                </div>
 
-                    <div class="mb-6">
-                        <label for="role" class="block mb-1 font-medium text-sm text-gray-700">I am a</label>
-                        <select name="role" id="role" required
-                            class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-400">
-                            <option value="receptionist" {{ old('role', 'receptionist') == 'receptionist' ? 'selected' : '' }}>
-                                Receptionist
-                            </option>
-                            <option value="doctor" {{ old('role') == 'doctor' ? 'selected' : '' }}>
-                                Doctor
-                            </option>
-                        </select>
-                        <p class="text-xs text-gray-400 mt-1">Admin accounts can only be created by an existing admin.</p>
-                    </div>
+                <!-- Role (Full Width) -->
+                <div>
+                    <label for="role" class="block text-sm font-medium text-gray-700 mb-1">Register as</label>
+                    <select name="role" id="role" required
+                        class="w-full px-4 py-2.5 text-sm rounded-lg border border-gray-300 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition bg-white">
+                        <option value="receptionist" {{ old('role', 'receptionist') == 'receptionist' ? 'selected' : '' }}>Receptionist</option>
+                        <option value="doctor" {{ old('role') == 'doctor' ? 'selected' : '' }}>Doctor</option>
+                    </select>
+                </div>
 
-                    <button type="submit" class="w-full bg-indigo-600 text-white py-2 rounded hover:bg-indigo-700 transition font-medium">
+                <!-- Submit Button -->
+                <div class="pt-2">
+                    <button type="submit" class="w-full py-3 px-4 bg-orange-500 hover:bg-orange-600 text-white font-semibold text-sm rounded-lg shadow-md transition duration-200">
                         Register
                     </button>
-                </form>
+                </div>
+            </form>
 
-                <p class="mt-4 text-center text-sm text-gray-600">
-                    Already have an account?
-                    <a href="{{ route('login') }}" class="text-indigo-600 hover:underline">Login here</a>.
-                </p>
+            <!-- Footer Link -->
+            <div class="mt-6 text-center text-sm text-gray-600">
+                Already have an account? 
+                <a href="{{ route('login') }}" class="text-orange-600 hover:underline font-medium">Log in</a>
             </div>
 
         </div>
