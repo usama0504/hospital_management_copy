@@ -27,6 +27,7 @@ class BillController extends Controller
     {
         $request->validate([
             'patient_id' => 'required|exists:patients,id',
+            'doctor_id' => 'required|exists:doctors,id',
             'amount' => 'required|numeric',
             'status' => 'required|string',
             'bill_date' => 'required|date',
@@ -48,6 +49,7 @@ class BillController extends Controller
     {
         $request->validate([
             'patient_id' => 'required|exists:patients,id',
+            'doctor_id' => 'required|exists:doctors,id',
             'amount' => 'required|numeric',
             'status' => 'required|string',
             'bill_date' => 'required|date',
