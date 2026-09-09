@@ -4,20 +4,29 @@
     <div class="py-6">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             
-            <!-- Header Section with Action Button -->
+            <!-- Header Section with Action Buttons -->
             <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
                 <div>
                     <h2 class="text-2xl font-black text-gray-900 tracking-tight">{{ __('Doctors List') }}</h2>
                     <p class="text-xs text-gray-500 font-medium mt-0.5">Manage all hospital doctors and their specializations.</p>
                 </div>
-                @role('admin')
-                <div>
-                    <a href="{{ route('doctors.create') }}" class="inline-flex items-center justify-center bg-orange-500 text-white px-4 py-2.5 rounded-xl font-bold text-xs shadow-md shadow-orange-500/25 hover:bg-orange-600 transition">
-                        <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
-                        Add Doctor
-                    </a>
+
+                <div class="flex items-center gap-2">
+                    <!-- Agar Doctor login hai -->
+                    @role('doctor')
+                        <a href="{{ route('doctor.availability') }}" class="inline-flex items-center justify-center bg-orange-500 text-white px-4 py-2.5 rounded-xl font-bold text-xs shadow-md shadow-orange-500/25 hover:bg-orange-600 transition">
+                            Manage My Availability
+                        </a>
+                    @endrole
+
+                    <!-- Agar Admin hai -->
+                    @role('admin')
+                        <a href="{{ route('doctors.create') }}" class="inline-flex items-center justify-center bg-orange-500 text-white px-4 py-2.5 rounded-xl font-bold text-xs shadow-md shadow-orange-500/25 hover:bg-orange-600 transition">
+                            <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
+                            Add Doctor
+                        </a>
+                    @endrole
                 </div>
-                @endrole
             </div>
 
             <!-- Success Message Alert -->
@@ -38,9 +47,7 @@
                                 <th class="py-3.5 px-6">Email</th>
                                 <th class="py-3.5 px-6">Phone</th>
                                 <th class="py-3.5 px-6">Specialization</th>
-                                @role('admin')
                                 <th class="py-3.5 px-6 text-right">Actions</th>
-                                @endrole
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-100 text-xs font-medium text-gray-700">
@@ -54,16 +61,23 @@
                                         {{ $doctor->specialization }}
                                     </span>
                                 </td>
-                                @role('admin')
-                                <td class="py-4 px-6 text-right space-x-3">
-                                    <a href="{{ route('doctors.edit', $doctor->id) }}" class="font-bold text-gray-600 hover:text-orange-600 transition">Edit</a>
-                                    <form action="{{ route('doctors.destroy', $doctor->id) }}" method="POST" class="inline-block" onsubmit="return confirm('Are you sure you want to delete this doctor?');">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" class="font-bold text-rose-500 hover:text-rose-700 transition">Delete</button>
-                                    </form>
+                                
+                                <td class="py-4 px-6 text-right space-x-2">
+                                    <!-- Admin ke liye Availability, Edit aur Delete buttons -->
+                                    @role('admin')
+                                        <a href="{{ route('doctor.availability', ['doctor_id' => $doctor->id]) }}" class="inline-flex items-center px-2.5 py-1 rounded-lg bg-orange-50 text-orange-600 font-bold hover:bg-orange-100 transition" title="Manage Doctor Availability">
+                                            Availability
+                                        </a>
+
+                                        <a href="{{ route('doctors.edit', $doctor->id) }}" class="font-bold text-gray-600 hover:text-orange-600 transition">Edit</a>
+                                        
+                                        <form action="{{ route('doctors.destroy', $doctor->id) }}" method="POST" class="inline-block" onsubmit="return confirm('Are you sure you want to delete this doctor?');">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="font-bold text-rose-500 hover:text-rose-700 transition">Delete</button>
+                                        </form>
+                                    @endrole
                                 </td>
-                                @endrole
                             </tr>
                             @empty
                             <tr>

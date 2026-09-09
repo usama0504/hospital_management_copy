@@ -11,14 +11,24 @@
                     <p class="text-xs text-gray-500 mt-1 font-medium">Manage and monitor all hospital appointments efficiently.</p>
                 </div>
 
-                @can('manage appointments')
-                <div>
-                    <a href="{{ route('appointments.create') }}" class="inline-flex items-center gap-2 bg-orange-500 text-white px-5 py-2.5 rounded-xl font-semibold text-xs shadow-md shadow-orange-500/20 hover:bg-orange-600 transition">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
-                        Add Appointment
+                <div class="flex items-center gap-2 flex-wrap">
+                    <!-- Today's Available Doctors Button -->
+                    <a href="{{ route('receptionist.today') }}" class="inline-flex items-center gap-2 bg-white text-gray-700 border border-gray-200 px-4 py-2.5 rounded-xl font-bold text-xs hover:bg-gray-50 transition shadow-2xs">
+                        <svg class="w-4 h-4 text-orange-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        Today's Available Doctors
                     </a>
+
+                    @can('manage appointments')
+                    <div>
+                        <a href="{{ route('appointments.create') }}" class="inline-flex items-center gap-2 bg-orange-500 text-white px-5 py-2.5 rounded-xl font-semibold text-xs shadow-md shadow-orange-500/20 hover:bg-orange-600 transition">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
+                            Add Appointment
+                        </a>
+                    </div>
+                    @endcan
                 </div>
-                @endcan
             </div>
 
             <!-- Success Alert -->

@@ -20,9 +20,9 @@ class AppointmentController extends Controller
 
             if ($doctor) {
                 $appointments = Appointment::where('doctor_id', $doctor->id)
-                                ->with('patient', 'doctor')
-                                ->latest()
-                                ->paginate(10);
+                    ->with('patient', 'doctor')
+                    ->latest()
+                    ->paginate(10);
             } else {
                 $appointments = collect();
             }
@@ -39,11 +39,17 @@ class AppointmentController extends Controller
         $patients = Patient::all();
         $user = Auth::user();
 
-        // Agar doctor login hai, toh use baqi doctors ki list ki zaroorat nahi ya wahi select ho ga
         if (method_exists($user, 'hasRole') && $user->hasRole('doctor')) {
             $doctors = Doctor::where('email', $user->email)->get();
         } else {
-            $doctors = Doctor::all();
+            // Sirf un doctors ko layein jinki aaj ke din availability active hai
+            $currentDay = \Carbon\Carbon::now()->format('l'); // Aaj ka din (e.g., Thursday)
+
+            $doctorIds = \App\Models\DoctorAvailability::where('day_of_week', $currentDay)
+                ->where('is_active', true)
+                ->pluck('doctor_id');
+
+            $doctors = Doctor::whereIn('id', $doctorIds)->get();
         }
 
         return view('appointments.create', compact('patients', 'doctors'));
@@ -75,6 +81,19 @@ class AppointmentController extends Controller
             ]);
             $doctorId = $request->doctor_id;
         }
+
+        // --- NEW: Doctor Availability Check ---
+        $appointmentDate = \Carbon\Carbon::parse($request->appointment_date);
+        $dayOfWeek = $appointmentDate->format('l'); // Maslan: Monday, Tuesday, etc.
+
+        $isAvailable = \App\Models\DoctorAvailability::where('doctor_id', $doctorId)
+            ->where('day_of_week', $dayOfWeek)
+            ->exists();
+
+        if (!$isAvailable) {
+            return back()->withInput()->with('error', 'Doctor is not available on ' . $dayOfWeek . '!');
+        }
+        // ------------------------------------
 
         Appointment::create([
             'patient_id' => $request->patient_id,
