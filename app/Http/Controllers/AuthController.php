@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Models\Doctor; // <-- Yeh line add ki hai
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -35,6 +36,16 @@ class AuthController extends Controller
         // Only doctor/receptionist can be self-selected at registration.
         // Admin accounts must always be assigned manually by an existing admin.
         $user->assignRole($request->role);
+
+        // <-- MOST IMPORTANT: Agar role 'doctor' hai toh doctors table mein bhi entry kar dein -->
+        if ($request->role === 'doctor') {
+            Doctor::create([
+                'name' => $request->name,
+                'email' => $request->email,
+                'phone' => 'N/A', // Default value kyunki register form mein phone nahi hota
+                'specialization' => 'General Practitioner', // Default specialty (baad mein edit ho sakti hai)
+            ]);
+        }
 
         return redirect()->route('login')->with('success',
             'Registration submitted! Your account is pending admin approval. You will be able to log in once approved.'
