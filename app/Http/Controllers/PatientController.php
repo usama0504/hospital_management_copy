@@ -7,6 +7,7 @@ use App\Models\Doctor;
 use App\Models\Appointment;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Inertia\Inertia;
 
 class PatientController extends Controller
 {
@@ -22,8 +23,8 @@ class PatientController extends Controller
             if ($doctor) {
                 // Appointments table se is doctor ki related patient IDs nikal lein
                 $patientIds = Appointment::where('doctor_id', $doctor->id)
-                                ->pluck('patient_id')
-                                ->unique();
+                                        ->pluck('patient_id')
+                                        ->unique();
 
                 $patients = Patient::whereIn('id', $patientIds)->latest()->paginate(10);
             } else {
@@ -34,12 +35,14 @@ class PatientController extends Controller
             $patients = Patient::latest()->paginate(10);
         }
 
-        return view('patients.index', compact('patients'));
+        return Inertia::render('Patients/Index', [
+            'patients' => $patients
+        ]);
     }
 
     public function create()
     {
-        return view('patients.create');
+        return Inertia::render('Patients/Create');
     }
 
     public function store(Request $request)
@@ -53,12 +56,15 @@ class PatientController extends Controller
         ]);
 
         Patient::create($request->all());
+
         return redirect()->route('patients.index')->with('success', 'Patient added successfully.');
     }
 
     public function edit(Patient $patient)
     {
-        return view('patients.edit', compact('patient'));
+        return Inertia::render('Patients/Edit', [
+            'patient' => $patient
+        ]);
     }
 
     public function update(Request $request, Patient $patient)
@@ -72,12 +78,14 @@ class PatientController extends Controller
         ]);
 
         $patient->update($request->all());
+
         return redirect()->route('patients.index')->with('success', 'Patient updated successfully.');
     }
 
     public function destroy(Patient $patient)
     {
         $patient->delete();
+
         return redirect()->route('patients.index')->with('success', 'Patient deleted successfully.');
     }
 }

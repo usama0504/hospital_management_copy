@@ -6,18 +6,22 @@ use App\Models\Doctor;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Inertia\Inertia;
 
 class DoctorController extends Controller
 {
     public function index()
     {
         $doctors = Doctor::latest()->paginate(10);
-        return view('doctors.index', compact('doctors'));
+        
+        return Inertia::render('Doctors/Index', [
+            'doctors' => $doctors
+        ]);
     }
 
     public function create()
     {
-        return view('doctors.create');
+        return Inertia::render('Doctors/Create');
     }
 
     public function store(Request $request)
@@ -55,7 +59,9 @@ class DoctorController extends Controller
 
     public function edit(Doctor $doctor)
     {
-        return view('doctors.edit', compact('doctor'));
+        return Inertia::render('Doctors/Edit', [
+            'doctor' => $doctor
+        ]);
     }
 
     public function update(Request $request, Doctor $doctor)
@@ -91,6 +97,7 @@ class DoctorController extends Controller
         }
 
         $doctor->delete();
+        
         return redirect()->route('doctors.index')->with('success', 'Doctor deleted successfully.');
     }
 }

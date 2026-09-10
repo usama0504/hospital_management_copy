@@ -7,6 +7,7 @@ use App\Models\Patient;
 use App\Models\Doctor;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Inertia\Inertia;
 
 class BillController extends Controller
 {
@@ -23,8 +24,11 @@ class BillController extends Controller
     {
         $this->checkDoctor();
 
-        $bills = Bill::with('patient','doctor')->latest()->paginate(10);
-        return view('bills.index', compact('bills'));
+        $bills = Bill::with('patient', 'doctor')->latest()->paginate(10);
+        
+        return Inertia::render('Bills/Index', [
+            'bills' => $bills
+        ]);
     }
 
     public function create()
@@ -34,7 +38,10 @@ class BillController extends Controller
         $patients = Patient::all();
         $doctors = Doctor::all();
 
-        return view('bills.create', compact('patients', 'doctors'));
+        return Inertia::render('Bills/Create', [
+            'patients' => $patients,
+            'doctors' => $doctors
+        ]);
     }
 
     public function store(Request $request)
@@ -50,6 +57,7 @@ class BillController extends Controller
         ]);
 
         Bill::create($request->all());
+
         return redirect()->route('bills.index')->with('success', 'Bill created successfully.');
     }
 
@@ -60,7 +68,11 @@ class BillController extends Controller
         $patients = Patient::all();
         $doctors = Doctor::all();
 
-        return view('bills.edit', compact('bill', 'patients', 'doctors'));
+        return Inertia::render('Bills/Edit', [
+            'bill' => $bill,
+            'patients' => $patients,
+            'doctors' => $doctors
+        ]);
     }
 
     public function update(Request $request, Bill $bill)
@@ -76,6 +88,7 @@ class BillController extends Controller
         ]);
 
         $bill->update($request->all());
+
         return redirect()->route('bills.index')->with('success', 'Bill updated successfully.');
     }
 
@@ -84,6 +97,7 @@ class BillController extends Controller
         $this->checkDoctor();
 
         $bill->delete();
+
         return redirect()->route('bills.index')->with('success', 'Bill deleted successfully.');
     }
 
@@ -93,6 +107,8 @@ class BillController extends Controller
 
         $bill->load(['patient', 'doctor']);
 
-        return view('bills.receipt', compact('bill'));
+        return Inertia::render('Bills/Receipt', [
+            'bill' => $bill
+        ]);
     }
 }

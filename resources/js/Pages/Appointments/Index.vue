@@ -1,7 +1,8 @@
 <script setup>
 import { Link, router } from '@inertiajs/vue3';
+import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 
-// Controller se ane walay props (pagination object aur success flash message)
+// Controller se ane walay props (pagination object)
 const props = defineProps({
     appointments: Object, // Laravel pagination object (data, links, etc.)
 });
@@ -14,14 +15,38 @@ const deleteAppointment = (id) => {
         });
     }
 };
+
+// Helper functions
+const getStatusClass = (status) => {
+    switch ((status || '').toLowerCase()) {
+        case 'completed':
+            return 'bg-emerald-50 text-emerald-700 border-emerald-200';
+        case 'cancelled':
+            return 'bg-rose-50 text-rose-700 border-rose-200';
+        default:
+            return 'bg-amber-50 text-amber-700 border-amber-200';
+    }
+};
+
+const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) + ' - ' + 
+           date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+};
+
+const strtoupperName = (name) => {
+    if (!name) return 'P';
+    return name.charAt(0).toUpperCase();
+};
 </script>
 
 <template>
-    <div class="py-6 sm:py-8">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <AuthenticatedLayout>
+        <div class="space-y-6">
             
             <!-- Header & Action Section -->
-            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6 sm:mb-8">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
                     <h2 class="text-xl sm:text-2xl font-black text-gray-900 tracking-tight">Appointments List</h2>
                     <p class="text-xs text-gray-500 mt-1 font-medium">Manage and monitor all hospital appointments efficiently.</p>
@@ -36,7 +61,7 @@ const deleteAppointment = (id) => {
                         <span>Today's Doctors</span>
                     </Link>
 
-                    <!-- Add Appointment (Aap yahan permission/role check bhi laga sakte hain agar Inertia mein share hota hai) -->
+                    <!-- Add Appointment Button -->
                     <Link :href="route('appointments.create')" class="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 bg-orange-500 text-white px-5 py-2.5 rounded-xl font-semibold text-xs shadow-md shadow-orange-500/20 hover:bg-orange-600 transition">
                         <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
@@ -46,8 +71,8 @@ const deleteAppointment = (id) => {
                 </div>
             </div>
 
-            <!-- Success Alert (Inertia Flash Messages $page.props.flash.success se aate hain) -->
-            <div v-if="$page.props.flash?.success" class="mb-6 flex items-center gap-3 bg-emerald-50 border border-emerald-200 text-emerald-800 px-4 py-3 rounded-xl text-xs font-semibold shadow-sm">
+            <!-- Success Alert (Inertia Flash Messages) -->
+            <div v-if="$page.props.flash?.success" class="flex items-center gap-3 bg-emerald-50 border border-emerald-200 text-emerald-800 px-4 py-3 rounded-xl text-xs font-semibold shadow-sm">
                 <svg class="w-5 h-5 text-emerald-500 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                 </svg>
@@ -182,16 +207,16 @@ const deleteAppointment = (id) => {
 
             </div>
 
-            <!-- Pagination Links (Laravel Pagination Links rendered via Inertia or standard links component) -->
-            <div class="mt-6 flex justify-center gap-1" v-if="appointments.links">
+            <!-- Pagination Links -->
+            <div class="mt-6 flex justify-center gap-1 flex-wrap" v-if="appointments.links">
                 <template v-for="(link, key) in appointments.links" :key="key">
                     <component
                         :is="link.url ? Link : 'span'"
                         :href="link.url"
                         v-html="link.label"
-                        class="px-3 py-1.5 text-xs rounded-lg border"
+                        class="px-3 py-1.5 text-xs rounded-lg border transition"
                         :class="{
-                            'bg-orange-500 text-white border-orange-500': link.active,
+                            'bg-orange-500 text-white border-orange-500 shadow-sm': link.active,
                             'bg-white text-gray-700 border-gray-200 hover:bg-gray-50': link.url && !link.active,
                             'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed': !link.url
                         }"
@@ -200,31 +225,5 @@ const deleteAppointment = (id) => {
             </div>
 
         </div>
-    </div>
+    </AuthenticatedLayout>
 </template>
-
-<script>
-// Helper functions script block ke neechay rakh sakte hain ya andar define kar sakte hain
-function getStatusClass(status) {
-    switch ((status || '').toLowerCase()) {
-        case 'completed':
-            return 'bg-emerald-50 text-emerald-700 border-emerald-200';
-        case 'cancelled':
-            return 'bg-rose-50 text-rose-700 border-rose-200';
-        default:
-            return 'bg-amber-50 text-amber-700 border-amber-200';
-    }
-}
-
-function formatDate(dateString) {
-    if (!dateString) return 'N/A';
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) + ' - ' + 
-           date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-}
-
-function strtoupperName(name) {
-    if (!name) return 'P';
-    return name.charAt(0).toUpperCase();
-}
-</script>

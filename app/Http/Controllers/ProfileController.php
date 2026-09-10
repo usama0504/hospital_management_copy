@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Storage;
 use App\Models\Doctor;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
+use Inertia\Inertia;
 
 class ProfileController extends Controller
 {
@@ -22,7 +23,10 @@ class ProfileController extends Controller
             $doctor = Doctor::where('email', $user->email)->first();
         }
 
-        return view('profile.edit', compact('user', 'doctor'));
+        return Inertia::render('Profile/Edit', [
+            'user' => $user,
+            'doctor' => $doctor
+        ]);
     }
 
     // Profile update karne ke liye

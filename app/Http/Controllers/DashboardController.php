@@ -6,6 +6,7 @@ use App\Models\Patient;
 use App\Models\Doctor;
 use App\Models\Appointment;
 use App\Models\Bill;
+use Inertia\Inertia;
 
 class DashboardController extends Controller
 {
@@ -33,18 +34,18 @@ class DashboardController extends Controller
         $recentPatients = Patient::latest()->take(5)->get();
         $popularDoctors = Doctor::take(4)->get();
 
-        return view('dashboard', compact(
-            'patientsCount',
-            'doctorsCount',
-            'appointmentsCount',
-            'operationsCount',
-            'totalEarnings',
-            'pendingBillsCount',
-            'paidBillsCount',
-            'recentBills',
-            'recentAppointments',
-            'recentPatients',
-            'popularDoctors'
-        ));
+        return Inertia::render('Dashboard', [
+            'patientsCount' => $patientsCount,
+            'doctorsCount' => $doctorsCount,
+            'appointmentsCount' => $appointmentsCount,
+            'operationsCount' => $operationsCount,
+            'totalEarnings' => $totalEarnings,
+            'pendingBillsCount' => $pendingBillsCount,
+            'paidBillsCount' => $paidBillsCount,
+            'recentBills' => $recentBills,
+            'recentAppointments' => $recentAppointments,
+            'recentPatients' => $recentPatients,
+            'popularDoctors' => $popularDoctors,
+        ]);
     }
 }

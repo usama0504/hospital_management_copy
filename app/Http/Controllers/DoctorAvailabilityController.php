@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Doctor;
 use App\Models\DoctorAvailability;
+use Inertia\Inertia;
 
 class DoctorAvailabilityController extends Controller
 {
@@ -35,8 +36,12 @@ class DoctorAvailabilityController extends Controller
 
         $availabilities = DoctorAvailability::where('doctor_id', $targetDoctorId)->get();
 
-        return view('doctors.availability', compact('availabilities', 'targetDoctorId'));
+        return Inertia::render('Doctors/Availability', [
+            'availabilities' => $availabilities,
+            'targetDoctorId' => $targetDoctorId
+        ]);
     }
+
     // Naya time slot save karne ke liye
     public function store(Request $request)
     {

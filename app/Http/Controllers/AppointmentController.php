@@ -7,6 +7,7 @@ use App\Models\Patient;
 use App\Models\Doctor;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Inertia\Inertia;
 
 class AppointmentController extends Controller
 {
@@ -31,7 +32,9 @@ class AppointmentController extends Controller
             $appointments = Appointment::with('patient', 'doctor')->latest()->paginate(10);
         }
 
-        return view('appointments.index', compact('appointments'));
+        return Inertia::render('Appointments/Index', [
+            'appointments' => $appointments
+        ]);
     }
 
     public function create()
@@ -52,7 +55,10 @@ class AppointmentController extends Controller
             $doctors = Doctor::whereIn('id', $doctorIds)->get();
         }
 
-        return view('appointments.create', compact('patients', 'doctors'));
+        return Inertia::render('Appointments/Create', [
+            'patients' => $patients,
+            'doctors' => $doctors
+        ]);
     }
 
     public function store(Request $request)
@@ -105,7 +111,12 @@ class AppointmentController extends Controller
     {
         $patients = Patient::all();
         $doctors = Doctor::all();
-        return view('appointments.edit', compact('appointment', 'patients', 'doctors'));
+
+        return Inertia::render('Appointments/Edit', [
+            'appointment' => $appointment,
+            'patients' => $patients,
+            'doctors' => $doctors
+        ]);
     }
 
     public function update(Request $request, Appointment $appointment)
@@ -118,12 +129,14 @@ class AppointmentController extends Controller
         ]);
 
         $appointment->update($request->all());
+        
         return redirect()->route('appointments.index')->with('success', 'Appointment updated successfully.');
     }
 
     public function destroy(Appointment $appointment)
     {
         $appointment->delete();
+        
         return redirect()->route('appointments.index')->with('success', 'Appointment deleted successfully.');
     }
 }

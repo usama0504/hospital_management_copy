@@ -37,7 +37,19 @@ class HandleInertiaRequests extends Middleware
     {
         return [
             ...parent::share($request),
-            //
+            
+            // Logged-in user ki details aur uske roles/permissions share karne ke liye
+            'auth' => [
+                'user' => $request->user() ? $request->user()->load('roles', 'permissions') : null,
+            ],
+
+            // Laravel ke flash messages (success, error, waghera) share karne ke liye
+            'flash' => [
+                'success' => fn () => $request->session()->get('success'),
+                'error' => fn () => $request->session()->get('error'),
+                'warning' => fn () => $request->session()->get('warning'),
+                'password_success' => fn () => $request->session()->get('password_success'),
+            ],
         ];
     }
 }

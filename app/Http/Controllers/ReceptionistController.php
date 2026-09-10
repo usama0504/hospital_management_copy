@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\DoctorAvailability;
 use Carbon\Carbon;
+use Inertia\Inertia;
 
 class ReceptionistController extends Controller
 {
@@ -20,6 +21,9 @@ class ReceptionistController extends Controller
             ->where('is_active', true)
             ->get();
 
-        return view('receptionist.today-availability', compact('availabilities', 'currentDay'));
+        return Inertia::render('Receptionist/TodayAvailability', [
+            'availabilities' => $availabilities,
+            'currentDay' => $currentDay
+        ]);
     }
 }

@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
+use Illuminate\Support\Facades\Auth;
 
 class UserController extends Controller
 {
@@ -11,7 +13,9 @@ class UserController extends Controller
     {
         $users = User::with('roles')->latest()->paginate(10);
 
-        return view('users.index', compact('users'));
+        return Inertia::render('Users/Index', [
+            'users' => $users
+        ]);
     }
 
     public function approve($id)
@@ -27,7 +31,7 @@ class UserController extends Controller
     {
         $user = User::findOrFail($id);
 
-        if ($user->id === auth()->id()) {
+        if ($user->id === Auth::id()) {
             return redirect()->route('users.index')->with('error', 'You cannot remove your own account.');
         }
 

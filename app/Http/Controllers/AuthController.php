@@ -3,16 +3,17 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
-use App\Models\Doctor; // <-- Yeh line add ki hai
+use App\Models\Doctor;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Inertia\Inertia;
 
 class AuthController extends Controller
 {
     public function showRegisterForm()
     {
-        return view('auth.register');
+        return Inertia::render('Auth/Register');
     }
 
     public function register(Request $request)
@@ -37,7 +38,7 @@ class AuthController extends Controller
         // Admin accounts must always be assigned manually by an existing admin.
         $user->assignRole($request->role);
 
-        // <-- MOST IMPORTANT: Agar role 'doctor' hai toh doctors table mein bhi entry kar dein -->
+        // Agar role 'doctor' hai toh doctors table mein bhi entry kar dein
         if ($request->role === 'doctor') {
             Doctor::create([
                 'name' => $request->name,
@@ -54,7 +55,7 @@ class AuthController extends Controller
 
     public function showLoginForm()
     {
-        return view('auth.login');
+        return Inertia::render('Auth/Login');
     }
 
     public function login(Request $request)

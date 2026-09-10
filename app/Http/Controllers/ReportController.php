@@ -7,6 +7,7 @@ use App\Models\Doctor;
 use App\Models\Appointment;
 use App\Models\Bill;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
 
 class ReportController extends Controller
 {
@@ -36,14 +37,14 @@ class ReportController extends Controller
         $pendingBillsCount = (clone $billsQuery)->whereIn('status', ['Pending', 'Unpaid'])->count();
         $paidBillsCount = (clone $billsQuery)->where('status', 'Paid')->count();
 
-        return view('reports.index', compact(
-            'patientsCount',
-            'doctorsCount',
-            'appointmentsCount',
-            'pendingBillsCount',
-            'paidBillsCount',
-            'from',
-            'to'
-        ));
+        return Inertia::render('Reports/Index', [
+            'patientsCount' => $patientsCount,
+            'doctorsCount' => $doctorsCount,
+            'appointmentsCount' => $appointmentsCount,
+            'pendingBillsCount' => $pendingBillsCount,
+            'paidBillsCount' => $paidBillsCount,
+            'from' => $from,
+            'to' => $to,
+        ]);
     }
 }
