@@ -1,23 +1,23 @@
 @extends('layouts.app')
 
 @section('content')
-    <div class="py-4">
+    <div class="py-6 sm:py-8">
         <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
             
             <!-- Header Section -->
-            <div class="mb-4 flex items-center justify-between">
+            <div class="mb-4 sm:mb-6 flex items-center justify-between gap-4">
                 <div>
-                    <h2 class="text-xl font-black text-gray-900 tracking-tight">{{ __('Edit Appointment') }}</h2>
-                    <p class="text-[11px] text-gray-500 font-medium">Update the appointment details below.</p>
+                    <h2 class="text-xl sm:text-2xl font-black text-gray-900 tracking-tight">{{ __('Edit Appointment') }}</h2>
+                    <p class="text-[11px] sm:text-xs text-gray-500 font-medium">Update the appointment details below.</p>
                 </div>
-                <a href="{{ route('appointments.index') }}" class="text-xs font-bold text-gray-500 hover:text-gray-900 transition bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-200">
+                <a href="{{ route('appointments.index') }}" class="text-xs font-bold text-gray-500 hover:text-gray-900 transition bg-white sm:bg-gray-50 px-3.5 py-2 rounded-xl border border-gray-200 shadow-2xs shrink-0">
                     &larr; Back
                 </a>
             </div>
 
             <!-- Error Messages Alert -->
             @if($errors->any())
-                <div class="mb-4 flex flex-col gap-1 bg-rose-50 border border-rose-200 text-rose-800 p-3 rounded-xl text-xs font-semibold">
+                <div class="mb-4 sm:mb-6 flex flex-col gap-1 bg-rose-50 border border-rose-200 text-rose-800 p-3.5 rounded-xl text-xs font-semibold shadow-sm">
                     <span class="font-bold">Please fix the following errors:</span>
                     <ul class="list-disc pl-5 space-y-0.5">
                         @foreach($errors->all() as $error)
@@ -27,15 +27,15 @@
                 </div>
             @endif
 
-            <!-- Form Card Container (2-Column Grid to avoid scrolling) -->
-            <form action="{{ route('appointments.update', $appointment->id) }}" method="POST" class="bg-white border border-gray-100 shadow-sm rounded-2xl p-5 sm:p-6 space-y-4">
+            <!-- Form Card Container -->
+            <form action="{{ route('appointments.update', $appointment->id) }}" method="POST" class="bg-white border border-gray-100 shadow-sm rounded-2xl p-4 sm:p-6 space-y-4">
                 @csrf
                 @method('PUT')
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <!-- Patient Selection -->
                     <div>
-                        <label for="patient_id" class="block text-[11px] font-bold text-gray-700 uppercase tracking-wider mb-1">Patient</label>
+                        <label for="patient_id" class="block text-[11px] font-bold text-gray-700 uppercase tracking-wider mb-1.5">Patient</label>
                         <select name="patient_id" id="patient_id" required
                             class="w-full bg-gray-50/50 border border-gray-200 rounded-xl px-3.5 py-2.5 text-xs font-medium text-gray-700 focus:outline-none focus:bg-white focus:border-orange-500 focus:ring-2 focus:ring-orange-500/25 transition">
                             <option value="">Select Patient</option>
@@ -49,7 +49,7 @@
 
                     <!-- Doctor Selection -->
                     <div>
-                        <label for="doctor_id" class="block text-[11px] font-bold text-gray-700 uppercase tracking-wider mb-1">Doctor</label>
+                        <label for="doctor_id" class="block text-[11px] font-bold text-gray-700 uppercase tracking-wider mb-1.5">Doctor</label>
                         <select name="doctor_id" id="doctor_id" required
                             class="w-full bg-gray-50/50 border border-gray-200 rounded-xl px-3.5 py-2.5 text-xs font-medium text-gray-700 focus:outline-none focus:bg-white focus:border-orange-500 focus:ring-2 focus:ring-orange-500/25 transition">
                             <option value="">Select Doctor</option>
@@ -63,7 +63,7 @@
 
                     <!-- Appointment Date & Time -->
                     <div>
-                        <label for="appointment_date" class="block text-[11px] font-bold text-gray-700 uppercase tracking-wider mb-1">Appointment Date & Time</label>
+                        <label for="appointment_date" class="block text-[11px] font-bold text-gray-700 uppercase tracking-wider mb-1.5">Appointment Date & Time</label>
                         <input type="datetime-local" name="appointment_date" id="appointment_date"
                             value="{{ old('appointment_date', \Illuminate\Support\Carbon::parse($appointment->appointment_date)->format('Y-m-d\TH:i')) }}"
                             required class="w-full bg-gray-50/50 border border-gray-200 rounded-xl px-3.5 py-2.5 text-xs font-medium text-gray-700 focus:outline-none focus:bg-white focus:border-orange-500 focus:ring-2 focus:ring-orange-500/25 transition" />
@@ -71,7 +71,7 @@
 
                     <!-- Status Selection -->
                     <div>
-                        <label for="status" class="block text-[11px] font-bold text-gray-700 uppercase tracking-wider mb-1">Status</label>
+                        <label for="status" class="block text-[11px] font-bold text-gray-700 uppercase tracking-wider mb-1.5">Status</label>
                         <select name="status" id="status" required
                             class="w-full bg-gray-50/50 border border-gray-200 rounded-xl px-3.5 py-2.5 text-xs font-medium text-gray-700 focus:outline-none focus:bg-white focus:border-orange-500 focus:ring-2 focus:ring-orange-500/25 transition">
                             <option value="Scheduled" {{ old('status', $appointment->status) == 'Scheduled' ? 'selected' : '' }}>Scheduled</option>
@@ -81,14 +81,14 @@
                     </div>
                 </div>
 
-                <!-- Action Buttons -->
-                <div class="flex items-center gap-3 pt-3 border-t border-gray-100">
-                    <button type="submit" class="inline-flex items-center justify-center bg-orange-500 text-white px-5 py-2.5 rounded-xl font-bold text-xs shadow-md shadow-orange-500/20 hover:bg-orange-600 transition">
-                        Update Appointment
-                    </button>
-                    <a href="{{ route('appointments.index') }}" class="text-xs font-bold text-gray-500 hover:text-gray-900 transition px-3 py-2">
+                <!-- Action Buttons (Stacked on mobile, inline on desktop) -->
+                <div class="flex flex-col-reverse sm:flex-row items-center justify-end gap-2.5 pt-4 border-t border-gray-100">
+                    <a href="{{ route('appointments.index') }}" class="w-full sm:w-auto text-center text-xs font-bold text-gray-500 hover:text-gray-900 transition px-4 py-2.5 rounded-xl border border-transparent hover:border-gray-200">
                         Cancel
                     </a>
+                    <button type="submit" class="w-full sm:w-auto inline-flex items-center justify-center bg-orange-500 text-white px-6 py-2.5 rounded-xl font-bold text-xs shadow-md shadow-orange-500/20 hover:bg-orange-600 transition">
+                        Update Appointment
+                    </button>
                 </div>
             </form>
 
