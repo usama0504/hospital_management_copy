@@ -44,7 +44,6 @@
                         </select>
                     </div>
 
-                    <!-- Doctor Selection -->
                     <div>
                         <label for="doctor_id" class="block text-[11px] font-bold text-gray-700 uppercase tracking-wider mb-1.5">Doctor</label>
                         <select name="doctor_id" id="doctor_id" required

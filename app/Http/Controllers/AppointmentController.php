@@ -60,7 +60,6 @@ class AppointmentController extends Controller
         $user = Auth::user();
         $doctorId = $request->doctor_id;
 
-        // Agar doctor login hai, toh ensure karein ke doctor_id uski apni hi ho
         if (method_exists($user, 'hasRole') && $user->hasRole('doctor')) {
             $doctor = Doctor::where('email', $user->email)->first();
             if ($doctor) {
@@ -74,7 +73,6 @@ class AppointmentController extends Controller
             'status' => 'required|string',
         ]);
 
-        // Agar admin/receptionist hai toh request wala doctor_id validation ke sath chale
         if (! (method_exists($user, 'hasRole') && $user->hasRole('doctor'))) {
             $request->validate([
                 'doctor_id' => 'required|exists:doctors,id',
@@ -82,7 +80,6 @@ class AppointmentController extends Controller
             $doctorId = $request->doctor_id;
         }
 
-        // --- NEW: Doctor Availability Check ---
         $appointmentDate = \Carbon\Carbon::parse($request->appointment_date);
         $dayOfWeek = $appointmentDate->format('l'); // Maslan: Monday, Tuesday, etc.
 
@@ -93,7 +90,6 @@ class AppointmentController extends Controller
         if (!$isAvailable) {
             return back()->withInput()->with('error', 'Doctor is not available on ' . $dayOfWeek . '!');
         }
-        // ------------------------------------
 
         Appointment::create([
             'patient_id' => $request->patient_id,
