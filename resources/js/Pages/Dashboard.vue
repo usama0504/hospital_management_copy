@@ -9,7 +9,7 @@ const props = defineProps({
     appointmentsCount: Number,
     operationsCount: Number,
     patientsCount: Number,
-    totalEarnings: Number,
+    totalEarnings:[Number, String],
     popularDoctors: Array,
     recentAppointments: Array,
     recentBills: Array,
