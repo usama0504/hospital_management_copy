@@ -11,18 +11,22 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('appointments', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('doctor_id')->constrained()->onDelete('cascade');
-            $table->string('patient_name');
-            $table->string('patient_phone');
-            $table->date('appointment_date');
-            $table->time('appointment_time');
-            $table->enum('status', ['Pending', 'Approved', 'Cancelled', 'Completed'])->default('Pending');
-            $table->text('notes')->nullable();
-            $table->timestamps();
-        });
+        // Agar table pehle se nahi hai, tabhi banaye ga
+        if (!Schema::hasTable('appointments')) {
+            Schema::create('appointments', function (Blueprint $table) {
+                $table->id();
+                $table->foreignId('doctor_id')->constrained()->onDelete('cascade');
+                $table->string('patient_name');
+                $table->string('patient_phone');
+                $table->date('appointment_date');
+                $table->time('appointment_time');
+                $table->enum('status', ['Pending', 'Approved', 'Cancelled', 'Completed'])->default('Pending');
+                $table->text('notes')->nullable();
+                $table->timestamps();
+            });
+        }
     }
+
     /**
      * Reverse the migrations.
      */
