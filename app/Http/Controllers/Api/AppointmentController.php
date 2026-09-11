@@ -1,19 +1,22 @@
 <?php
 
-namespace App\Http\Controllers\Api;
+namespace App\Http\Controllers\Api; // Agar aapne Api folder mein rakha hai
 
 use App\Http\Controllers\Controller;
 use App\Models\Appointment;
 use App\Models\Patient;
 use App\Models\Doctor;
+use App\Models\DoctorAvailability;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Carbon\Carbon;
 
 class AppointmentController extends Controller
 {
-    // 1. Appointments ki list dekhne ke liye
-    public function index(Request $request)
+    // 1. Saari appointments ki list dikhane ke liye
+    public function index()
     {
-        $user = $request->user();
+        $user = Auth::user();
 
         if (method_exists($user, 'hasRole') && $user->hasRole('doctor')) {
             $doctor = Doctor::where('email', $user->email)->first();
@@ -27,16 +30,42 @@ class AppointmentController extends Controller
             $appointments = Appointment::with('patient', 'doctor')->latest()->paginate(10);
         }
 
+        // Inertia ki jagah JSON response bhej rahe hain
         return response()->json([
             'status' => 'success',
             'data' => $appointments
         ]);
     }
 
-    // 2. Nayi appointment store karne ke liye (API)
+    // 2. Form ke liye zaroori data (Patients aur Doctors) dene ke liye
+    public function createData()
+    {
+        $patients = Patient::all();
+        $user = Auth::user();
+
+        if (method_exists($user, 'hasRole') && $user->hasRole('doctor')) {
+            $doctors = Doctor::where('email', $user->email)->get();
+        } else {
+            $currentDay = Carbon::now()->format('l');
+
+            $doctorIds = DoctorAvailability::where('day_of_week', $currentDay)
+                ->where('is_active', true)
+                ->pluck('doctor_id');
+
+            $doctors = Doctor::whereIn('id', $doctorIds)->get();
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'patients' => $patients,
+            'doctors' => $doctors
+        ]);
+    }
+
+    // 3. Nayi appointment save karne ke liye
     public function store(Request $request)
     {
-        $user = $request->user();
+        $user = Auth::user();
         $doctorId = $request->doctor_id;
 
         if (method_exists($user, 'hasRole') && $user->hasRole('doctor')) {
@@ -59,10 +88,10 @@ class AppointmentController extends Controller
             $doctorId = $request->doctor_id;
         }
 
-        $appointmentDate = \Carbon\Carbon::parse($request->appointment_date);
+        $appointmentDate = Carbon::parse($request->appointment_date);
         $dayOfWeek = $appointmentDate->format('l');
 
-        $isAvailable = \App\Models\DoctorAvailability::where('doctor_id', $doctorId)
+        $isAvailable = DoctorAvailability::where('doctor_id', $doctorId)
             ->where('day_of_week', $dayOfWeek)
             ->exists();
 
@@ -87,6 +116,16 @@ class AppointmentController extends Controller
         ], 201);
     }
 
+    // 4. Single appointment show karne ke liye (Edit ke waqt data lane ke liye)
+    public function show(Appointment $appointment)
+    {
+        return response()->json([
+            'status' => 'success',
+            'appointment' => $appointment->load('patient', 'doctor')
+        ]);
+    }
+
+    // 5. Appointment update karne ke liye
     public function update(Request $request, Appointment $appointment)
     {
         $request->validate([
@@ -96,12 +135,7 @@ class AppointmentController extends Controller
             'status' => 'required|string',
         ]);
 
-        $appointment->update([
-            'patient_id' => $request->patient_id,
-            'doctor_id' => $request->doctor_id,
-            'appointment_date' => $request->appointment_date,
-            'status' => $request->status,
-        ]);
+        $appointment->update($request->all());
 
         return response()->json([
             'status' => 'success',
@@ -110,14 +144,14 @@ class AppointmentController extends Controller
         ]);
     }
 
-    // 4. Appointment Delete (Cancel) karne ke liye
+    // 6. Appointment delete karne ke liye
     public function destroy(Appointment $appointment)
     {
         $appointment->delete();
 
         return response()->json([
             'status' => 'success',
-            'message' => 'Appointment deleted/cancelled successfully.'
+            'message' => 'Appointment deleted successfully.'
         ]);
     }
 }

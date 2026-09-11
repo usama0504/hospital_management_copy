@@ -19,6 +19,7 @@ use Illuminate\Support\Facades\Route;
 | Public API Routes
 |--------------------------------------------------------------------------
 */
+
 Route::post('/login', [AuthController::class, 'login']);
 
 /*
@@ -27,22 +28,24 @@ Route::post('/login', [AuthController::class, 'login']);
 |--------------------------------------------------------------------------
 */
 Route::middleware('auth:sanctum')->group(function () {
-    
+
     // Authenticated User Profile Route
     Route::get('/user', function (Request $request) {
         return $request->user();
     });
-    
+
     // User Management Routes
     Route::get('/users', [UserController::class, 'index']);
     Route::post('/logout', [AuthController::class, 'logout']);
 
     // Appointment Management Routes
+    Route::get('/appointments/create-data', [AppointmentController::class, 'createData']);
+    Route::get('/appointments/{appointment}', [AppointmentController::class, 'show']);
     Route::get('/appointments', [AppointmentController::class, 'index']);
     Route::post('/appointments', [AppointmentController::class, 'store']);
     Route::put('/appointments/{appointment}', [AppointmentController::class, 'update']);
     Route::delete('/appointments/{appointment}', [AppointmentController::class, 'destroy']);
-    
+
     // Patient Management Routes
     Route::get('/patients', [PatientController::class, 'index']);
     Route::post('/patients', [PatientController::class, 'store']);
@@ -80,6 +83,4 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Reports Route
     Route::get('/reports', [ReportController::class, 'index']);
-
-
 });
