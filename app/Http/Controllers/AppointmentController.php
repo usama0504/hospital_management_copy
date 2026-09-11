@@ -20,10 +20,7 @@ class AppointmentController extends Controller
             $doctor = Doctor::where('email', $user->email)->first();
 
             if ($doctor) {
-                $appointments = Appointment::where('doctor_id', $doctor->id)
-                    ->with('patient', 'doctor')
-                    ->latest()
-                    ->paginate(10);
+                $appointments = Appointment::where('doctor_id', $doctor->id)->with('patient', 'doctor')->latest()->paginate(10);
             } else {
                 $appointments = collect();
             }

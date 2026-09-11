@@ -1,5 +1,5 @@
 <script setup>
-import { router, usePage } from '@inertiajs/vue3';
+import { router, usePage, Link } from '@inertiajs/vue3';
 import { computed } from 'vue';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 
@@ -107,9 +107,25 @@ const deleteUser = (userId) => {
                     </div>
                 </div>
 
-                <!-- Pagination Links -->
-                <div v-if="users.links" class="mt-4 flex items-center justify-center gap-1">
-                    <div v-html="users.links" class="pagination-wrapper flex gap-1"></div>
+                <!-- Modern Styled Pagination Links -->
+                <div v-if="users.links && users.links.length > 3" class="mt-6 flex items-center justify-center">
+                    <nav class="flex items-center gap-1 bg-white border border-gray-100 p-2 rounded-2xl shadow-sm">
+                        <template v-for="(link, index) in users.links" :key="index">
+                            <component
+                                :is="link.url ? Link : 'span'"
+                                :href="link.url"
+                                v-html="link.label"
+                                class="px-3.5 py-2 text-xs font-bold rounded-xl transition"
+                                :class="[
+                                    link.active 
+                                        ? 'bg-orange-500 text-white shadow-md shadow-orange-500/20' 
+                                        : link.url 
+                                            ? 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' 
+                                            : 'text-gray-300 cursor-not-allowed'
+                                ]"
+                            />
+                        </template>
+                    </nav>
                 </div>
 
             </div>
