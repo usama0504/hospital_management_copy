@@ -3,7 +3,6 @@ import { computed } from 'vue';
 import { Link, usePage } from '@inertiajs/vue3';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 
-// Controller se aane wali props ko define karein
 const props = defineProps({
     auth: Object,
     appointmentsCount: Number,
@@ -15,17 +14,14 @@ const props = defineProps({
     recentBills: Array,
 });
 
-// Check if user is a doctor (handles strings, objects, or arrays robustly)
 const isDoctor = computed(() => {
     const user = props.auth?.user;
     if (!user) return false;
 
-    // 1. Agar role direct string hai (e.g., 'doctor' ya 'Doctor')
     if (typeof user.role === 'string') {
         return user.role.toLowerCase() === 'doctor';
     }
 
-    // 2. Agar roles ek array hai (e.g., Spatie permissions package)
     if (Array.isArray(user.roles)) {
         return user.roles.some(r => 
             (typeof r === 'string' && r.toLowerCase() === 'doctor') || 
@@ -33,7 +29,6 @@ const isDoctor = computed(() => {
         );
     }
 
-    // 3. Agar role ek object hai
     if (typeof user.role === 'object' && user.role !== null) {
         return user.role.name?.toLowerCase() === 'doctor';
     }
@@ -41,7 +36,6 @@ const isDoctor = computed(() => {
     return false;
 });
 
-// Helper formatting functions
 const formatCurrency = (value) => {
     return Number(value || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 };
@@ -49,7 +43,7 @@ const formatCurrency = (value) => {
 const formatDate = (dateString) => {
     if (!dateString) return 'N/A';
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-GB'); // DD/MM/YYYY format
+    return date.toLocaleDateString('en-GB');
 };
 
 const formatTime = (dateString) => {
@@ -63,14 +57,12 @@ const formatTime = (dateString) => {
     <AuthenticatedLayout>
         <div class="space-y-6">
 
-            <!-- Top Activity Overview Cards -->
             <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
                 <div class="xl:col-span-2 space-y-6">
                     <div>
                         <h3 class="text-base font-bold text-gray-800 mb-4">Activity Overview</h3>
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            
-                            <!-- Appointments Card -->
+
                             <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between">
                                 <div>
                                     <p class="text-2xl font-black text-gray-900">{{ appointmentsCount || 0 }}</p>
@@ -83,7 +75,6 @@ const formatTime = (dateString) => {
                                 </div>
                             </div>
 
-                            <!-- Operations Card -->
                             <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between">
                                 <div>
                                     <p class="text-2xl font-black text-gray-900">{{ operationsCount || 0 }}</p>
@@ -96,7 +87,6 @@ const formatTime = (dateString) => {
                                 </div>
                             </div>
 
-                            <!-- New Patients Card -->
                             <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between">
                                 <div>
                                     <p class="text-2xl font-black text-gray-900">{{ patientsCount || 0 }}</p>
@@ -109,7 +99,6 @@ const formatTime = (dateString) => {
                                 </div>
                             </div>
 
-                            <!-- Earnings Card (Conditional) -->
                             <div v-if="!isDoctor" class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between">
                                 <div>
                                     <p class="text-2xl font-black text-gray-900">${{ formatCurrency(totalEarnings || 0) }}</p>
@@ -125,7 +114,6 @@ const formatTime = (dateString) => {
                         </div>
                     </div>
 
-                    <!-- Hospital Survey Section -->
                     <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
                         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
                             <h3 class="text-base font-bold text-gray-800">Hospital Survey</h3>
@@ -143,9 +131,8 @@ const formatTime = (dateString) => {
                     </div>
                 </div>
 
-                <!-- Right Sidebar Widgets -->
                 <div class="space-y-6">
-                    <!-- Patient Visit By Department -->
+
                     <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
                         <h3 class="text-base font-bold text-gray-800 mb-4">Patient Visit By Department</h3>
                         <div class="flex items-center justify-center py-6">
@@ -169,7 +156,6 @@ const formatTime = (dateString) => {
                         </div>
                     </div>
 
-                    <!-- Popular Doctor List -->
                     <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
                         <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
                             <h3 class="text-base font-bold text-gray-800">Popular Doctor List</h3>
@@ -196,7 +182,6 @@ const formatTime = (dateString) => {
                 </div>
             </div>
 
-            <!-- Appointments Table & Metrics Section -->
             <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
                 <div class="xl:col-span-2 bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
                     <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
@@ -242,7 +227,6 @@ const formatTime = (dateString) => {
                     </div>
                 </div>
 
-                <!-- Sub widgets on right -->
                 <div class="space-y-6">
                     <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
                         <h3 class="text-base font-bold text-gray-800 mb-4">Average Patient Visits</h3>
@@ -263,7 +247,6 @@ const formatTime = (dateString) => {
                 </div>
             </div>
 
-            <!-- Recent Billing Section -->
             <div v-if="!isDoctor" class="grid grid-cols-1 gap-6">
                 <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
                     <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">

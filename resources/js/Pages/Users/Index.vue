@@ -3,25 +3,21 @@ import { router, usePage, Link } from '@inertiajs/vue3';
 import { computed } from 'vue';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 
-// Controller se ane walay props
 defineProps({
-    users: Object, // Paginated users collection
+    users: Object,
 });
 
-// Flash messages from Inertia page props
 const page = usePage();
 const flashSuccess = computed(() => page.props.flash?.success);
 const flashError = computed(() => page.props.flash?.error);
 const authUser = computed(() => page.props.auth?.user);
 
-// Approve user action
 const approveUser = (userId) => {
     router.post(route('users.approve', userId), {}, {
         preserveScroll: true,
     });
 };
 
-// Delete user action
 const deleteUser = (userId) => {
     if (confirm('Remove this user permanently?')) {
         router.delete(route('users.destroy', userId), {
@@ -36,7 +32,6 @@ const deleteUser = (userId) => {
         <div class="py-6 sm:py-8">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
 
-                <!-- Header Section -->
                 <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     <div>
                         <h1 class="text-2xl font-black text-gray-900 tracking-tight">Manage Users</h1>
@@ -44,7 +39,6 @@ const deleteUser = (userId) => {
                     </div>
                 </div>
 
-                <!-- Session Alerts -->
                 <div v-if="flashSuccess" class="flex items-center bg-emerald-50 border border-emerald-200 text-emerald-800 p-4 rounded-2xl text-xs font-semibold shadow-sm">
                     {{ flashSuccess }}
                 </div>
@@ -52,7 +46,6 @@ const deleteUser = (userId) => {
                     {{ flashError }}
                 </div>
 
-                <!-- Users Table Card -->
                 <div class="bg-white border border-gray-100 shadow-sm rounded-2xl overflow-hidden">
                     <div class="overflow-x-auto">
                         <table class="min-w-full text-left border-collapse">
@@ -107,7 +100,6 @@ const deleteUser = (userId) => {
                     </div>
                 </div>
 
-                <!-- Modern Styled Pagination Links -->
                 <div v-if="users.links && users.links.length > 3" class="mt-6 flex items-center justify-center">
                     <nav class="flex items-center gap-1 bg-white border border-gray-100 p-2 rounded-2xl shadow-sm">
                         <template v-for="(link, index) in users.links" :key="index">

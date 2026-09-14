@@ -3,7 +3,6 @@ import { router, Link } from '@inertiajs/vue3';
 import { reactive } from 'vue';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 
-// Controller se ane walay props
 const props = defineProps({
     from: String,
     to: String,
@@ -14,7 +13,6 @@ const props = defineProps({
     paidBillsCount: Number,
 });
 
-// Form state for date filtering using Inertia router.get
 const form = reactive({
     from: props.from || '',
     to: props.to || '',
@@ -32,8 +30,7 @@ const handleFilter = () => {
     <AuthenticatedLayout>
         <div class="py-6 sm:py-8">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
-                
-                <!-- Header Section -->
+
                 <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     <div>
                         <h1 class="text-2xl font-black text-gray-900 tracking-tight">Hospital Reports</h1>
@@ -41,7 +38,6 @@ const handleFilter = () => {
                     </div>
                 </div>
 
-                <!-- Date Filter Form Card -->
                 <div class="bg-white border border-gray-100 shadow-sm rounded-2xl p-6 sm:p-8">
                     <form @submit.prevent="handleFilter" class="flex flex-col sm:flex-row items-end gap-4">
                         <div class="w-full sm:w-auto flex-1">
@@ -65,10 +61,8 @@ const handleFilter = () => {
                     </form>
                 </div>
 
-                <!-- Summary Cards Grid -->
                 <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-                    
-                    <!-- Total Patients -->
+
                     <div class="bg-white border border-gray-100 shadow-sm rounded-2xl p-6 flex flex-col justify-between hover:border-blue-100 transition">
                         <div class="flex items-center justify-between mb-4">
                             <span class="text-xs font-bold text-gray-500 uppercase tracking-wider">Total Patients</span>
@@ -79,7 +73,6 @@ const handleFilter = () => {
                         <div class="text-3xl font-black text-gray-900 tracking-tight">{{ patientsCount }}</div>
                     </div>
 
-                    <!-- Total Doctors -->
                     <div class="bg-white border border-gray-100 shadow-sm rounded-2xl p-6 flex flex-col justify-between hover:border-indigo-100 transition">
                         <div class="flex items-center justify-between mb-4">
                             <span class="text-xs font-bold text-gray-500 uppercase tracking-wider">Total Doctors</span>
@@ -90,7 +83,6 @@ const handleFilter = () => {
                         <div class="text-3xl font-black text-gray-900 tracking-tight">{{ doctorsCount }}</div>
                     </div>
 
-                    <!-- Total Appointments -->
                     <div class="bg-white border border-gray-100 shadow-sm rounded-2xl p-6 flex flex-col justify-between hover:border-orange-100 transition">
                         <div class="flex items-center justify-between mb-4">
                             <span class="text-xs font-bold text-gray-500 uppercase tracking-wider">Total Appointments</span>
@@ -101,7 +93,6 @@ const handleFilter = () => {
                         <div class="text-3xl font-black text-gray-900 tracking-tight">{{ appointmentsCount }}</div>
                     </div>
 
-                    <!-- Pending Bills -->
                     <div class="bg-white border border-gray-100 shadow-sm rounded-2xl p-6 flex flex-col justify-between hover:border-rose-100 transition">
                         <div class="flex items-center justify-between mb-4">
                             <span class="text-xs font-bold text-gray-500 uppercase tracking-wider">Pending Bills</span>
@@ -112,7 +103,6 @@ const handleFilter = () => {
                         <div class="text-3xl font-black text-rose-600 tracking-tight">{{ pendingBillsCount }}</div>
                     </div>
 
-                    <!-- Paid Bills -->
                     <div class="bg-white border border-gray-100 shadow-sm rounded-2xl p-6 flex flex-col justify-between hover:border-emerald-100 transition">
                         <div class="flex items-center justify-between mb-4">
                             <span class="text-xs font-bold text-gray-500 uppercase tracking-wider">Paid Bills</span>

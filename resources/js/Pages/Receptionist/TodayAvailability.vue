@@ -8,7 +8,6 @@ const props = defineProps({
     availabilities: Array,
 });
 
-// Helper function to format time string (e.g., "14:30:00" -> "02:30 PM")
 const formatTime = (timeString) => {
     if (!timeString) return '';
     const [hours, minutes] = timeString.split(':');
@@ -18,7 +17,6 @@ const formatTime = (timeString) => {
     return `${String(formattedHours).padStart(2, '0')}:${minutes} ${ampm}`;
 };
 
-// Availabilities ko doctor_id ke hisab se group kar do
 const groupedByDoctor = computed(() => {
     if (!props.availabilities || props.availabilities.length === 0) return [];
 
@@ -50,7 +48,6 @@ const groupedByDoctor = computed(() => {
         <div class="py-4 sm:py-6 lg:py-8">
             <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 space-y-4 sm:space-y-6">
 
-                <!-- Header Section -->
                 <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
                     <div class="min-w-0">
                         <h1 class="text-xl sm:text-2xl font-black text-gray-900 tracking-tight truncate">
@@ -73,13 +70,11 @@ const groupedByDoctor = computed(() => {
                     </Link>
                 </div>
 
-                <!-- Content Card -->
                 <div class="bg-white border border-gray-100 shadow-sm rounded-2xl overflow-hidden p-4 sm:p-6 lg:p-8">
                     <h2 class="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-gray-400 mb-4 sm:mb-6">
                         Available Schedule List
                     </h2>
 
-                    <!-- Empty State -->
                     <div v-if="!groupedByDoctor || groupedByDoctor.length === 0" class="text-center py-10 sm:py-12">
                         <svg class="w-10 h-10 sm:w-12 sm:h-12 text-gray-300 mx-auto mb-3" fill="none"
                             stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
@@ -91,12 +86,10 @@ const groupedByDoctor = computed(() => {
                             schedule.</p>
                     </div>
 
-                    <!-- Doctors Grid -->
                     <div v-else class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
                         <div v-for="group in groupedByDoctor" :key="group.doctor_id"
                             class="border border-gray-100 rounded-2xl p-4 sm:p-5 bg-gray-50/40 flex flex-col justify-between gap-4 shadow-2xs hover:border-orange-200 hover:bg-white transition">
 
-                            <!-- Top Info -->
                             <div class="min-w-0">
                                 <div class="flex items-start justify-between gap-2 mb-1">
                                     <h3 class="font-black text-gray-900 text-sm tracking-tight truncate">
@@ -108,12 +101,10 @@ const groupedByDoctor = computed(() => {
                                     </span>
                                 </div>
 
-                                <!-- Specialization / Specialty -->
                                 <p class="text-xs font-semibold text-orange-600 truncate">
                                     {{ group.doctor?.specialization || 'General Practitioner' }}
                                 </p>
 
-                                <!-- Timing Slots (multiple ho sakte hain) -->
                                 <div class="mt-4 space-y-2">
                                     <div v-for="(slot, index) in group.slots" :key="index"
                                         class="flex items-center gap-2 bg-orange-50/60 border border-orange-100 px-3 sm:px-3.5 py-2.5 rounded-xl text-orange-900">
@@ -132,7 +123,6 @@ const groupedByDoctor = computed(() => {
                         </div>
                     </div>
 
-                    <!-- Common Book Now Button (sirf ek hi, poori list ke liye) -->
                     <div v-if="groupedByDoctor.length"
                         class="mt-6 sm:mt-8 pt-5 sm:pt-6 border-t border-gray-100 flex justify-center sm:justify-end">
                         <Link :href="route('appointments.create')"

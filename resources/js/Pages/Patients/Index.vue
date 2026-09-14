@@ -3,24 +3,21 @@ import { Link, useForm, usePage } from '@inertiajs/vue3';
 import { computed } from 'vue';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 
-// Controller se ane walay props
 const props = defineProps({
-    patients: Object, // Paginator object from Laravel
+    patients: Object, 
 });
 
 const page = usePage();
 
-// Helper to check user permissions/roles safely from page props (auth object)
 const auth = computed(() => page.props.auth?.user || {});
 const canManagePatients = computed(() => {
-    // Agar aapke paas permissions array ya roles array hain auth.user mein
+
     return auth.value.permissions?.includes('manage patients') || auth.value.roles?.some(r => r.name === 'admin');
 });
 const isAdmin = computed(() => {
     return auth.value.roles?.some(r => r.name === 'admin');
 });
 
-// Form helper for deleting a patient
 const deleteForm = useForm({});
 
 const deletePatient = (id) => {
@@ -31,12 +28,10 @@ const deletePatient = (id) => {
     }
 };
 
-// Helper for first letter avatar
 const getInitial = (name) => {
     return name ? name.charAt(0).toUpperCase() : 'P';
 };
 
-// Date formatter helper
 const formatDate = (dateString) => {
     if (!dateString) return '-';
     const options = { day: '2-digit', month: 'short', year: 'numeric' };
@@ -49,7 +44,6 @@ const formatDate = (dateString) => {
         <div class="py-6 sm:py-8">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
 
-                <!-- Header Section with Action Button -->
                 <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     <div>
                         <h2 class="text-2xl font-black text-gray-900 tracking-tight">Patients List</h2>
@@ -57,7 +51,6 @@ const formatDate = (dateString) => {
                             patients.</p>
                     </div>
 
-                    <!-- Permission check equivalent to @can('manage patients') -->
                     <div v-if="canManagePatients">
                         <Link :href="route('patients.create')"
                             class="inline-flex items-center justify-center bg-orange-500 text-white px-4 py-2.5 rounded-xl font-bold text-xs shadow-md shadow-orange-500/20 hover:bg-orange-600 transition">
@@ -70,7 +63,6 @@ const formatDate = (dateString) => {
                     </div>
                 </div>
 
-                <!-- Success Message Alert -->
                 <div v-if="$page.props.flash?.success"
                     class="flex items-center gap-2 bg-emerald-50 border border-emerald-200 text-emerald-800 p-4 rounded-2xl text-xs font-semibold shadow-sm">
                     <svg class="w-5 h-5 text-emerald-500 flex-shrink-0" fill="none" stroke="currentColor"
@@ -81,7 +73,6 @@ const formatDate = (dateString) => {
                     <span>{{ $page.props.flash.success }}</span>
                 </div>
 
-                <!-- Table Card Container -->
                 <div class="bg-white border border-gray-100 shadow-sm rounded-2xl overflow-hidden">
                     <div class="overflow-x-auto">
                         <table class="min-w-full divide-y divide-gray-100 text-left">
@@ -136,7 +127,6 @@ const formatDate = (dateString) => {
                         </table>
                     </div>
 
-                    <!-- Pagination Container -->
                     <div v-if="patients?.links && patients.last_page > 1"
                         class="p-4 border-t border-gray-100 bg-gray-50/50 flex justify-center">
                         <div class="flex gap-1 flex-wrap justify-center">
