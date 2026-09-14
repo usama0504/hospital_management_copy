@@ -15,9 +15,30 @@ const props = defineProps({
     recentBills: Array,
 });
 
-// Check if user is a doctor
+// Check if user is a doctor (handles strings, objects, or arrays robustly)
 const isDoctor = computed(() => {
-    return props.auth?.user && props.auth.user.role === 'doctor';
+    const user = props.auth?.user;
+    if (!user) return false;
+
+    // 1. Agar role direct string hai (e.g., 'doctor' ya 'Doctor')
+    if (typeof user.role === 'string') {
+        return user.role.toLowerCase() === 'doctor';
+    }
+
+    // 2. Agar roles ek array hai (e.g., Spatie permissions package)
+    if (Array.isArray(user.roles)) {
+        return user.roles.some(r => 
+            (typeof r === 'string' && r.toLowerCase() === 'doctor') || 
+            (typeof r === 'object' && r !== null && r.name?.toLowerCase() === 'doctor')
+        );
+    }
+
+    // 3. Agar role ek object hai
+    if (typeof user.role === 'object' && user.role !== null) {
+        return user.role.name?.toLowerCase() === 'doctor';
+    }
+
+    return false;
 });
 
 // Helper formatting functions

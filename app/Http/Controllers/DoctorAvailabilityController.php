@@ -13,36 +13,29 @@ class DoctorAvailabilityController extends Controller
     public function index($doctor_id = null)
     {
         $user = Auth::user();
+        $targetDoctorId = null;
 
-        $isDoctorUser = false;
+        $doctor = Doctor::where('email', $user->email)->first();
 
-        if ($user) {
-            if (method_exists($user, 'hasRole')) {
-                $isDoctorUser = $user->hasRole('doctor');
-            }
-
-            if (!$isDoctorUser) {
-                $doctor = Doctor::where('email', $user->email)->first();
-                $isDoctorUser = !empty($doctor);
-            }
+        if ($doctor) {
+            $targetDoctorId = $doctor->id;
+        } else {
+            $targetDoctorId = $doctor_id;
         }
 
-        if ($isDoctorUser) {
-            $doctor = Doctor::where('email', $user->email)->first();
-            $targetDoctorId = $doctor ? $doctor->id : $user->id;
-        } else {
-            $targetDoctorId = $doctor_id ?? Auth::id();
+        if (!$targetDoctorId) {
+            $firstDoctor = Doctor::first();
+            $targetDoctorId = $firstDoctor ? $firstDoctor->id : 1;
         }
 
         $availabilities = DoctorAvailability::where('doctor_id', $targetDoctorId)->get();
 
         return Inertia::render('Doctors/Availability', [
             'availabilities' => $availabilities,
-            'targetDoctorId' => $targetDoctorId
+            'targetDoctorId' => $targetDoctorId,
         ]);
     }
 
-    // Naya time slot save karne ke liye
     public function store(Request $request)
     {
         $request->validate([
@@ -54,7 +47,15 @@ class DoctorAvailabilityController extends Controller
         $doctor = Doctor::where('email', Auth::user()->email)->first();
 
         if (!$doctor) {
-            abort(403, 'Access Denied: Doctor profile not found.');
+            $user = Auth::user();
+            $isAdmin = is_callable([$user, 'hasRole'])
+                && call_user_func([$user, 'hasRole'], 'admin');
+
+            if ($request->has('doctor_id') && $isAdmin) {
+                $doctor = Doctor::findOrFail($request->doctor_id);
+            } else {
+                abort(403, 'Access Denied: Doctor profile not found.');
+            }
         }
 
         $doctor->availabilities()->create([

@@ -3,27 +3,28 @@ import { Link, useForm, usePage } from '@inertiajs/vue3';
 import { computed } from 'vue';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 
-// Controller se ane walay props (doctors list, pagination, auth user roles)
 const props = defineProps({
-    doctors: Object, // Paginator object
+    doctors: Object,
 });
 
-// Get auth user and roles/permissions from Inertia page props
 const page = usePage();
-const auth = computed(() => page.props.auth || {});
-const userRoles = computed(() => auth.value.roles || []);
+const authUser = computed(() => page.props.auth?.user || {});
 
-// Helper to check user roles
-const hasRole = (role) => {
-    return userRoles.value.includes(role);
+// Flexible role check jo objects aur strings dono ko handle karega
+const hasRole = (roleName) => {
+    const roles = authUser.value.roles || [];
+    return roles.some(role => {
+        if (typeof role === 'string') return role === roleName;
+        if (typeof role === 'object' && role !== null) return role.name === roleName;
+        return false;
+    });
 };
 
-// Inertia form helper for delete actions
 const form = useForm({});
 
 const deleteDoctor = (id) => {
     if (confirm('Are you sure you want to delete this doctor?')) {
-        form.delete(route('doctors.destroy', id), {
+        form.delete(`/doctors/${id}`, {
             preserveScroll: true,
         });
     }
@@ -32,7 +33,7 @@ const deleteDoctor = (id) => {
 
 <template>
     <AuthenticatedLayout>
-        <div class="py-6 sm:py-8">
+        <div class="py-6">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 
                 <!-- Header Section with Action Buttons -->
@@ -45,14 +46,14 @@ const deleteDoctor = (id) => {
                     <div class="flex items-center gap-2">
                         <!-- Agar Doctor login hai -->
                         <template v-if="hasRole('doctor')">
-                            <Link :href="route('doctor.availability')" class="inline-flex items-center justify-center bg-orange-500 text-white px-4 py-2.5 rounded-xl font-bold text-xs shadow-md shadow-orange-500/25 hover:bg-orange-600 transition">
+                            <Link href="/doctor/availability" class="inline-flex items-center justify-center bg-orange-500 text-white px-4 py-2.5 rounded-xl font-bold text-xs shadow-md shadow-orange-500/25 hover:bg-orange-600 transition">
                                 Manage My Availability
                             </Link>
                         </template>
 
                         <!-- Agar Admin hai -->
                         <template v-if="hasRole('admin')">
-                            <Link :href="route('doctors.create')" class="inline-flex items-center justify-center bg-orange-500 text-white px-4 py-2.5 rounded-xl font-bold text-xs shadow-md shadow-orange-500/25 hover:bg-orange-600 transition">
+                            <Link href="/doctors/create" class="inline-flex items-center justify-center bg-orange-500 text-white px-4 py-2.5 rounded-xl font-bold text-xs shadow-md shadow-orange-500/25 hover:bg-orange-600 transition">
                                 <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
                                 Add Doctor
                             </Link>
@@ -94,11 +95,11 @@ const deleteDoctor = (id) => {
                                         <td class="py-4 px-6 text-right space-x-2">
                                             <!-- Admin ke liye Availability, Edit aur Delete buttons -->
                                             <template v-if="hasRole('admin')">
-                                                <Link :href="route('doctor.availability', { doctor_id: doctor.id })" class="inline-flex items-center px-2.5 py-1 rounded-lg bg-orange-50 text-orange-600 font-bold hover:bg-orange-100 transition" title="Manage Doctor Availability">
+                                                <Link :href="`/doctor/availability?doctor_id=${doctor.id}`" class="inline-flex items-center px-2.5 py-1 rounded-lg bg-orange-50 text-orange-600 font-bold hover:bg-orange-100 transition" title="Manage Doctor Availability">
                                                     Availability
                                                 </Link>
 
-                                                <Link :href="route('doctors.edit', doctor.id)" class="font-bold text-gray-600 hover:text-orange-600 transition">Edit</Link>
+                                                <Link :href="`/doctors/${doctor.id}/edit`" class="font-bold text-gray-600 hover:text-orange-600 transition">Edit</Link>
                                                 
                                                 <button @click="deleteDoctor(doctor.id)" type="button" class="font-bold text-rose-500 hover:text-rose-700 transition">Delete</button>
                                             </template>
@@ -106,12 +107,13 @@ const deleteDoctor = (id) => {
                                     </tr>
                                 </template>
                                 
-                                <!-- Empty State -->
-                                <tr v-if="!doctors.data || doctors.data.length === 0">
-                                    <td colspan="5" class="py-12 text-center text-gray-400 font-medium text-xs">
-                                        No doctors available.
-                                    </td>
-                                </tr>
+                                <template v-if="!doctors.data || doctors.data.length === 0">
+                                    <tr>
+                                        <td colspan="5" class="py-12 text-center text-gray-400 font-medium text-xs">
+                                            No doctors available.
+                                        </td>
+                                    </tr>
+                                </template>
                             </tbody>
                         </table>
                     </div>

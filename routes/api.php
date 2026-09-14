@@ -21,6 +21,7 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::post('/login', [AuthController::class, 'login']);
+Route::post('/register', [AuthController::class, 'register']); // Naya Register Route
 
 /*
 |--------------------------------------------------------------------------
@@ -29,6 +30,9 @@ Route::post('/login', [AuthController::class, 'login']);
 */
 Route::middleware('auth:sanctum')->group(function () {
 
+    // Auth Logout Route (Token revoke karne ke liye)
+    Route::post('/logout', [AuthController::class, 'logout']);
+
     // Authenticated User Profile Route
     Route::get('/user', function (Request $request) {
         return $request->user();
@@ -36,7 +40,8 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // User Management Routes
     Route::get('/users', [UserController::class, 'index']);
-    Route::post('/logout', [AuthController::class, 'logout']);
+    Route::patch('/users/{id}/approve', [UserController::class, 'approve']);
+    Route::delete('/users/{id}', [UserController::class, 'destroy']);
 
     // Appointment Management Routes
     Route::get('/appointments/create-data', [AppointmentController::class, 'createData']);

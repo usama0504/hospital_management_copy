@@ -22,8 +22,8 @@ const userRoleName = computed(() => {
     return props.user?.roles?.[0]?.name || 'User';
 });
 
-// Profile Info Form
 const profileForm = useForm({
+    _method: 'PUT', // 👈 Yeh line add karna zaroori hai
     name: props.user?.name || '',
     phone: props.user?.phone || props.doctor?.phone || '',
     date_of_birth: props.user?.date_of_birth || '',
