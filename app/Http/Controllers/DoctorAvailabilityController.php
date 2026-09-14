@@ -10,22 +10,33 @@ use Inertia\Inertia;
 
 class DoctorAvailabilityController extends Controller
 {
-    public function index($doctor_id = null)
+    public function index(Request $request, $doctor_id = null)
     {
+
+        $doctor_id = $doctor_id ?? $request->query('doctor_id');
+
         $user = Auth::user();
-        $targetDoctorId = null;
 
-        $doctor = Doctor::where('email', $user->email)->first();
+        $isAdmin = method_exists($user, 'hasRole') && $user->hasRole('admin');
+        $doctor  = Doctor::where('email', $user->email)->first();
 
-        if ($doctor) {
+        if ($isAdmin) {
+            $targetDoctorId = $doctor_id ?? (Doctor::first()?->id);
+
+            if (!$targetDoctorId) {
+                abort(404, 'No doctors found.');
+            }
+
+            $targetDoctor = Doctor::find($targetDoctorId);
+
+            if (!$targetDoctor) {
+                abort(404, 'Doctor not found.');
+            }
+        } elseif ($doctor) {
             $targetDoctorId = $doctor->id;
+            $targetDoctor = $doctor;
         } else {
-            $targetDoctorId = $doctor_id;
-        }
-
-        if (!$targetDoctorId) {
-            $firstDoctor = Doctor::first();
-            $targetDoctorId = $firstDoctor ? $firstDoctor->id : 1;
+            abort(403, 'Access Denied: You are not authorized to view this page.');
         }
 
         $availabilities = DoctorAvailability::where('doctor_id', $targetDoctorId)->get();
@@ -33,35 +44,43 @@ class DoctorAvailabilityController extends Controller
         return Inertia::render('Doctors/Availability', [
             'availabilities' => $availabilities,
             'targetDoctorId' => $targetDoctorId,
+            'doctorName'     => $targetDoctor->name,
+            'isAdmin'        => $isAdmin,
         ]);
     }
 
     public function store(Request $request)
     {
-        $request->validate([
-            'day_of_week' => ['required', 'string'],
-            'start_time' => ['required'],
-            'end_time' => ['required', 'after:start_time'],
-        ]);
+        $user = Auth::user();
+        $isAdmin = method_exists($user, 'hasRole') && $user->hasRole('admin');
 
-        $doctor = Doctor::where('email', Auth::user()->email)->first();
+        if ($isAdmin) {
+            $request->validate([
+                'day_of_week' => ['required', 'string'],
+                'start_time'  => ['required'],
+                'end_time'    => ['required', 'after:start_time'],
+                'doctor_id'   => ['required', 'exists:doctors,id'],
+            ]);
+
+            $doctor = Doctor::find($request->doctor_id);
+        } else {
+            $request->validate([
+                'day_of_week' => ['required', 'string'],
+                'start_time'  => ['required'],
+                'end_time'    => ['required', 'after:start_time'],
+            ]);
+
+            $doctor = Doctor::where('email', $user->email)->first();
+        }
 
         if (!$doctor) {
-            $user = Auth::user();
-            $isAdmin = is_callable([$user, 'hasRole'])
-                && call_user_func([$user, 'hasRole'], 'admin');
-
-            if ($request->has('doctor_id') && $isAdmin) {
-                $doctor = Doctor::findOrFail($request->doctor_id);
-            } else {
-                abort(403, 'Access Denied: Doctor profile not found.');
-            }
+            abort(403, 'Access Denied: Doctor profile not found.');
         }
 
         $doctor->availabilities()->create([
             'day_of_week' => $request->day_of_week,
-            'start_time' => $request->start_time,
-            'end_time' => $request->end_time,
+            'start_time'  => $request->start_time,
+            'end_time'    => $request->end_time,
         ]);
 
         return back()->with('success', 'Availability slot added successfully!');
@@ -69,7 +88,22 @@ class DoctorAvailabilityController extends Controller
 
     public function destroy($id)
     {
+        $user = Auth::user();
+        $isAdmin = method_exists($user, 'hasRole') && $user->hasRole('admin');
+
         $availability = DoctorAvailability::findOrFail($id);
+
+        if ($isAdmin) {
+            $availability->delete();
+            return back()->with('success', 'Availability slot removed successfully!');
+        }
+
+        $doctor = Doctor::where('email', $user->email)->first();
+
+        if (!$doctor || $availability->doctor_id !== $doctor->id) {
+            abort(403, 'Access Denied: This is not your slot.');
+        }
+
         $availability->delete();
 
         return back()->with('success', 'Availability slot removed successfully!');
