@@ -49,9 +49,8 @@ const deleteDoctor = (id) => {
                     <div class="flex items-center gap-2">
                         <template v-if="hasRole('doctor')">
                             <Link :href="`/doctor/availability/${authUser.doctor_id || authUser.id}`"
-                                class="inline-flex items-center px-2.5 py-1 rounded-lg bg-orange-50 text-orange-600 font-bold hover:bg-orange-100 transition"
-                                title="Manage Doctor Availability">
-                                Availability
+                                class="inline-flex items-center justify-center gap-1.5 bg-orange-500 text-white px-6 py-3 rounded-xl font-bold text-sm hover:bg-orange-600 transition shadow-sm shadow-orange-500/20 w-full sm:w-auto">
+                                Manage Availability
                             </Link>
                         </template>
 
