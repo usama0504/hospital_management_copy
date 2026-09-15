@@ -11,24 +11,41 @@ use Inertia\Inertia;
 
 class PatientController extends Controller
 {
+    // Constructor mein middleware ya authorization bhi laga sakte hain
+    public function __construct()
+    {
+        // Misal ke taur par: Admin aur Receptionist hi create/store/edit/update kar sakte hain
+        // Lekin destroy (delete) sirf Admin kar sake, iske liye hum method mein bhi check laga sakte hain
+    }
+
+    private function userHasRole($roles): bool
+    {
+        $user = Auth::user();
+
+        if (!$user || !method_exists($user, 'hasRole')) {
+            return false;
+        }
+
+        return $user->hasRole($roles);
+    }
+
     public function index()
     {
         $user = Auth::user();
 
         // Agar user Doctor hai, toh sirf uske appointment wale patients show hon
-        if (method_exists($user, 'hasRole') && $user->hasRole('doctor')) {
-            // Doctor ko user ki email ke zariye find karein
+        if ($user && method_exists($user, 'hasRole') && $user->hasRole('doctor')) {
             $doctor = Doctor::where('email', $user->email)->first();
 
             if ($doctor) {
-                // Appointments table se is doctor ki related patient IDs nikal lein
                 $patientIds = Appointment::where('doctor_id', $doctor->id)
                                         ->pluck('patient_id')
                                         ->unique();
 
                 $patients = Patient::whereIn('id', $patientIds)->latest()->paginate(10);
             } else {
-                $patients = collect(); // Agar doctor profile nahi mili
+                // Empty pagination instance return karein taake frontend par links() error na de
+                $patients = Patient::where('id', 0)->paginate(10);
             }
         } else {
             // Admin ya Receptionist ke liye sab patients show hon
@@ -42,11 +59,20 @@ class PatientController extends Controller
 
     public function create()
     {
+        // Check karein ke sirf Admin ya Receptionist hi create page access kar sakein
+        if (!$this->userHasRole(['admin', 'receptionist'])) {
+            abort(403, 'Unauthorized action.');
+        }
+
         return Inertia::render('Patients/Create');
     }
 
     public function store(Request $request)
     {
+        if (!$this->userHasRole(['admin', 'receptionist'])) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:patients,email',
@@ -62,6 +88,10 @@ class PatientController extends Controller
 
     public function edit(Patient $patient)
     {
+        if (!$this->userHasRole(['admin', 'receptionist'])) {
+            abort(403, 'Unauthorized action.');
+        }
+
         return Inertia::render('Patients/Edit', [
             'patient' => $patient
         ]);
@@ -69,6 +99,10 @@ class PatientController extends Controller
 
     public function update(Request $request, Patient $patient)
     {
+        if (!$this->userHasRole(['admin', 'receptionist'])) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:patients,email,' . $patient->id,
@@ -84,6 +118,11 @@ class PatientController extends Controller
 
     public function destroy(Patient $patient)
     {
+        // 🛑 IMPORTANT: Sirf Admin hi patient delete kar sakta hai, Receptionist nahi!
+        if (!$this->userHasRole('admin')) {
+            abort(403, 'Unauthorized action. Only admins can delete patients.');
+        }
+
         $patient->delete();
 
         return redirect()->route('patients.index')->with('success', 'Patient deleted successfully.');
