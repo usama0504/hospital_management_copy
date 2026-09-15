@@ -5,32 +5,40 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class Appointment extends Model
+class Prescription extends Model
 {
     use HasFactory;
 
     protected $fillable = [
         'patient_id',
         'doctor_id',
-        'appointment_date',
-        'status',
+        'appointment_id',
+        'prescribed_date',
+        'diagnosis',
+        'notes',
     ];
 
-    // Patient relation: ek appointment ka ek patient hota hai
+    protected $casts = [
+        'prescribed_date' => 'date',
+    ];
+
     public function patient()
     {
         return $this->belongsTo(Patient::class);
     }
 
-    // Doctor relation: ek appointment ka ek doctor hota hai
     public function doctor()
     {
         return $this->belongsTo(Doctor::class);
     }
 
-    // Ek appointment se ek prescription likhi ja sakti hai
-    public function prescription()
+    public function appointment()
     {
-        return $this->hasOne(Prescription::class);
+        return $this->belongsTo(Appointment::class);
+    }
+
+    public function items()
+    {
+        return $this->hasMany(PrescriptionItem::class);
     }
 }

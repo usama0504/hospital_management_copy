@@ -17,4 +17,9 @@ class Patient extends Model
     protected $casts = [
         'dob' => 'date',
     ];
+
+    public function prescriptions()
+    {
+        return $this->hasMany(Prescription::class);
+    }
 }

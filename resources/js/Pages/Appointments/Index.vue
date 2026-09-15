@@ -111,6 +111,11 @@ const strtoupperName = (name) => {
 
                                 <!-- Mobile Actions -->
                                 <div class="flex items-center gap-1.5">
+                                    <Link :href="route('prescriptions.create', { appointment_id: appointment.id })" class="p-1.5 rounded-lg bg-gray-50 text-emerald-600 hover:bg-emerald-50 transition" title="Write Prescription">
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                        </svg>
+                                    </Link>
                                     <Link :href="route('appointments.edit', appointment.id)" class="p-1.5 rounded-lg bg-gray-50 text-blue-600 hover:bg-blue-50 transition" title="Edit">
                                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.862 4.487zm0 0L19.5 7.125"/>
@@ -174,6 +179,11 @@ const strtoupperName = (name) => {
                                     </td>
                                     <td class="py-4 px-6 text-right whitespace-nowrap">
                                         <div class="inline-flex items-center gap-2">
+                                            <Link :href="route('prescriptions.create', { appointment_id: appointment.id })" class="p-2 rounded-xl bg-gray-50 text-emerald-600 hover:bg-emerald-50 transition" title="Write Prescription">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                                </svg>
+                                            </Link>
                                             <Link :href="route('appointments.edit', appointment.id)" class="p-2 rounded-xl bg-gray-50 text-blue-600 hover:bg-blue-50 transition" title="Edit">
                                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                                                     <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.862 4.487zm0 0L19.5 7.125"/>

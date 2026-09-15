@@ -1,0 +1,1497 @@
+diff --git a/app/Http/Controllers/Api/PrescriptionController.php b/app/Http/Controllers/Api/PrescriptionController.php
+new file mode 100644
+index 0000000..9d0dc21
+--- /dev/null
++++ b/app/Http/Controllers/Api/PrescriptionController.php
+@@ -0,0 +1,145 @@
++<?php
++
++namespace App\Http\Controllers\Api;
++
++use App\Http\Controllers\Controller;
++use App\Models\Prescription;
++use App\Models\Doctor;
++use Illuminate\Http\Request;
++use Illuminate\Support\Facades\Auth;
++
++class PrescriptionController extends Controller
++{
++    private function currentDoctor()
++    {
++        $user = Auth::user();
++
++        if ($user && method_exists($user, 'hasRole') && $user->hasRole('doctor')) {
++            return Doctor::where('email', $user->email)->first();
++        }
++
++        return null;
++    }
++
++    // 1. Saari prescriptions ki list (ya doctor ke liye sirf uski apni)
++    public function index()
++    {
++        $doctor = $this->currentDoctor();
++
++        if ($doctor) {
++            $prescriptions = Prescription::where('doctor_id', $doctor->id)
++                ->with('patient', 'doctor', 'items')
++                ->latest('prescribed_date')
++                ->paginate(10);
++        } else {
++            $prescriptions = Prescription::with('patient', 'doctor', 'items')
++                ->latest('prescribed_date')
++                ->paginate(10);
++        }
++
++        return response()->json([
++            'status' => 'success',
++            'data' => $prescriptions,
++        ]);
++    }
++
++    // 2. Nayi prescription save karne ke liye (medicines ke sath)
++    public function store(Request $request)
++    {
++        $doctor = $this->currentDoctor();
++
++        $rules = [
++            'patient_id' => 'required|exists:patients,id',
++            'appointment_id' => 'nullable|exists:appointments,id',
++            'prescribed_date' => 'required|date',
++            'diagnosis' => 'required|string',
++            'notes' => 'nullable|string',
++            'items' => 'required|array|min:1',
++            'items.*.medicine_name' => 'required|string',
++            'items.*.dosage' => 'nullable|string',
++            'items.*.frequency' => 'nullable|string',
++            'items.*.duration' => 'nullable|string',
++            'items.*.instructions' => 'nullable|string',
++        ];
++
++        if (!$doctor) {
++            $rules['doctor_id'] = 'required|exists:doctors,id';
++        }
++
++        $validated = $request->validate($rules);
++
++        $prescription = Prescription::create([
++            'patient_id' => $validated['patient_id'],
++            'doctor_id' => $doctor ? $doctor->id : $validated['doctor_id'],
++            'appointment_id' => $validated['appointment_id'] ?? null,
++            'prescribed_date' => $validated['prescribed_date'],
++            'diagnosis' => $validated['diagnosis'],
++            'notes' => $validated['notes'] ?? null,
++        ]);
++
++        foreach ($validated['items'] as $item) {
++            $prescription->items()->create($item);
++        }
++
++        return response()->json([
++            'status' => 'success',
++            'message' => 'Prescription created successfully.',
++            'data' => $prescription->load('patient', 'doctor', 'items'),
++        ], 201);
++    }
++
++    // 3. Single prescription (medicines ke sath) dikhane ke liye
++    public function show(Prescription $prescription)
++    {
++        return response()->json([
++            'status' => 'success',
++            'data' => $prescription->load('patient', 'doctor', 'appointment', 'items'),
++        ]);
++    }
++
++    // 4. Prescription update karne ke liye
++    public function update(Request $request, Prescription $prescription)
++    {
++        $validated = $request->validate([
++            'patient_id' => 'required|exists:patients,id',
++            'prescribed_date' => 'required|date',
++            'diagnosis' => 'required|string',
++            'notes' => 'nullable|string',
++            'items' => 'required|array|min:1',
++            'items.*.medicine_name' => 'required|string',
++            'items.*.dosage' => 'nullable|string',
++            'items.*.frequency' => 'nullable|string',
++            'items.*.duration' => 'nullable|string',
++            'items.*.instructions' => 'nullable|string',
++        ]);
++
++        $prescription->update([
++            'patient_id' => $validated['patient_id'],
++            'prescribed_date' => $validated['prescribed_date'],
++            'diagnosis' => $validated['diagnosis'],
++            'notes' => $validated['notes'] ?? null,
++        ]);
++
++        $prescription->items()->delete();
++        foreach ($validated['items'] as $item) {
++            $prescription->items()->create($item);
++        }
++
++        return response()->json([
++            'status' => 'success',
++            'message' => 'Prescription updated successfully.',
++            'data' => $prescription->load('patient', 'doctor', 'items'),
++        ]);
++    }
++
++    // 5. Prescription delete karne ke liye
++    public function destroy(Prescription $prescription)
++    {
++        $prescription->delete();
++
++        return response()->json([
++            'status' => 'success',
++            'message' => 'Prescription deleted successfully.',
++        ]);
++    }
++}
+diff --git a/app/Http/Controllers/PrescriptionController.php b/app/Http/Controllers/PrescriptionController.php
+new file mode 100644
+index 0000000..3d43ddb
+--- /dev/null
++++ b/app/Http/Controllers/PrescriptionController.php
+@@ -0,0 +1,214 @@
++<?php
++
++namespace App\Http\Controllers;
++
++use App\Models\Prescription;
++use App\Models\Patient;
++use App\Models\Doctor;
++use App\Models\Appointment;
++use Illuminate\Http\Request;
++use Illuminate\Support\Facades\Auth;
++use Inertia\Inertia;
++
++class PrescriptionController extends Controller
++{
++    // Logged-in user doctor hai to uska Doctor record wapis karta hai, warna null
++    private function currentDoctor()
++    {
++        $user = Auth::user();
++
++        if ($user && method_exists($user, 'hasRole') && $user->hasRole('doctor')) {
++            return Doctor::where('email', $user->email)->first();
++        }
++
++        return null;
++    }
++
++    public function index()
++    {
++        $doctor = $this->currentDoctor();
++
++        if ($doctor) {
++            // Doctor ko sirf apni likhi hui prescriptions dikhein
++            $prescriptions = Prescription::where('doctor_id', $doctor->id)
++                ->with('patient', 'doctor')
++                ->latest('prescribed_date')
++                ->paginate(10);
++        } else {
++            // Admin / Receptionist ko sab prescriptions dikhein
++            $prescriptions = Prescription::with('patient', 'doctor')
++                ->latest('prescribed_date')
++                ->paginate(10);
++        }
++
++        return Inertia::render('Prescriptions/Index', [
++            'prescriptions' => $prescriptions,
++        ]);
++    }
++
++    public function create(Request $request)
++    {
++        $user = Auth::user();
++
++        // Sirf doctor aur admin naya prescription likh sakte hain
++        if (!(method_exists($user, 'hasRole') && ($user->hasRole('doctor') || $user->hasRole('admin')))) {
++            abort(403, 'Unauthorized action.');
++        }
++
++        $doctor = $this->currentDoctor();
++
++        $patients = Patient::all();
++        $doctors = $doctor ? collect([$doctor]) : Doctor::all();
++
++        // Agar kisi appointment se "Write Prescription" click hua ho, to us appointment ko pre-fill karein
++        $appointment = null;
++        if ($request->filled('appointment_id')) {
++            $appointment = Appointment::with('patient', 'doctor')->find($request->appointment_id);
++        }
++
++        return Inertia::render('Prescriptions/Create', [
++            'patients' => $patients,
++            'doctors' => $doctors,
++            'selectedAppointment' => $appointment,
++        ]);
++    }
++
++    public function store(Request $request)
++    {
++        $user = Auth::user();
++
++        if (!(method_exists($user, 'hasRole') && ($user->hasRole('doctor') || $user->hasRole('admin')))) {
++            abort(403, 'Unauthorized action.');
++        }
++
++        $doctor = $this->currentDoctor();
++
++        $rules = [
++            'patient_id' => 'required|exists:patients,id',
++            'appointment_id' => 'nullable|exists:appointments,id',
++            'prescribed_date' => 'required|date',
++            'diagnosis' => 'required|string',
++            'notes' => 'nullable|string',
++            'items' => 'required|array|min:1',
++            'items.*.medicine_name' => 'required|string',
++            'items.*.dosage' => 'nullable|string',
++            'items.*.frequency' => 'nullable|string',
++            'items.*.duration' => 'nullable|string',
++            'items.*.instructions' => 'nullable|string',
++        ];
++
++        // Admin ke liye doctor select karna zaroori hai, doctor khud login hai to apna id use hoga
++        if (!$doctor) {
++            $rules['doctor_id'] = 'required|exists:doctors,id';
++        }
++
++        $validated = $request->validate($rules);
++
++        $prescription = Prescription::create([
++            'patient_id' => $validated['patient_id'],
++            'doctor_id' => $doctor ? $doctor->id : $validated['doctor_id'],
++            'appointment_id' => $validated['appointment_id'] ?? null,
++            'prescribed_date' => $validated['prescribed_date'],
++            'diagnosis' => $validated['diagnosis'],
++            'notes' => $validated['notes'] ?? null,
++        ]);
++
++        foreach ($validated['items'] as $item) {
++            $prescription->items()->create($item);
++        }
++
++        return redirect()->route('prescriptions.index')->with('success', 'Prescription created successfully.');
++    }
++
++    public function show(Prescription $prescription)
++    {
++        $this->authorizeAccess($prescription, allowReceptionist: true);
++
++        $prescription->load('patient', 'doctor', 'items');
++
++        return Inertia::render('Prescriptions/Show', [
++            'prescription' => $prescription,
++        ]);
++    }
++
++    public function edit(Prescription $prescription)
++    {
++        $this->authorizeAccess($prescription);
++
++        $prescription->load('items');
++
++        $doctor = $this->currentDoctor();
++        $patients = Patient::all();
++        $doctors = $doctor ? collect([$doctor]) : Doctor::all();
++
++        return Inertia::render('Prescriptions/Edit', [
++            'prescription' => $prescription,
++            'patients' => $patients,
++            'doctors' => $doctors,
++        ]);
++    }
++
++    public function update(Request $request, Prescription $prescription)
++    {
++        $this->authorizeAccess($prescription);
++
++        $validated = $request->validate([
++            'patient_id' => 'required|exists:patients,id',
++            'prescribed_date' => 'required|date',
++            'diagnosis' => 'required|string',
++            'notes' => 'nullable|string',
++            'items' => 'required|array|min:1',
++            'items.*.id' => 'nullable|exists:prescription_items,id',
++            'items.*.medicine_name' => 'required|string',
++            'items.*.dosage' => 'nullable|string',
++            'items.*.frequency' => 'nullable|string',
++            'items.*.duration' => 'nullable|string',
++            'items.*.instructions' => 'nullable|string',
++        ]);
++
++        $prescription->update([
++            'patient_id' => $validated['patient_id'],
++            'prescribed_date' => $validated['prescribed_date'],
++            'diagnosis' => $validated['diagnosis'],
++            'notes' => $validated['notes'] ?? null,
++        ]);
++
++        // Simple replace strategy: purane items hata kar naye bana dete hain
++        $prescription->items()->delete();
++        foreach ($validated['items'] as $item) {
++            $prescription->items()->create($item);
++        }
++
++        return redirect()->route('prescriptions.index')->with('success', 'Prescription updated successfully.');
++    }
++
++    public function destroy(Prescription $prescription)
++    {
++        $prescription->delete();
++
++        return redirect()->route('prescriptions.index')->with('success', 'Prescription deleted successfully.');
++    }
++
++    // Doctor sirf apni prescriptions edit/view kar sake, admin har cheez.
++    // Receptionist ko sirf "show" (read-only receipt) pe allowReceptionist=true ke sath access milta hai.
++    private function authorizeAccess(Prescription $prescription, bool $allowReceptionist = false)
++    {
++        $user = Auth::user();
++
++        if (method_exists($user, 'hasRole') && $user->hasRole('admin')) {
++            return;
++        }
++
++        $doctor = $this->currentDoctor();
++
++        if ($doctor && $prescription->doctor_id === $doctor->id) {
++            return;
++        }
++
++        if ($allowReceptionist && method_exists($user, 'hasRole') && $user->hasRole('receptionist')) {
++            return;
++        }
++
++        abort(403, 'Unauthorized action.');
++    }
++}
+diff --git a/app/Models/Appointment.php b/app/Models/Appointment.php
+index 54a49b4..57515f2 100644
+--- a/app/Models/Appointment.php
++++ b/app/Models/Appointment.php
+@@ -27,4 +27,10 @@ public function doctor()
+     {
+         return $this->belongsTo(Doctor::class);
+     }
++
++    // Ek appointment se ek prescription likhi ja sakti hai
++    public function prescription()
++    {
++        return $this->hasOne(Prescription::class);
++    }
+ }
+diff --git a/app/Models/Doctor.php b/app/Models/Doctor.php
+index f77d102..b0e83c1 100644
+--- a/app/Models/Doctor.php
++++ b/app/Models/Doctor.php
+@@ -25,4 +25,9 @@ public function availabilities()
+     {
+         return $this->hasMany(DoctorAvailability::class);
+     }
++
++    public function prescriptions()
++    {
++        return $this->hasMany(Prescription::class);
++    }
+ }
+diff --git a/app/Models/Patient.php b/app/Models/Patient.php
+index d8fb567..c77b742 100644
+--- a/app/Models/Patient.php
++++ b/app/Models/Patient.php
+@@ -17,4 +17,9 @@ class Patient extends Model
+     protected $casts = [
+         'dob' => 'date',
+     ];
++
++    public function prescriptions()
++    {
++        return $this->hasMany(Prescription::class);
++    }
+ }
+\ No newline at end of file
+diff --git a/app/Models/Prescription.php b/app/Models/Prescription.php
+new file mode 100644
+index 0000000..694f353
+--- /dev/null
++++ b/app/Models/Prescription.php
+@@ -0,0 +1,44 @@
++<?php
++
++namespace App\Models;
++
++use Illuminate\Database\Eloquent\Factories\HasFactory;
++use Illuminate\Database\Eloquent\Model;
++
++class Prescription extends Model
++{
++    use HasFactory;
++
++    protected $fillable = [
++        'patient_id',
++        'doctor_id',
++        'appointment_id',
++        'prescribed_date',
++        'diagnosis',
++        'notes',
++    ];
++
++    protected $casts = [
++        'prescribed_date' => 'date',
++    ];
++
++    public function patient()
++    {
++        return $this->belongsTo(Patient::class);
++    }
++
++    public function doctor()
++    {
++        return $this->belongsTo(Doctor::class);
++    }
++
++    public function appointment()
++    {
++        return $this->belongsTo(Appointment::class);
++    }
++
++    public function items()
++    {
++        return $this->hasMany(PrescriptionItem::class);
++    }
++}
+diff --git a/app/Models/PrescriptionItem.php b/app/Models/PrescriptionItem.php
+new file mode 100644
+index 0000000..8d83705
+--- /dev/null
++++ b/app/Models/PrescriptionItem.php
+@@ -0,0 +1,25 @@
++<?php
++
++namespace App\Models;
++
++use Illuminate\Database\Eloquent\Factories\HasFactory;
++use Illuminate\Database\Eloquent\Model;
++
++class PrescriptionItem extends Model
++{
++    use HasFactory;
++
++    protected $fillable = [
++        'prescription_id',
++        'medicine_name',
++        'dosage',
++        'frequency',
++        'duration',
++        'instructions',
++    ];
++
++    public function prescription()
++    {
++        return $this->belongsTo(Prescription::class);
++    }
++}
+diff --git a/database/migrations/2026_09_15_120000_create_prescriptions_table.php b/database/migrations/2026_09_15_120000_create_prescriptions_table.php
+new file mode 100644
+index 0000000..9b1a651
+--- /dev/null
++++ b/database/migrations/2026_09_15_120000_create_prescriptions_table.php
+@@ -0,0 +1,36 @@
++<?php
++
++use Illuminate\Database\Migrations\Migration;
++use Illuminate\Database\Schema\Blueprint;
++use Illuminate\Support\Facades\Schema;
++
++return new class extends Migration
++{
++    /**
++     * Run the migrations.
++     */
++    public function up(): void
++    {
++        if (!Schema::hasTable('prescriptions')) {
++            Schema::create('prescriptions', function (Blueprint $table) {
++                $table->id();
++                $table->foreignId('patient_id')->constrained()->onDelete('cascade');
++                $table->foreignId('doctor_id')->constrained()->onDelete('cascade');
++                // Optional link back to the appointment this prescription was written during
++                $table->foreignId('appointment_id')->nullable()->constrained()->nullOnDelete();
++                $table->date('prescribed_date');
++                $table->text('diagnosis');
++                $table->text('notes')->nullable();
++                $table->timestamps();
++            });
++        }
++    }
++
++    /**
++     * Reverse the migrations.
++     */
++    public function down(): void
++    {
++        Schema::dropIfExists('prescriptions');
++    }
++};
+diff --git a/database/migrations/2026_09_15_120001_create_prescription_items_table.php b/database/migrations/2026_09_15_120001_create_prescription_items_table.php
+new file mode 100644
+index 0000000..fb16820
+--- /dev/null
++++ b/database/migrations/2026_09_15_120001_create_prescription_items_table.php
+@@ -0,0 +1,35 @@
++<?php
++
++use Illuminate\Database\Migrations\Migration;
++use Illuminate\Database\Schema\Blueprint;
++use Illuminate\Support\Facades\Schema;
++
++return new class extends Migration
++{
++    /**
++     * Run the migrations.
++     */
++    public function up(): void
++    {
++        if (!Schema::hasTable('prescription_items')) {
++            Schema::create('prescription_items', function (Blueprint $table) {
++                $table->id();
++                $table->foreignId('prescription_id')->constrained()->onDelete('cascade');
++                $table->string('medicine_name');
++                $table->string('dosage')->nullable();       // e.g. "500mg"
++                $table->string('frequency')->nullable();    // e.g. "1-0-1" (morning-afternoon-night)
++                $table->string('duration')->nullable();     // e.g. "5 days"
++                $table->text('instructions')->nullable();   // e.g. "After meals"
++                $table->timestamps();
++            });
++        }
++    }
++
++    /**
++     * Reverse the migrations.
++     */
++    public function down(): void
++    {
++        Schema::dropIfExists('prescription_items');
++    }
++};
+diff --git a/database/seeders/RolesAndPermissionsSeeder.php b/database/seeders/RolesAndPermissionsSeeder.php
+index d6aaad5..bc8a359 100644
+--- a/database/seeders/RolesAndPermissionsSeeder.php
++++ b/database/seeders/RolesAndPermissionsSeeder.php
+@@ -14,6 +14,7 @@ public function run()
+         $manageDoctors = Permission::firstOrCreate(['name' => 'manage doctors']);
+         $manageAppointments = Permission::firstOrCreate(['name' => 'manage appointments']);
+         $manageBills = Permission::firstOrCreate(['name' => 'manage bills']);
++        $managePrescriptions = Permission::firstOrCreate(['name' => 'manage prescriptions']);
+ 
+         $admin = Role::firstOrCreate(['name' => 'admin']);
+         $doctor = Role::firstOrCreate(['name' => 'doctor']);
+@@ -25,15 +26,19 @@ public function run()
+             $manageDoctors,
+             $manageAppointments,
+             $manageBills,
++            $managePrescriptions,
+         ]);
+ 
+-        // Receptionist: can manage day-to-day records, but not doctors
++        // Receptionist: can manage day-to-day records, but not doctors or prescriptions
+         $receptionist->syncPermissions([
+             $managePatients,
+             $manageAppointments,
+             $manageBills,
+         ]);
+ 
+-        // Doctor: view-only role, no manage permissions assigned
++        // Doctor: view-only role for most modules, but can write/manage their own prescriptions
++        $doctor->syncPermissions([
++            $managePrescriptions,
++        ]);
+     }
+ }
+\ No newline at end of file
+diff --git a/resources/js/Layouts/AuthenticatedLayout.vue b/resources/js/Layouts/AuthenticatedLayout.vue
+index 801977c..86eeecc 100644
+--- a/resources/js/Layouts/AuthenticatedLayout.vue
++++ b/resources/js/Layouts/AuthenticatedLayout.vue
+@@ -56,6 +56,15 @@ const user = page.props.auth?.user;
+                         </svg>
+                         Appointment
+                     </Link>
++                    <Link :href="route('prescriptions.index')"
++                        :class="route().current('prescriptions.*') ? 'bg-orange-500 text-white shadow-md shadow-orange-500/20' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'"
++                        class="flex items-center gap-3 px-4 py-3 rounded-xl transition">
++                        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
++                            <path stroke-linecap="round" stroke-linejoin="round"
++                                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
++                        </svg>
++                        Prescriptions
++                    </Link>
+                     <Link :href="route('bills.index')"
+                         :class="route().current('bills.*') ? 'bg-orange-500 text-white shadow-md shadow-orange-500/20' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'"
+                         class="flex items-center gap-3 px-4 py-3 rounded-xl transition">
+diff --git a/resources/js/Pages/Appointments/Index.vue b/resources/js/Pages/Appointments/Index.vue
+index 5acf069..08c3f21 100644
+--- a/resources/js/Pages/Appointments/Index.vue
++++ b/resources/js/Pages/Appointments/Index.vue
+@@ -111,6 +111,11 @@ const strtoupperName = (name) => {
+ 
+                                 <!-- Mobile Actions -->
+                                 <div class="flex items-center gap-1.5">
++                                    <Link :href="route('prescriptions.create', { appointment_id: appointment.id })" class="p-1.5 rounded-lg bg-gray-50 text-emerald-600 hover:bg-emerald-50 transition" title="Write Prescription">
++                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
++                                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
++                                        </svg>
++                                    </Link>
+                                     <Link :href="route('appointments.edit', appointment.id)" class="p-1.5 rounded-lg bg-gray-50 text-blue-600 hover:bg-blue-50 transition" title="Edit">
+                                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                             <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.862 4.487zm0 0L19.5 7.125"/>
+@@ -174,6 +179,11 @@ const strtoupperName = (name) => {
+                                     </td>
+                                     <td class="py-4 px-6 text-right whitespace-nowrap">
+                                         <div class="inline-flex items-center gap-2">
++                                            <Link :href="route('prescriptions.create', { appointment_id: appointment.id })" class="p-2 rounded-xl bg-gray-50 text-emerald-600 hover:bg-emerald-50 transition" title="Write Prescription">
++                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
++                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
++                                                </svg>
++                                            </Link>
+                                             <Link :href="route('appointments.edit', appointment.id)" class="p-2 rounded-xl bg-gray-50 text-blue-600 hover:bg-blue-50 transition" title="Edit">
+                                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                                     <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.862 4.487zm0 0L19.5 7.125"/>
+diff --git a/resources/js/Pages/Prescriptions/Create.vue b/resources/js/Pages/Prescriptions/Create.vue
+new file mode 100644
+index 0000000..17ee711
+--- /dev/null
++++ b/resources/js/Pages/Prescriptions/Create.vue
+@@ -0,0 +1,201 @@
++<script setup>
++import { Link, useForm } from '@inertiajs/vue3';
++import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
++
++// Controller se ane walay props
++const props = defineProps({
++    patients: Array,
++    doctors: Array,
++    selectedAppointment: Object,
++});
++
++const today = new Date().toISOString().slice(0, 10);
++
++// Inertia useForm helper for reactive data and form submission
++const form = useForm({
++    patient_id: props.selectedAppointment?.patient?.id ?? '',
++    doctor_id: props.doctors.length === 1 ? props.doctors[0].id : (props.selectedAppointment?.doctor?.id ?? ''),
++    appointment_id: props.selectedAppointment?.id ?? '',
++    prescribed_date: today,
++    diagnosis: '',
++    notes: '',
++    items: [
++        { medicine_name: '', dosage: '', frequency: '', duration: '', instructions: '' },
++    ],
++});
++
++const addItem = () => {
++    form.items.push({ medicine_name: '', dosage: '', frequency: '', duration: '', instructions: '' });
++};
++
++const removeItem = (index) => {
++    if (form.items.length > 1) {
++        form.items.splice(index, 1);
++    }
++};
++
++// Form submit handler
++const submit = () => {
++    form.post(route('prescriptions.store'), {
++        preserveScroll: true,
++    });
++};
++</script>
++
++<template>
++    <AuthenticatedLayout>
++        <div class="py-6 sm:py-8">
++            <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
++
++                <!-- Header Section -->
++                <div class="mb-4 sm:mb-6 flex items-center justify-between gap-4">
++                    <div>
++                        <h2 class="text-xl sm:text-2xl font-black text-gray-900 tracking-tight">New Prescription</h2>
++                        <p class="text-[11px] sm:text-xs text-gray-500 font-medium">Record diagnosis and prescribe medicines for a patient.</p>
++                    </div>
++                    <Link :href="route('prescriptions.index')" class="text-xs font-bold text-gray-500 hover:text-gray-900 transition bg-white sm:bg-gray-50 px-3.5 py-2 rounded-xl border border-gray-200 shadow-2xs shrink-0">
++                        &larr; Back
++                    </Link>
++                </div>
++
++                <!-- Error Messages Alert -->
++                <div v-if="Object.keys(form.errors).length > 0" class="mb-4 sm:mb-6 flex flex-col gap-1 bg-rose-50 border border-rose-200 text-rose-800 p-3.5 rounded-xl text-xs font-semibold shadow-sm">
++                    <span class="font-bold">Please fix the following errors:</span>
++                    <ul class="list-disc pl-5 space-y-0.5">
++                        <li v-for="(error, key) in form.errors" :key="key">{{ error }}</li>
++                    </ul>
++                </div>
++
++                <!-- Form Card Container -->
++                <form @submit.prevent="submit" class="bg-white border border-gray-100 shadow-sm rounded-2xl p-4 sm:p-6 space-y-6">
++
++                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
++                        <!-- Patient Selection -->
++                        <div>
++                            <label for="patient_id" class="block text-[11px] font-bold text-gray-700 uppercase tracking-wider mb-1.5">Patient</label>
++                            <select v-model="form.patient_id" id="patient_id" required
++                                class="w-full bg-gray-50/50 border border-gray-200 rounded-xl px-3.5 py-2.5 text-xs font-medium text-gray-700 focus:outline-none focus:bg-white focus:border-orange-500 focus:ring-2 focus:ring-orange-500/25 transition">
++                                <option value="">Select Patient</option>
++                                <option v-for="patient in patients" :key="patient.id" :value="patient.id">
++                                    {{ patient.name }}
++                                </option>
++                            </select>
++                            <div v-if="form.errors.patient_id" class="text-rose-600 text-[11px] mt-1 font-semibold">{{ form.errors.patient_id }}</div>
++                        </div>
++
++                        <!-- Doctor Selection (only shown when more than one doctor to choose from, e.g. admin) -->
++                        <div v-if="doctors.length > 1">
++                            <label for="doctor_id" class="block text-[11px] font-bold text-gray-700 uppercase tracking-wider mb-1.5">Doctor</label>
++                            <select v-model="form.doctor_id" id="doctor_id" required
++                                class="w-full bg-gray-50/50 border border-gray-200 rounded-xl px-3.5 py-2.5 text-xs font-medium text-gray-700 focus:outline-none focus:bg-white focus:border-orange-500 focus:ring-2 focus:ring-orange-500/25 transition">
++                                <option value="">Select Doctor</option>
++                                <option v-for="doctor in doctors" :key="doctor.id" :value="doctor.id">
++                                    Dr. {{ doctor.name }}
++                                </option>
++                            </select>
++                            <div v-if="form.errors.doctor_id" class="text-rose-600 text-[11px] mt-1 font-semibold">{{ form.errors.doctor_id }}</div>
++                        </div>
++                        <div v-else-if="doctors.length === 1" class="flex flex-col justify-end">
++                            <label class="block text-[11px] font-bold text-gray-700 uppercase tracking-wider mb-1.5">Doctor</label>
++                            <div class="w-full bg-gray-50 border border-gray-200 rounded-xl px-3.5 py-2.5 text-xs font-bold text-gray-600">
++                                Dr. {{ doctors[0].name }}
++                            </div>
++                        </div>
++
++                        <!-- Prescribed Date -->
++                        <div>
++                            <label for="prescribed_date" class="block text-[11px] font-bold text-gray-700 uppercase tracking-wider mb-1.5">Date</label>
++                            <input type="date" v-model="form.prescribed_date" id="prescribed_date" required
++                                class="w-full bg-gray-50/50 border border-gray-200 rounded-xl px-3.5 py-2.5 text-xs font-medium text-gray-700 focus:outline-none focus:bg-white focus:border-orange-500 focus:ring-2 focus:ring-orange-500/25 transition" />
++                            <div v-if="form.errors.prescribed_date" class="text-rose-600 text-[11px] mt-1 font-semibold">{{ form.errors.prescribed_date }}</div>
++                        </div>
++
++                        <!-- Diagnosis -->
++                        <div class="sm:col-span-2">
++                            <label for="diagnosis" class="block text-[11px] font-bold text-gray-700 uppercase tracking-wider mb-1.5">Diagnosis</label>
++                            <textarea v-model="form.diagnosis" id="diagnosis" rows="2" required
++                                placeholder="e.g. Acute viral fever with mild throat infection"
++                                class="w-full bg-gray-50/50 border border-gray-200 rounded-xl px-3.5 py-2.5 text-xs font-medium text-gray-700 focus:outline-none focus:bg-white focus:border-orange-500 focus:ring-2 focus:ring-orange-500/25 transition"></textarea>
++                            <div v-if="form.errors.diagnosis" class="text-rose-600 text-[11px] mt-1 font-semibold">{{ form.errors.diagnosis }}</div>
++                        </div>
++                    </div>
++
++                    <!-- Medicines Repeater -->
++                    <div class="border-t border-gray-100 pt-5">
++                        <div class="flex items-center justify-between mb-3">
++                            <h3 class="text-xs font-bold text-gray-800 uppercase tracking-wider">Medicines</h3>
++                            <button type="button" @click="addItem"
++                                class="inline-flex items-center gap-1.5 text-[11px] font-bold text-orange-600 hover:text-orange-700 bg-orange-50 px-3 py-1.5 rounded-lg transition">
++                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
++                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
++                                </svg>
++                                Add Medicine
++                            </button>
++                        </div>
++
++                        <div class="space-y-3">
++                            <div v-for="(item, index) in form.items" :key="index"
++                                class="bg-gray-50/60 border border-gray-100 rounded-xl p-3.5 relative">
++                                <button v-if="form.items.length > 1" type="button" @click="removeItem(index)"
++                                    class="absolute top-2.5 right-2.5 p-1 rounded-lg text-gray-400 hover:text-rose-600 hover:bg-rose-50 transition" title="Remove medicine">
++                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
++                                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
++                                    </svg>
++                                </button>
++
++                                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pr-6">
++                                    <div class="lg:col-span-2">
++                                        <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">Medicine Name</label>
++                                        <input type="text" v-model="item.medicine_name" required placeholder="e.g. Panadol"
++                                            class="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-xs font-medium text-gray-700 focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/25 transition" />
++                                    </div>
++                                    <div>
++                                        <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">Dosage</label>
++                                        <input type="text" v-model="item.dosage" placeholder="e.g. 500mg"
++                                            class="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-xs font-medium text-gray-700 focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/25 transition" />
++                                    </div>
++                                    <div>
++                                        <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">Frequency</label>
++                                        <input type="text" v-model="item.frequency" placeholder="e.g. 1-0-1"
++                                            class="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-xs font-medium text-gray-700 focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/25 transition" />
++                                    </div>
++                                    <div>
++                                        <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">Duration</label>
++                                        <input type="text" v-model="item.duration" placeholder="e.g. 5 days"
++                                            class="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-xs font-medium text-gray-700 focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/25 transition" />
++                                    </div>
++                                    <div class="lg:col-span-3">
++                                        <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">Instructions</label>
++                                        <input type="text" v-model="item.instructions" placeholder="e.g. After meals"
++                                            class="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-xs font-medium text-gray-700 focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/25 transition" />
++                                    </div>
++                                </div>
++                            </div>
++                        </div>
++                        <div v-if="form.errors.items" class="text-rose-600 text-[11px] mt-2 font-semibold">{{ form.errors.items }}</div>
++                    </div>
++
++                    <!-- Notes -->
++                    <div>
++                        <label for="notes" class="block text-[11px] font-bold text-gray-700 uppercase tracking-wider mb-1.5">Additional Notes (optional)</label>
++                        <textarea v-model="form.notes" id="notes" rows="2"
++                            placeholder="e.g. Follow up after 5 days, drink plenty of fluids"
++                            class="w-full bg-gray-50/50 border border-gray-200 rounded-xl px-3.5 py-2.5 text-xs font-medium text-gray-700 focus:outline-none focus:bg-white focus:border-orange-500 focus:ring-2 focus:ring-orange-500/25 transition"></textarea>
++                    </div>
++
++                    <!-- Action Buttons -->
++                    <div class="flex flex-col-reverse sm:flex-row items-center justify-end gap-2.5 pt-4 border-t border-gray-100">
++                        <Link :href="route('prescriptions.index')" class="w-full sm:w-auto text-center text-xs font-bold text-gray-500 hover:text-gray-900 transition px-4 py-2.5 rounded-xl border border-transparent hover:border-gray-200">
++                            Cancel
++                        </Link>
++                        <button type="submit" :disabled="form.processing" class="w-full sm:w-auto inline-flex items-center justify-center bg-orange-500 text-white px-6 py-2.5 rounded-xl font-bold text-xs shadow-md shadow-orange-500/20 hover:bg-orange-600 transition disabled:opacity-50">
++                            <span v-if="form.processing">Saving...</span>
++                            <span v-else>Save Prescription</span>
++                        </button>
++                    </div>
++                </form>
++
++            </div>
++        </div>
++    </AuthenticatedLayout>
++</template>
+diff --git a/resources/js/Pages/Prescriptions/Edit.vue b/resources/js/Pages/Prescriptions/Edit.vue
+new file mode 100644
+index 0000000..6928bba
+--- /dev/null
++++ b/resources/js/Pages/Prescriptions/Edit.vue
+@@ -0,0 +1,188 @@
++<script setup>
++import { Link, useForm } from '@inertiajs/vue3';
++import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
++
++const props = defineProps({
++    prescription: Object,
++    patients: Array,
++    doctors: Array,
++});
++
++const form = useForm({
++    patient_id: props.prescription.patient_id,
++    prescribed_date: props.prescription.prescribed_date?.slice(0, 10) ?? '',
++    diagnosis: props.prescription.diagnosis,
++    notes: props.prescription.notes ?? '',
++    items: props.prescription.items.length > 0
++        ? props.prescription.items.map(i => ({
++            id: i.id,
++            medicine_name: i.medicine_name,
++            dosage: i.dosage ?? '',
++            frequency: i.frequency ?? '',
++            duration: i.duration ?? '',
++            instructions: i.instructions ?? '',
++        }))
++        : [{ medicine_name: '', dosage: '', frequency: '', duration: '', instructions: '' }],
++});
++
++const addItem = () => {
++    form.items.push({ medicine_name: '', dosage: '', frequency: '', duration: '', instructions: '' });
++};
++
++const removeItem = (index) => {
++    if (form.items.length > 1) {
++        form.items.splice(index, 1);
++    }
++};
++
++const submit = () => {
++    form.put(route('prescriptions.update', props.prescription.id), {
++        preserveScroll: true,
++    });
++};
++</script>
++
++<template>
++    <AuthenticatedLayout>
++        <div class="py-6 sm:py-8">
++            <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
++
++                <!-- Header Section -->
++                <div class="mb-4 sm:mb-6 flex items-center justify-between gap-4">
++                    <div>
++                        <h2 class="text-xl sm:text-2xl font-black text-gray-900 tracking-tight">Edit Prescription</h2>
++                        <p class="text-[11px] sm:text-xs text-gray-500 font-medium">Update diagnosis, notes, or the prescribed medicines.</p>
++                    </div>
++                    <Link :href="route('prescriptions.index')" class="text-xs font-bold text-gray-500 hover:text-gray-900 transition bg-white sm:bg-gray-50 px-3.5 py-2 rounded-xl border border-gray-200 shadow-2xs shrink-0">
++                        &larr; Back
++                    </Link>
++                </div>
++
++                <!-- Error Messages Alert -->
++                <div v-if="Object.keys(form.errors).length > 0" class="mb-4 sm:mb-6 flex flex-col gap-1 bg-rose-50 border border-rose-200 text-rose-800 p-3.5 rounded-xl text-xs font-semibold shadow-sm">
++                    <span class="font-bold">Please fix the following errors:</span>
++                    <ul class="list-disc pl-5 space-y-0.5">
++                        <li v-for="(error, key) in form.errors" :key="key">{{ error }}</li>
++                    </ul>
++                </div>
++
++                <!-- Form Card Container -->
++                <form @submit.prevent="submit" class="bg-white border border-gray-100 shadow-sm rounded-2xl p-4 sm:p-6 space-y-6">
++
++                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
++                        <!-- Patient Selection -->
++                        <div>
++                            <label for="patient_id" class="block text-[11px] font-bold text-gray-700 uppercase tracking-wider mb-1.5">Patient</label>
++                            <select v-model="form.patient_id" id="patient_id" required
++                                class="w-full bg-gray-50/50 border border-gray-200 rounded-xl px-3.5 py-2.5 text-xs font-medium text-gray-700 focus:outline-none focus:bg-white focus:border-orange-500 focus:ring-2 focus:ring-orange-500/25 transition">
++                                <option value="">Select Patient</option>
++                                <option v-for="patient in patients" :key="patient.id" :value="patient.id">
++                                    {{ patient.name }}
++                                </option>
++                            </select>
++                            <div v-if="form.errors.patient_id" class="text-rose-600 text-[11px] mt-1 font-semibold">{{ form.errors.patient_id }}</div>
++                        </div>
++
++                        <!-- Doctor (read-only display, doctor cannot be reassigned after creation) -->
++                        <div>
++                            <label class="block text-[11px] font-bold text-gray-700 uppercase tracking-wider mb-1.5">Doctor</label>
++                            <div class="w-full bg-gray-50 border border-gray-200 rounded-xl px-3.5 py-2.5 text-xs font-bold text-gray-600">
++                                Dr. {{ prescription.doctor?.name ?? 'N/A' }}
++                            </div>
++                        </div>
++
++                        <!-- Prescribed Date -->
++                        <div>
++                            <label for="prescribed_date" class="block text-[11px] font-bold text-gray-700 uppercase tracking-wider mb-1.5">Date</label>
++                            <input type="date" v-model="form.prescribed_date" id="prescribed_date" required
++                                class="w-full bg-gray-50/50 border border-gray-200 rounded-xl px-3.5 py-2.5 text-xs font-medium text-gray-700 focus:outline-none focus:bg-white focus:border-orange-500 focus:ring-2 focus:ring-orange-500/25 transition" />
++                            <div v-if="form.errors.prescribed_date" class="text-rose-600 text-[11px] mt-1 font-semibold">{{ form.errors.prescribed_date }}</div>
++                        </div>
++
++                        <!-- Diagnosis -->
++                        <div class="sm:col-span-2">
++                            <label for="diagnosis" class="block text-[11px] font-bold text-gray-700 uppercase tracking-wider mb-1.5">Diagnosis</label>
++                            <textarea v-model="form.diagnosis" id="diagnosis" rows="2" required
++                                class="w-full bg-gray-50/50 border border-gray-200 rounded-xl px-3.5 py-2.5 text-xs font-medium text-gray-700 focus:outline-none focus:bg-white focus:border-orange-500 focus:ring-2 focus:ring-orange-500/25 transition"></textarea>
++                            <div v-if="form.errors.diagnosis" class="text-rose-600 text-[11px] mt-1 font-semibold">{{ form.errors.diagnosis }}</div>
++                        </div>
++                    </div>
++
++                    <!-- Medicines Repeater -->
++                    <div class="border-t border-gray-100 pt-5">
++                        <div class="flex items-center justify-between mb-3">
++                            <h3 class="text-xs font-bold text-gray-800 uppercase tracking-wider">Medicines</h3>
++                            <button type="button" @click="addItem"
++                                class="inline-flex items-center gap-1.5 text-[11px] font-bold text-orange-600 hover:text-orange-700 bg-orange-50 px-3 py-1.5 rounded-lg transition">
++                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
++                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
++                                </svg>
++                                Add Medicine
++                            </button>
++                        </div>
++
++                        <div class="space-y-3">
++                            <div v-for="(item, index) in form.items" :key="item.id ?? 'new-' + index"
++                                class="bg-gray-50/60 border border-gray-100 rounded-xl p-3.5 relative">
++                                <button v-if="form.items.length > 1" type="button" @click="removeItem(index)"
++                                    class="absolute top-2.5 right-2.5 p-1 rounded-lg text-gray-400 hover:text-rose-600 hover:bg-rose-50 transition" title="Remove medicine">
++                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
++                                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
++                                    </svg>
++                                </button>
++
++                                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pr-6">
++                                    <div class="lg:col-span-2">
++                                        <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">Medicine Name</label>
++                                        <input type="text" v-model="item.medicine_name" required
++                                            class="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-xs font-medium text-gray-700 focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/25 transition" />
++                                    </div>
++                                    <div>
++                                        <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">Dosage</label>
++                                        <input type="text" v-model="item.dosage"
++                                            class="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-xs font-medium text-gray-700 focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/25 transition" />
++                                    </div>
++                                    <div>
++                                        <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">Frequency</label>
++                                        <input type="text" v-model="item.frequency"
++                                            class="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-xs font-medium text-gray-700 focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/25 transition" />
++                                    </div>
++                                    <div>
++                                        <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">Duration</label>
++                                        <input type="text" v-model="item.duration"
++                                            class="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-xs font-medium text-gray-700 focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/25 transition" />
++                                    </div>
++                                    <div class="lg:col-span-3">
++                                        <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">Instructions</label>
++                                        <input type="text" v-model="item.instructions"
++                                            class="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-xs font-medium text-gray-700 focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/25 transition" />
++                                    </div>
++                                </div>
++                            </div>
++                        </div>
++                        <div v-if="form.errors.items" class="text-rose-600 text-[11px] mt-2 font-semibold">{{ form.errors.items }}</div>
++                    </div>
++
++                    <!-- Notes -->
++                    <div>
++                        <label for="notes" class="block text-[11px] font-bold text-gray-700 uppercase tracking-wider mb-1.5">Additional Notes (optional)</label>
++                        <textarea v-model="form.notes" id="notes" rows="2"
++                            class="w-full bg-gray-50/50 border border-gray-200 rounded-xl px-3.5 py-2.5 text-xs font-medium text-gray-700 focus:outline-none focus:bg-white focus:border-orange-500 focus:ring-2 focus:ring-orange-500/25 transition"></textarea>
++                    </div>
++
++                    <!-- Action Buttons -->
++                    <div class="flex flex-col-reverse sm:flex-row items-center justify-end gap-2.5 pt-4 border-t border-gray-100">
++                        <Link :href="route('prescriptions.index')" class="w-full sm:w-auto text-center text-xs font-bold text-gray-500 hover:text-gray-900 transition px-4 py-2.5 rounded-xl border border-transparent hover:border-gray-200">
++                            Cancel
++                        </Link>
++                        <button type="submit" :disabled="form.processing" class="w-full sm:w-auto inline-flex items-center justify-center bg-orange-500 text-white px-6 py-2.5 rounded-xl font-bold text-xs shadow-md shadow-orange-500/20 hover:bg-orange-600 transition disabled:opacity-50">
++                            <span v-if="form.processing">Saving...</span>
++                            <span v-else>Update Prescription</span>
++                        </button>
++                    </div>
++                </form>
++
++            </div>
++        </div>
++    </AuthenticatedLayout>
++</template>
+diff --git a/resources/js/Pages/Prescriptions/Index.vue b/resources/js/Pages/Prescriptions/Index.vue
+new file mode 100644
+index 0000000..9f4b59a
+--- /dev/null
++++ b/resources/js/Pages/Prescriptions/Index.vue
+@@ -0,0 +1,203 @@
++<script setup>
++import { Link, router, usePage } from '@inertiajs/vue3';
++import { computed } from 'vue';
++import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
++
++// Controller se ane walay props (pagination object)
++const props = defineProps({
++    prescriptions: Object,
++});
++
++const page = usePage();
++const user = computed(() => page.props.auth?.user);
++const isAdmin = computed(() => user.value?.roles?.some?.(r => r.name === 'admin') ?? false);
++
++// Delete prescription handler
++const deletePrescription = (id) => {
++    if (confirm('Are you sure you want to delete this prescription?')) {
++        router.delete(route('prescriptions.destroy', id), {
++            preserveScroll: true,
++        });
++    }
++};
++
++const formatDate = (dateString) => {
++    if (!dateString) return 'N/A';
++    const date = new Date(dateString);
++    return date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
++};
++
++const strtoupperName = (name) => {
++    if (!name) return 'P';
++    return name.charAt(0).toUpperCase();
++};
++
++const truncate = (text, length = 60) => {
++    if (!text) return '';
++    return text.length > length ? text.slice(0, length) + '…' : text;
++};
++</script>
++
++<template>
++    <AuthenticatedLayout>
++        <div class="space-y-6">
++
++            <!-- Header & Action Section -->
++            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
++                <div>
++                    <h2 class="text-xl sm:text-2xl font-black text-gray-900 tracking-tight">Prescriptions</h2>
++                    <p class="text-xs text-gray-500 mt-1 font-medium">View and manage patient prescriptions and medical records.</p>
++                </div>
++
++                <Link :href="route('prescriptions.create')" class="inline-flex items-center justify-center gap-2 bg-orange-500 text-white px-5 py-2.5 rounded-xl font-semibold text-xs shadow-md shadow-orange-500/20 hover:bg-orange-600 transition">
++                    <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
++                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
++                    </svg>
++                    <span>New Prescription</span>
++                </Link>
++            </div>
++
++            <!-- Success Alert (Inertia Flash Messages) -->
++            <div v-if="$page.props.flash?.success" class="flex items-center gap-3 bg-emerald-50 border border-emerald-200 text-emerald-800 px-4 py-3 rounded-xl text-xs font-semibold shadow-sm">
++                <svg class="w-5 h-5 text-emerald-500 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
++                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
++                </svg>
++                <span>{{ $page.props.flash.success }}</span>
++            </div>
++
++            <!-- Main Card Wrapper -->
++            <div class="bg-white border border-gray-100 shadow-sm rounded-2xl overflow-hidden">
++
++                <!-- MOBILE VIEW: Card Layout -->
++                <div class="block md:hidden divide-y divide-gray-100">
++                    <template v-if="prescriptions.data && prescriptions.data.length > 0">
++                        <div v-for="prescription in prescriptions.data" :key="prescription.id" class="p-4 space-y-3 hover:bg-gray-50/50 transition">
++                            <div class="flex items-center justify-between">
++                                <div class="flex items-center gap-3">
++                                    <div class="w-9 h-9 rounded-full bg-orange-100 text-orange-600 font-bold flex items-center justify-center text-xs shrink-0">
++                                        {{ strtoupperName(prescription.patient?.name) }}
++                                    </div>
++                                    <div>
++                                        <h4 class="font-bold text-gray-900 text-xs">{{ prescription.patient?.name ?? 'N/A' }}</h4>
++                                        <p class="text-[11px] text-gray-500">Dr. {{ prescription.doctor?.name ?? 'N/A' }}</p>
++                                    </div>
++                                </div>
++                                <span class="text-[11px] text-gray-500 font-semibold">{{ formatDate(prescription.prescribed_date) }}</span>
++                            </div>
++
++                            <p class="text-[11px] text-gray-600 font-medium bg-gray-50 rounded-lg px-3 py-2">{{ truncate(prescription.diagnosis) }}</p>
++
++                            <div class="flex items-center justify-end gap-1.5 pt-1 border-t border-gray-50">
++                                <Link :href="route('prescriptions.show', prescription.id)" class="p-1.5 rounded-lg bg-gray-50 text-emerald-600 hover:bg-emerald-50 transition" title="View">
++                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
++                                        <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"/>
++                                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
++                                    </svg>
++                                </Link>
++                                <Link :href="route('prescriptions.edit', prescription.id)" class="p-1.5 rounded-lg bg-gray-50 text-blue-600 hover:bg-blue-50 transition" title="Edit">
++                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
++                                        <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.862 4.487zm0 0L19.5 7.125"/>
++                                    </svg>
++                                </Link>
++                                <button v-if="isAdmin" @click="deletePrescription(prescription.id)" type="button" class="p-1.5 rounded-lg bg-gray-50 text-rose-600 hover:bg-rose-50 transition" title="Delete">
++                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
++                                        <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"/>
++                                    </svg>
++                                </button>
++                            </div>
++                        </div>
++                    </template>
++                    <template v-else>
++                        <div class="text-center text-gray-400 py-12">
++                            <p class="text-xs font-semibold text-gray-500">No prescriptions found.</p>
++                        </div>
++                    </template>
++                </div>
++
++                <!-- DESKTOP VIEW: Table Layout -->
++                <div class="hidden md:block overflow-x-auto">
++                    <table class="min-w-full divide-y divide-gray-100 text-left text-xs font-medium text-gray-600">
++                        <thead class="bg-gray-50 text-gray-400 uppercase tracking-wider font-bold text-[10px]">
++                            <tr>
++                                <th class="py-3.5 px-6">Patient</th>
++                                <th class="py-3.5 px-6">Doctor</th>
++                                <th class="py-3.5 px-6">Diagnosis</th>
++                                <th class="py-3.5 px-6">Date</th>
++                                <th class="py-3.5 px-6 text-right">Actions</th>
++                            </tr>
++                        </thead>
++                        <tbody class="divide-y divide-gray-100 bg-white">
++                            <template v-if="prescriptions.data && prescriptions.data.length > 0">
++                                <tr v-for="prescription in prescriptions.data" :key="prescription.id" class="hover:bg-gray-50/60 transition">
++                                    <td class="py-4 px-6 font-bold text-gray-900">
++                                        <div class="flex items-center gap-3">
++                                            <div class="w-8 h-8 rounded-full bg-orange-100 text-orange-600 font-bold flex items-center justify-center text-xs">
++                                                {{ strtoupperName(prescription.patient?.name) }}
++                                            </div>
++                                            <span>{{ prescription.patient?.name ?? 'N/A' }}</span>
++                                        </div>
++                                    </td>
++                                    <td class="py-4 px-6 text-gray-700 font-semibold">
++                                        Dr. {{ prescription.doctor?.name ?? 'N/A' }}
++                                    </td>
++                                    <td class="py-4 px-6 text-gray-500 font-medium max-w-xs">
++                                        {{ truncate(prescription.diagnosis) }}
++                                    </td>
++                                    <td class="py-4 px-6 text-gray-500 font-medium">
++                                        {{ formatDate(prescription.prescribed_date) }}
++                                    </td>
++                                    <td class="py-4 px-6 text-right whitespace-nowrap">
++                                        <div class="inline-flex items-center gap-2">
++                                            <Link :href="route('prescriptions.show', prescription.id)" class="p-2 rounded-xl bg-gray-50 text-emerald-600 hover:bg-emerald-50 transition" title="View">
++                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
++                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"/>
++                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
++                                                </svg>
++                                            </Link>
++                                            <Link :href="route('prescriptions.edit', prescription.id)" class="p-2 rounded-xl bg-gray-50 text-blue-600 hover:bg-blue-50 transition" title="Edit">
++                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
++                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.862 4.487zm0 0L19.5 7.125"/>
++                                                </svg>
++                                            </Link>
++                                            <button v-if="isAdmin" @click="deletePrescription(prescription.id)" type="button" class="p-2 rounded-xl bg-gray-50 text-rose-600 hover:bg-rose-50 transition" title="Delete">
++                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
++                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"/>
++                                                </svg>
++                                            </button>
++                                        </div>
++                                    </td>
++                                </tr>
++                            </template>
++                            <template v-else>
++                                <tr>
++                                    <td colspan="5" class="text-center text-gray-400 py-12">
++                                        <p class="text-xs font-semibold text-gray-500">No prescriptions found.</p>
++                                    </td>
++                                </tr>
++                            </template>
++                        </tbody>
++                    </table>
++                </div>
++
++            </div>
++
++            <!-- Pagination Links -->
++            <div class="mt-6 flex justify-center gap-1 flex-wrap" v-if="prescriptions.links">
++                <template v-for="(link, key) in prescriptions.links" :key="key">
++                    <component
++                        :is="link.url ? Link : 'span'"
++                        :href="link.url"
++                        v-html="link.label"
++                        class="px-3 py-1.5 text-xs rounded-lg border transition"
++                        :class="{
++                            'bg-orange-500 text-white border-orange-500 shadow-sm': link.active,
++                            'bg-white text-gray-700 border-gray-200 hover:bg-gray-50': link.url && !link.active,
++                            'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed': !link.url
++                        }"
++                    />
++                </template>
++            </div>
++
++        </div>
++    </AuthenticatedLayout>
++</template>
+diff --git a/resources/js/Pages/Prescriptions/Show.vue b/resources/js/Pages/Prescriptions/Show.vue
+new file mode 100644
+index 0000000..503be7f
+--- /dev/null
++++ b/resources/js/Pages/Prescriptions/Show.vue
+@@ -0,0 +1,167 @@
++<script setup>
++import { Link } from '@inertiajs/vue3';
++import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
++
++const props = defineProps({
++    prescription: Object,
++});
++
++const formatDate = (dateString) => {
++    if (!dateString) return '';
++    const date = new Date(dateString);
++    return date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
++};
++
++const formatRxId = (id) => {
++    return String(id).padStart(5, '0');
++};
++</script>
++
++<template>
++    <!-- Print-specific styles to hide layout navigation/headers during window.print() -->
++    <component :is="'style'">
++        @media print {
++            body * {
++                visibility: hidden;
++            }
++
++            #printable-prescription,
++            #printable-prescription * {
++                visibility: visible;
++            }
++
++            #printable-prescription {
++                position: absolute;
++                left: 0;
++                top: 0;
++                width: 100%;
++                box-shadow: none !important;
++                border: none !important;
++                padding: 10px !important;
++                margin: 0 !important;
++            }
++        }
++    </component>
++
++    <AuthenticatedLayout>
++        <div class="py-6 sm:py-8">
++            <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
++
++                <!-- Top Actions (Back & Print Buttons - Hidden on Print) -->
++                <div class="mb-6 flex items-center justify-between print:hidden gap-4">
++                    <Link :href="route('prescriptions.index')"
++                        class="inline-flex items-center gap-2 text-xs font-semibold text-gray-600 hover:text-gray-900 transition bg-white px-4 py-2.5 rounded-xl border border-gray-200 shadow-sm">
++                        &larr; Back to Prescriptions
++                    </Link>
++                    <button @click="window.print()"
++                        class="inline-flex items-center gap-2 bg-orange-500 text-white px-5 py-2.5 rounded-xl font-bold text-xs shadow-lg shadow-orange-500/20 hover:bg-orange-600 transition">
++                        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24"
++                            stroke="currentColor">
++                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
++                                d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
++                        </svg>
++                        Print Prescription
++                    </button>
++                </div>
++
++                <!-- Prescription Card Container (Targeted for Print) -->
++                <div id="printable-prescription"
++                    class="bg-white border border-gray-100 shadow-2xl shadow-gray-100/90 rounded-3xl p-6 sm:p-12 space-y-8 relative overflow-hidden">
++
++                    <!-- Decorative Top Border Accent -->
++                    <div class="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-orange-400 to-orange-600"></div>
++
++                    <!-- Hospital Header -->
++                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-gray-100 pb-6 gap-4">
++                        <div class="flex items-center gap-4">
++                            <div class="w-14 h-14 rounded-2xl bg-orange-500 flex items-center justify-center text-white font-black text-2xl shadow-lg shadow-orange-500/30">
++                                HC
++                            </div>
++                            <div>
++                                <h1 class="text-2xl font-black text-gray-900 tracking-tight">Health Care</h1>
++                                <p class="text-xs text-gray-500 font-medium mt-0.5">Official Medical Prescription</p>
++                            </div>
++                        </div>
++                        <div class="text-left sm:text-right bg-gray-50 px-5 py-3 rounded-2xl border border-gray-100 w-full sm:w-auto">
++                            <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest block">Prescription Reference</span>
++                            <span class="text-base font-black text-orange-600">#RX-{{ formatRxId(prescription.id) }}</span>
++                        </div>
++                    </div>
++
++                    <!-- Patient, Doctor & Date Meta Info -->
++                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-6 text-sm bg-gray-50/60 p-6 rounded-2xl border border-gray-100">
++                        <div>
++                            <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1.5">Patient</span>
++                            <h3 class="font-bold text-gray-900 text-base">{{ prescription.patient?.name ?? 'N/A' }}</h3>
++                            <p class="text-xs text-gray-500 mt-0.5 font-medium">Phone: {{ prescription.patient?.phone ?? 'N/A' }}</p>
++                        </div>
++
++                        <div>
++                            <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1.5">Prescribed By</span>
++                            <h3 class="font-bold text-gray-900 text-base">Dr. {{ prescription.doctor?.name ?? 'N/A' }}</h3>
++                            <p class="text-xs text-orange-600 font-semibold mt-0.5">{{ prescription.doctor?.specialization ?? 'Medical Specialist' }}</p>
++                        </div>
++
++                        <div class="sm:text-right">
++                            <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">Date</span>
++                            <span class="font-bold text-gray-800 text-xs sm:text-sm">{{ formatDate(prescription.prescribed_date) }}</span>
++                        </div>
++                    </div>
++
++                    <!-- Diagnosis -->
++                    <div>
++                        <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1.5">Diagnosis</span>
++                        <p class="text-sm text-gray-800 font-medium bg-gray-50/60 border border-gray-100 rounded-xl px-4 py-3">{{ prescription.diagnosis }}</p>
++                    </div>
++
++                    <!-- Medicines Table -->
++                    <div>
++                        <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-2">Prescribed Medicines (Rx)</span>
++                        <div class="border border-gray-100 rounded-2xl overflow-hidden shadow-sm">
++                            <table class="w-full text-left border-collapse">
++                                <thead>
++                                    <tr class="bg-gray-50/80 border-b border-gray-100 text-[11px] font-bold text-gray-500 uppercase tracking-wider">
++                                        <th class="py-3 px-4">Medicine</th>
++                                        <th class="py-3 px-4">Dosage</th>
++                                        <th class="py-3 px-4">Frequency</th>
++                                        <th class="py-3 px-4">Duration</th>
++                                        <th class="py-3 px-4">Instructions</th>
++                                    </tr>
++                                </thead>
++                                <tbody class="divide-y divide-gray-100 text-xs sm:text-sm">
++                                    <tr v-for="item in prescription.items" :key="item.id">
++                                        <td class="py-3 px-4 font-bold text-gray-900">{{ item.medicine_name }}</td>
++                                        <td class="py-3 px-4 text-gray-600 font-medium">{{ item.dosage || '—' }}</td>
++                                        <td class="py-3 px-4 text-gray-600 font-medium">{{ item.frequency || '—' }}</td>
++                                        <td class="py-3 px-4 text-gray-600 font-medium">{{ item.duration || '—' }}</td>
++                                        <td class="py-3 px-4 text-gray-600 font-medium">{{ item.instructions || '—' }}</td>
++                                    </tr>
++                                </tbody>
++                            </table>
++                        </div>
++                    </div>
++
++                    <!-- Notes -->
++                    <div v-if="prescription.notes">
++                        <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1.5">Additional Notes</span>
++                        <p class="text-sm text-gray-700 font-medium bg-gray-50/60 border border-gray-100 rounded-xl px-4 py-3">{{ prescription.notes }}</p>
++                    </div>
++
++                    <!-- Footer Note / Signature -->
++                    <div class="border-t border-gray-100 pt-6 mt-8 flex flex-col sm:flex-row justify-between items-center text-xs text-gray-400 gap-6">
++                        <div class="text-center sm:text-left">
++                            <p class="font-bold text-gray-700">Take medicines as prescribed. Consult again if symptoms persist.</p>
++                            <p class="text-[11px] text-gray-400 mt-0.5">This is a computer-generated prescription.</p>
++                        </div>
++                        <div class="text-center sm:text-right min-w-[180px]">
++                            <div class="h-8 mb-1"></div>
++                            <p class="font-bold text-gray-800 border-t border-gray-300 pt-2">Doctor's Signature</p>
++                        </div>
++                    </div>
++
++                </div>
++
++            </div>
++        </div>
++    </AuthenticatedLayout>
++</template>
+diff --git a/routes/api.php b/routes/api.php
+index 28222ac..fdd46bb 100644
+--- a/routes/api.php
++++ b/routes/api.php
+@@ -10,6 +10,7 @@
+ use App\Http\Controllers\Api\ProfileController;
+ use App\Http\Controllers\Api\ReceptionistController;
+ use App\Http\Controllers\Api\ReportController;
++use App\Http\Controllers\Api\PrescriptionController;
+ 
+ use Illuminate\Http\Request;
+ use Illuminate\Support\Facades\Route;
+@@ -66,6 +67,13 @@
+     Route::delete('/bills/{bill}', [BillController::class, 'destroy']);
+     Route::get('/bills/{bill}/receipt', [BillController::class, 'receipt']);
+ 
++    // Prescription Management Routes
++    Route::get('/prescriptions', [PrescriptionController::class, 'index']);
++    Route::post('/prescriptions', [PrescriptionController::class, 'store']);
++    Route::get('/prescriptions/{prescription}', [PrescriptionController::class, 'show']);
++    Route::put('/prescriptions/{prescription}', [PrescriptionController::class, 'update']);
++    Route::delete('/prescriptions/{prescription}', [PrescriptionController::class, 'destroy']);
++
+     // Doctor Availability Routes
+     Route::get('/doctor-availabilities/{doctor_id?}', [DoctorAvailabilityController::class, 'index']);
+     Route::post('/doctor-availabilities', [DoctorAvailabilityController::class, 'store']);
+diff --git a/routes/web.php b/routes/web.php
+index 8ad74c4..7bc14c0 100644
+--- a/routes/web.php
++++ b/routes/web.php
+@@ -14,6 +14,7 @@
+ use App\Http\Controllers\BillController;
+ use App\Http\Controllers\ReportController;
+ use App\Http\Controllers\UserController;
++use App\Http\Controllers\PrescriptionController;
+ 
+ Route::middleware('auth')->group(function () {
+     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+@@ -46,6 +47,13 @@
+     Route::delete('/appointments/{appointment}', [AppointmentController::class, 'destroy'])
+         ->middleware('role:admin')->name('appointments.destroy');
+ 
++    // Prescriptions: doctor apni prescriptions likh/edit kar sakta hai, admin sab kuch,
++    // receptionist sirf list aur read-only "show" (via controller-level checks).
++    Route::resource('prescriptions', PrescriptionController::class)
++        ->only(['index', 'create', 'store', 'show', 'edit', 'update']);
++    Route::delete('/prescriptions/{prescription}', [PrescriptionController::class, 'destroy'])
++        ->middleware('role:admin')->name('prescriptions.destroy');
++
+     // 1. Index route
+     Route::get('/bills', [BillController::class, 'index'])->name('bills.index');
+ 

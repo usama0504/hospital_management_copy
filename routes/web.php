@@ -14,6 +14,7 @@ use App\Http\Controllers\AppointmentController;
 use App\Http\Controllers\BillController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\PrescriptionController;
 
 Route::middleware('auth')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
@@ -45,6 +46,13 @@ Route::middleware('auth')->group(function () {
     Route::resource('appointments', AppointmentController::class)->only(['index']);
     Route::delete('/appointments/{appointment}', [AppointmentController::class, 'destroy'])
         ->middleware('role:admin')->name('appointments.destroy');
+
+    // Prescriptions: doctor apni prescriptions likh/edit kar sakta hai, admin sab kuch,
+    // receptionist sirf list aur read-only "show" (via controller-level checks).
+    Route::resource('prescriptions', PrescriptionController::class)
+        ->only(['index', 'create', 'store', 'show', 'edit', 'update']);
+    Route::delete('/prescriptions/{prescription}', [PrescriptionController::class, 'destroy'])
+        ->middleware('role:admin')->name('prescriptions.destroy');
 
     // 1. Index route
     Route::get('/bills', [BillController::class, 'index'])->name('bills.index');

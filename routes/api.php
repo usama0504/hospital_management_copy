@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\DoctorController;
 use App\Http\Controllers\Api\ProfileController;
 use App\Http\Controllers\Api\ReceptionistController;
 use App\Http\Controllers\Api\ReportController;
+use App\Http\Controllers\Api\PrescriptionController;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -65,6 +66,13 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/bills/{bill}', [BillController::class, 'update']);
     Route::delete('/bills/{bill}', [BillController::class, 'destroy']);
     Route::get('/bills/{bill}/receipt', [BillController::class, 'receipt']);
+
+    // Prescription Management Routes
+    Route::get('/prescriptions', [PrescriptionController::class, 'index']);
+    Route::post('/prescriptions', [PrescriptionController::class, 'store']);
+    Route::get('/prescriptions/{prescription}', [PrescriptionController::class, 'show']);
+    Route::put('/prescriptions/{prescription}', [PrescriptionController::class, 'update']);
+    Route::delete('/prescriptions/{prescription}', [PrescriptionController::class, 'destroy']);
 
     // Doctor Availability Routes
     Route::get('/doctor-availabilities/{doctor_id?}', [DoctorAvailabilityController::class, 'index']);

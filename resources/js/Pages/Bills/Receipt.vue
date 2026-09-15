@@ -2,38 +2,37 @@
 import { Link } from '@inertiajs/vue3';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 
-// Controller se ane walay props (bill details including patient and doctor relations)
 const props = defineProps({
     bill: Object,
 });
 
-// Helper function to format date
 const formatDate = (dateString) => {
     if (!dateString) return '';
     const date = new Date(dateString);
     return date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
 };
 
-// Helper function to format currency amounts
 const formatCurrency = (amount) => {
     return Number(amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 };
 
-// Helper function for invoice reference ID formatting
 const formatInvoiceId = (id) => {
     return String(id).padStart(5, '0');
 };
 
-// Status background and text color mapping
 const statusColors = {
     Paid: 'bg-emerald-50 text-emerald-700 border-emerald-200',
     Pending: 'bg-amber-50 text-amber-700 border-amber-200',
     Unpaid: 'bg-rose-50 text-rose-700 border-rose-200',
 };
+
+const printPage = () => {
+    window.print();
+};
 </script>
 
 <template>
-    <!-- Print-specific styles to hide layout navigation/headers during window.print() -->
+
     <component :is="'style'">
         @media print {
             body * {
@@ -62,13 +61,12 @@ const statusColors = {
         <div class="py-6 sm:py-8">
             <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
 
-                <!-- Top Actions (Back & Print Buttons - Hidden on Print) -->
                 <div class="mb-6 flex items-center justify-between print:hidden gap-4">
                     <Link :href="route('bills.index')"
                         class="inline-flex items-center gap-2 text-xs font-semibold text-gray-600 hover:text-gray-900 transition bg-white px-4 py-2.5 rounded-xl border border-gray-200 shadow-sm">
                         &larr; Back to Bills List
                     </Link>
-                    <button @click="window.print()"
+                    <button @click="printPage()"
                         class="inline-flex items-center gap-2 bg-orange-500 text-white px-5 py-2.5 rounded-xl font-bold text-xs shadow-lg shadow-orange-500/20 hover:bg-orange-600 transition">
                         <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24"
                             stroke="currentColor">
@@ -79,14 +77,11 @@ const statusColors = {
                     </button>
                 </div>
 
-                <!-- Receipt Card Container (Targeted for Print) -->
                 <div id="printable-receipt"
                     class="bg-white border border-gray-100 shadow-2xl shadow-gray-100/90 rounded-3xl p-6 sm:p-12 space-y-8 relative overflow-hidden">
 
-                    <!-- Decorative Top Border Accent -->
                     <div class="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-orange-400 to-orange-600"></div>
 
-                    <!-- Hospital / Company Header -->
                     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-gray-100 pb-6 gap-4">
                         <div class="flex items-center gap-4">
                             <div class="w-14 h-14 rounded-2xl bg-orange-500 flex items-center justify-center text-white font-black text-2xl shadow-lg shadow-orange-500/30">
@@ -103,23 +98,20 @@ const statusColors = {
                         </div>
                     </div>
 
-                    <!-- Patient, Doctor & Bill Meta Info (3 Columns Grid) -->
                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-6 text-sm bg-gray-50/60 p-6 rounded-2xl border border-gray-100">
-                        <!-- Patient Info -->
+
                         <div>
                             <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1.5">Billed To Patient</span>
                             <h3 class="font-bold text-gray-900 text-base">{{ bill.patient?.name ?? 'N/A' }}</h3>
                             <p class="text-xs text-gray-500 mt-0.5 font-medium">Phone: {{ bill.patient?.phone ?? 'N/A' }}</p>
                         </div>
 
-                        <!-- Doctor Info -->
                         <div>
                             <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1.5">Consulting Doctor</span>
                             <h3 class="font-bold text-gray-900 text-base">Dr. {{ bill.doctor?.name ?? 'N/A' }}</h3>
                             <p class="text-xs text-orange-600 font-semibold mt-0.5">{{ bill.doctor?.specialization ?? 'Medical Specialist' }}</p>
                         </div>
 
-                        <!-- Date & Status Info -->
                         <div class="sm:text-right flex flex-col sm:items-end justify-between">
                             <div>
                                 <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">Issued Date</span>
@@ -136,7 +128,6 @@ const statusColors = {
                         </div>
                     </div>
 
-                    <!-- Line Items Table -->
                     <div class="border border-gray-100 rounded-2xl overflow-hidden shadow-sm">
                         <table class="w-full text-left border-collapse">
                             <thead>
@@ -159,7 +150,6 @@ const statusColors = {
                         </table>
                     </div>
 
-                    <!-- Total Summary Section -->
                     <div class="flex justify-end pt-2">
                         <div class="w-full sm:w-80 space-y-3 bg-gray-50/80 p-5 rounded-2xl border border-gray-100 shadow-sm">
                             <div class="flex justify-between text-xs text-gray-500 font-semibold">
@@ -177,7 +167,6 @@ const statusColors = {
                         </div>
                     </div>
 
-                    <!-- Footer Note / Signature -->
                     <div class="border-t border-gray-100 pt-6 mt-8 flex flex-col sm:flex-row justify-between items-center text-xs text-gray-400 gap-6">
                         <div class="text-center sm:text-left">
                             <p class="font-bold text-gray-700">Thank you for trusting Health Care services.</p>
