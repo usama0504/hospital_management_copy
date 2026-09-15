@@ -6,6 +6,8 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 const props = defineProps({
     doctors: Object,
 });
+// Script section mein yeh add karein agar user ke paas doctor object hai
+const currentDoctorId = computed(() => page.props.auth?.doctor?.id || authUser.value.id);
 
 const page = usePage();
 const authUser = computed(() => page.props.auth?.user || {});
@@ -45,9 +47,8 @@ const deleteDoctor = (id) => {
                     </div>
 
                     <div class="flex items-center gap-2">
-                        <!-- Agar Doctor login hai -->
                         <template v-if="hasRole('doctor')">
-                            <Link :href="`/doctor/availability/${doctor.id}`"
+                            <Link :href="`/doctor/availability/${authUser.doctor_id || authUser.id}`"
                                 class="inline-flex items-center px-2.5 py-1 rounded-lg bg-orange-50 text-orange-600 font-bold hover:bg-orange-100 transition"
                                 title="Manage Doctor Availability">
                                 Availability

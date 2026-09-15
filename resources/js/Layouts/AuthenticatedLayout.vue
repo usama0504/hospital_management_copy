@@ -29,7 +29,7 @@ const user = page.props.auth?.user;
                         </div>
                         <span class="text-lg font-black tracking-tight text-gray-900">Health Care</span>
                     </div>
-   
+
                     <button @click="sidebarOpen = false" class="md:hidden text-gray-400 hover:text-gray-600">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -154,8 +154,13 @@ const user = page.props.auth?.user;
 
                             <div class="hidden sm:block">
                                 <p class="text-xs font-bold text-gray-900 leading-none">{{ user.name }}</p>
-                                <p class="text-[11px] text-gray-400 mt-1 capitalize font-semibold">Admin</p>
+                                <!-- Dynamic Role Check -->
+                                <p class="text-[11px] text-gray-400 mt-1 capitalize font-semibold">
+                                    {{ user.roles && user.roles.length > 0 ? (typeof user.roles[0] === 'string' ?
+                                        user.roles[0] : user.roles[0].name) : 'User' }}
+                                </p>
                             </div>
+
                         </div>
                     </div>
                 </header>
