@@ -115,11 +115,13 @@ const deleteDoctor = (id) => {
                                                 </Link>
 
                                                 <Link :href="`/doctors/${doctor.id}/edit`"
-                                                    class="font-bold text-gray-600 hover:text-orange-600 transition">
+                                                    class="inline-flex items-center text-xs font-bold text-orange-600 bg-orange-50 hover:bg-orange-100 px-3 py-1.5 rounded-lg transition">
                                                     Edit</Link>
 
                                                 <button @click="deleteDoctor(doctor.id)" type="button"
-                                                    class="font-bold text-rose-500 hover:text-rose-700 transition">Delete</button>
+                                                    class="inline-flex items-center text-xs font-bold text-rose-600 bg-rose-50 hover:bg-rose-100 px-3 py-1.5 rounded-lg transition">
+                                                    Delete
+                                                </button>
                                             </template>
                                         </td>
                                     </tr>
