@@ -34,7 +34,7 @@ Route::post('/register', [AuthController::class, 'register']);
 Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login');
 Route::post('/login', [AuthController::class, 'login']);
 
-Route::post('/logout', [AuthController::class, 'name'])->name('logout'); // ya apka logout route
+Route::post('/logout', [AuthController::class, 'logout'])->name('logout'); // ya apka logout route
 
 
 /*
@@ -50,14 +50,14 @@ Route::middleware(['auth'])->group(function () {
 
     // 2. Patient Management
     Route::get('/patients', [PatientController::class, 'index'])->name('patients.index');
-    
+
     Route::middleware('permission:manage patients')->group(function () {
         Route::get('/patients/create', [PatientController::class, 'create'])->name('patients.create');
         Route::post('/patients', [PatientController::class, 'store'])->name('patients.store');
         Route::get('/patients/{patient}/edit', [PatientController::class, 'edit'])->name('patients.edit');
         Route::put('/patients/{patient}', [PatientController::class, 'update'])->name('patients.update');
     });
-    
+
     Route::delete('/patients/{patient}', [PatientController::class, 'destroy'])
         ->middleware('role:admin')
         ->name('patients.destroy');
@@ -93,7 +93,7 @@ Route::middleware(['auth'])->group(function () {
     // 5. Prescription Management
     Route::resource('prescriptions', PrescriptionController::class)
         ->only(['index', 'create', 'store', 'show', 'edit', 'update']);
-        
+
     Route::delete('/prescriptions/{prescription}', [PrescriptionController::class, 'destroy'])
         ->middleware('role:admin')
         ->name('prescriptions.destroy');
@@ -106,7 +106,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/bills/{bill}/receipt', [BillController::class, 'receipt'])->name('bills.receipt');
     Route::get('/bills/{bill}/edit', [BillController::class, 'edit'])->name('bills.edit');
     Route::put('/bills/{bill}', [BillController::class, 'update'])->name('bills.update');
-    
+
     Route::delete('/bills/{bill}', [BillController::class, 'destroy'])
         ->middleware('role:admin')
         ->name('bills.destroy');
@@ -134,5 +134,4 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/users/{id}/approve', [UserController::class, 'approve'])->name('users.approve');
         Route::delete('/users/{id}', [UserController::class, 'destroy'])->name('users.destroy');
     });
-
 });
