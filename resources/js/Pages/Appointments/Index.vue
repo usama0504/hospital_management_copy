@@ -279,7 +279,7 @@ const strtoupperName = (name) => {
             </div>
 
             <!-- Pagination Links -->
-            <div class="mt-6 flex justify-center gap-1 flex-wrap" v-if="appointments.links">
+            <div class="mt-6 flex justify-center gap-1 flex-wrap" v-if="appointments.links > 10">
                 <template v-for="(link, key) in appointments.links" :key="key">
                     <component :is="link.url ? Link : 'span'" :href="link.url" v-html="link.label"
                         class="px-3 py-1.5 text-xs rounded-lg border transition" :class="{

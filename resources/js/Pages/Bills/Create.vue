@@ -2,16 +2,18 @@
 import { Link, useForm } from '@inertiajs/vue3';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 
-// Controller se ane walay props (patients aur doctors lists)
+// Controller se ane walay props (patients, doctors aur appointments lists)
 defineProps({
     patients: Array,
     doctors: Array,
+    appointments: Array,
 });
 
 // Inertia useForm helper initialized with default bill fields
 const form = useForm({
     patient_id: '',
     doctor_id: '',
+    appointment_id: '', // <-- Yeh field add ki gayi hai
     amount: '',
     status: 'Unpaid',
     bill_date: '',
@@ -77,6 +79,19 @@ const submit = () => {
                                 </option>
                             </select>
                             <div v-if="form.errors.doctor_id" class="text-rose-600 text-[11px] mt-1 font-semibold">{{ form.errors.doctor_id }}</div>
+                        </div>
+
+                        <!-- Appointment Selection (New Added) -->
+                        <div class="sm:col-span-2">
+                            <label for="appointment_id" class="block text-[11px] font-bold text-gray-700 uppercase tracking-wider mb-1.5">Linked Appointment (Optional)</label>
+                            <select v-model="form.appointment_id" id="appointment_id"
+                                class="w-full bg-gray-50/50 border border-gray-200 rounded-xl px-3.5 py-2.5 text-xs font-medium text-gray-700 focus:outline-none focus:bg-white focus:border-orange-500 focus:ring-2 focus:ring-orange-500/25 transition">
+                                <option value="">Select Appointment (if applicable)</option>
+                                <option v-for="appointment in appointments" :key="appointment.id" :value="appointment.id">
+                                    ID: {{ appointment.id }} — {{ appointment.appointment_date }}
+                                </option>
+                            </select>
+                            <div v-if="form.errors.appointment_id" class="text-rose-600 text-[11px] mt-1 font-semibold">{{ form.errors.appointment_id }}</div>
                         </div>
 
                         <!-- Amount Field -->
