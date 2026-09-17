@@ -47,6 +47,7 @@ const user = page.props.auth?.user;
                         </svg>
                         Dashboard
                     </Link>
+
                     <Link :href="route('appointments.index')"
                         :class="route().current('appointments.*') ? 'bg-orange-500 text-white shadow-md shadow-orange-500/20' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'"
                         class="flex items-center gap-3 px-4 py-3 rounded-xl transition">
@@ -56,6 +57,18 @@ const user = page.props.auth?.user;
                         </svg>
                         Appointment
                     </Link>
+
+                    <!-- NEW VISIT WIZARD BUTTON -->
+                    <Link :href="route('patient.visit.create')"
+                        :class="route().current('patient.visit.*') ? 'bg-orange-500 text-white shadow-md shadow-orange-500/20' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'"
+                        class="flex items-center gap-3 px-4 py-3 rounded-xl transition">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        Visit Patient Appointment
+                    </Link>
+
                     <Link :href="route('prescriptions.index')"
                         :class="route().current('prescriptions.*') ? 'bg-orange-500 text-white shadow-md shadow-orange-500/20' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'"
                         class="flex items-center gap-3 px-4 py-3 rounded-xl transition">

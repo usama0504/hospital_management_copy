@@ -16,6 +16,7 @@ use App\Http\Controllers\PrescriptionController;
 use App\Http\Controllers\DoctorAvailabilityController;
 use App\Http\Controllers\ReceptionistController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\PatientVisitController;
 
 /*
 |--------------------------------------------------------------------------
@@ -135,4 +136,9 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/users/{id}/approve', [UserController::class, 'approve'])->name('users.approve');
         Route::delete('/users/{id}', [UserController::class, 'destroy'])->name('users.destroy');
     });
+
+    Route::middleware(['auth', 'verified'])->group(function () {
+    Route::get('/patient-visit/create', [PatientVisitController::class, 'create'])->name('patient.visit.create');
+    Route::post('/patient-visit', [PatientVisitController::class, 'store'])->name('patient.visit.store');
+});
 });
