@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Doctor;
@@ -11,8 +10,9 @@ use Inertia\Inertia;
 
 class DoctorAvailabilityController extends Controller
 {
-   public function index(Request $request, $doctor_id = null)
+    public function index(Request $request, $doctor_id = null)
     {
+
         $doctor_id = $doctor_id ?? $request->query('doctor_id');
 
         $user = Auth::user();
@@ -39,25 +39,7 @@ class DoctorAvailabilityController extends Controller
             abort(403, 'Access Denied: You are not authorized to view this page.');
         }
 
-        // --- CURRENT TIME & DAY LOGIC ---
-        $currentDay = Carbon::now()->format('l'); // Aaj ka din (maslan: Thursday)
-        $currentTime = Carbon::now()->format('H:i:s'); // Current time
-
-        // Hum availabilities fetch karte waqt check lagayenge:
-        // Agar aaj ka din hai, toh sirf wohi slots ayein jinka end_time abhi se aage ka ho.
-        // Agar koi purana din hai (maslan Monday), toh woh apni marzi se dikha sakte hain ya sirf aaj ke liye filter kar sakte hain.
-        $availabilities = DoctorAvailability::where('doctor_id', $targetDoctorId)
-            ->where(function ($query) use ($currentDay, $currentTime) {
-                // Agar din aaj ka nahi hai, toh saare slots dikhao
-                $query->where('day_of_week', '!=', $currentDay)
-                      // Lekin agar din AAJ hi ka hai, toh sirf wahi slots dikhao jinka time abhi baqi hai
-                      ->orWhere(function ($q) use ($currentDay, $currentTime) {
-                          $q->where('day_of_week', $currentDay)
-                            ->where('end_time', '>', $currentTime);
-                      });
-            })
-            ->get();
-        // ----------------------------------------------------
+        $availabilities = DoctorAvailability::where('doctor_id', $targetDoctorId)->get();
 
         return Inertia::render('Doctors/Availability', [
             'availabilities' => $availabilities,
@@ -66,6 +48,7 @@ class DoctorAvailabilityController extends Controller
             'isAdmin'        => $isAdmin,
         ]);
     }
+
     public function store(Request $request)
     {
         $user = Auth::user();
