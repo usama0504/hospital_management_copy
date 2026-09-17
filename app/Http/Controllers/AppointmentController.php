@@ -5,93 +5,76 @@ namespace App\Http\Controllers;
 use App\Models\Appointment;
 use App\Models\Patient;
 use App\Models\Doctor;
+use App\Models\DoctorAvailability;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Carbon\Carbon;
 use Inertia\Inertia;
 
 class AppointmentController extends Controller
 {
-    public function index()
+    // Helper: Check if current user is a doctor and get their record
+    private function getAuthenticatedDoctor()
     {
         $user = Auth::user();
-
-        // Agar user Doctor hai, toh sirf uski apni appointments show hon
         if (method_exists($user, 'hasRole') && $user->hasRole('doctor')) {
-            $doctor = Doctor::where('email', $user->email)->first();
-
-            if ($doctor) {
-                $appointments = Appointment::where('doctor_id', $doctor->id)->with('patient', 'doctor')->latest()->paginate(10);
-            } else {
-                $appointments = collect();
-            }
-        } else {
-            // Admin ya Receptionist ke liye sab appointments show hon
-            $appointments = Appointment::with('patient', 'doctor')->latest()->paginate(10);
+            return Doctor::where('email', $user->email)->first();
         }
+        return null;
+    }
 
-        return Inertia::render('Appointments/Index', [
-            'appointments' => $appointments
-        ]);
+    public function index()
+    {
+        $doctor = $this->getAuthenticatedDoctor();
+
+        $appointments = Appointment::with(['patient', 'doctor'])
+            ->when($doctor, fn($query) => $query->where('doctor_id', $doctor->id))
+            ->latest()
+            ->paginate(10);
+
+        return Inertia::render('Appointments/Index', compact('appointments'));
     }
 
     public function create()
     {
         $patients = Patient::all();
-        $user = Auth::user();
+        $doctor = $this->getAuthenticatedDoctor();
 
-        if (method_exists($user, 'hasRole') && $user->hasRole('doctor')) {
-            $doctors = Doctor::where('email', $user->email)->get();
+        if ($doctor) {
+            $doctors = collect([$doctor]);
         } else {
-            // Sirf un doctors ko layein jinki aaj ke din availability active hai
-            $currentDay = \Carbon\Carbon::now()->format('l'); // Aaj ka din (e.g., Thursday)
-
-            $doctorIds = \App\Models\DoctorAvailability::where('day_of_week', $currentDay)
+            $currentDay = Carbon::now()->format('l');
+            $doctorIds = DoctorAvailability::where('day_of_week', $currentDay)
                 ->where('is_active', true)
                 ->pluck('doctor_id');
 
             $doctors = Doctor::whereIn('id', $doctorIds)->get();
         }
 
-        return Inertia::render('Appointments/Create', [
-            'patients' => $patients,
-            'doctors' => $doctors
-        ]);
+        return Inertia::render('Appointments/Create', compact('patients', 'doctors'));
     }
 
     public function store(Request $request)
     {
-        $user = Auth::user();
-        $doctorId = $request->doctor_id;
-
-        if (method_exists($user, 'hasRole') && $user->hasRole('doctor')) {
-            $doctor = Doctor::where('email', $user->email)->first();
-            if ($doctor) {
-                $doctorId = $doctor->id;
-            }
-        }
+        $doctor = $this->getAuthenticatedDoctor();
+        $doctorId = $doctor ? $doctor->id : $request->doctor_id;
 
         $request->validate([
             'patient_id' => 'required|exists:patients,id',
             'appointment_date' => 'required|date',
             'status' => 'required|string',
+            'doctor_id' => $doctor ? 'nullable' : 'required|exists:doctors,id',
         ]);
 
-        if (! (method_exists($user, 'hasRole') && $user->hasRole('doctor'))) {
-            $request->validate([
-                'doctor_id' => 'required|exists:doctors,id',
-            ]);
-            $doctorId = $request->doctor_id;
-        }
+        $appointmentDate = Carbon::parse($request->appointment_date);
+        $dayOfWeek = $appointmentDate->format('l');
 
-        $appointmentDate = \Carbon\Carbon::parse($request->appointment_date);
-        $dayOfWeek = $appointmentDate->format('l'); // Maslan: Monday, Tuesday, etc.
-
-        $isAvailable = \App\Models\DoctorAvailability::where('doctor_id', $doctorId)
+        $isAvailable = DoctorAvailability::where('doctor_id', $doctorId)
             ->where('day_of_week', $dayOfWeek)
             ->exists();
 
         if (!$isAvailable) {
-            return back()->withInput()->with('error', 'Doctor is not available on ' . $dayOfWeek . '!');
+            return back()->withInput()->with('error', "Doctor is not available on {$dayOfWeek}!");
         }
 
         Appointment::create([
@@ -106,13 +89,10 @@ class AppointmentController extends Controller
 
     public function edit(Appointment $appointment)
     {
-        $patients = Patient::all();
-        $doctors = Doctor::all();
-
         return Inertia::render('Appointments/Edit', [
             'appointment' => $appointment,
-            'patients' => $patients,
-            'doctors' => $doctors
+            'patients' => Patient::all(),
+            'doctors' => Doctor::all(),
         ]);
     }
 
@@ -135,5 +115,34 @@ class AppointmentController extends Controller
         $appointment->delete();
         
         return redirect()->route('appointments.index')->with('success', 'Appointment deleted successfully.');
+    }
+
+    public function calendar()
+    {
+        $doctor = $this->getAuthenticatedDoctor();
+
+        $appointments = Appointment::with(['patient', 'doctor'])
+            ->when($doctor, fn($query) => $query->where('doctor_id', $doctor->id))
+            ->get();
+
+        $statusColors = [
+            'Scheduled' => '#f59e0b',
+            'Completed' => '#10b981',
+            'Cancelled' => '#f43f5e',
+        ];
+
+        $events = $appointments->map(fn($appointment) => [
+            'id' => $appointment->id,
+            'title' => ($appointment->patient?->name ?? 'Patient') . ' — Dr. ' . ($appointment->doctor?->name ?? 'N/A'),
+            'start' => Carbon::parse($appointment->appointment_date)->toIso8601String(),
+            'color' => $statusColors[$appointment->status] ?? '#6b7280',
+            'extendedProps' => [
+                'status' => $appointment->status,
+                'patient' => $appointment->patient?->name,
+                'doctor' => $appointment->doctor?->name,
+            ],
+        ]);
+
+        return Inertia::render('Appointments/Calendar', compact('events'));
     }
 }

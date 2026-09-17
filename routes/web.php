@@ -77,6 +77,7 @@ Route::middleware(['auth'])->group(function () {
 
     // 4. Appointment Management
     Route::get('/appointments', [AppointmentController::class, 'index'])->name('appointments.index');
+    Route::get('/appointments/calendar', [AppointmentController::class, 'calendar'])->name('appointments.calendar');
 
     Route::middleware('permission:manage appointments')->group(function () {
         Route::get('/appointments/create', [AppointmentController::class, 'create'])->name('appointments.create');
