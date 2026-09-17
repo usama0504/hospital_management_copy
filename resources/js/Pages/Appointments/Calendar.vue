@@ -110,8 +110,14 @@ const goToEdit = (id) => {
                         appointments.</p>
                 </div>
                 <Link :href="route('appointments.index')"
-                    class="inline-flex items-center justify-center gap-2 bg-white text-gray-700 px-4 py-2 sm:px-5 sm:py-2.5 rounded-xl font-semibold text-xs shadow-sm border border-gray-200 hover:bg-gray-50 transition w-full sm:w-auto">
-                    List View
+                    class="inline-flex items-center justify-center gap-1.5 bg-orange-500 text-white px-6 py-3 rounded-xl font-bold text-xs hover:bg-orange-600 transition shadow-sm shadow-orange-500/20 w-full sm:w-auto">
+                    <svg class="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2.5"
+                        viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18">
+                        </path>
+                    </svg>
+                    Back Appointments
+
                 </Link>
             </div>
 
@@ -164,7 +170,7 @@ const goToEdit = (id) => {
                                     <span
                                         class="text-[10px] font-bold text-gray-400 uppercase tracking-widest block">Doctor</span>
                                     <p class="text-sm font-semibold text-gray-700">Dr. {{ selectedEvent.doctor ?? 'N/A'
-                                        }}</p>
+                                    }}</p>
                                 </div>
                                 <div>
                                     <span
