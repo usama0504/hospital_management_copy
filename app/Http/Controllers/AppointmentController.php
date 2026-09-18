@@ -23,16 +23,26 @@ class AppointmentController extends Controller
         return null;
     }
 
-    public function index()
+    public function index(Request $request)
     {
         $doctor = $this->getAuthenticatedDoctor();
+        $search = $request->input('search');
+        $status = $request->input('status');
 
         $appointments = Appointment::with(['patient', 'doctor'])
             ->when($doctor, fn($query) => $query->where('doctor_id', $doctor->id))
+            ->when($search, function ($query) use ($search) {
+                $query->whereHas('patient', fn($q) => $q->where('name', 'like', "%{$search}%"));
+            })
+            ->when($status, fn($query) => $query->where('status', $status))
             ->latest()
-            ->paginate(10);
+            ->paginate(10)
+            ->withQueryString();
 
-        return Inertia::render('Appointments/Index', compact('appointments'));
+        return Inertia::render('Appointments/Index', [
+            'appointments' => $appointments,
+            'filters' => ['search' => $search, 'status' => $status],
+        ]);
     }
 
     public function create()
@@ -68,13 +78,19 @@ class AppointmentController extends Controller
 
         $appointmentDate = Carbon::parse($request->appointment_date);
         $dayOfWeek = $appointmentDate->format('l');
+        // FIX: sirf din nahi, exact TIME bhi check karein — pehle sirf day_of_week
+        // match hota tha, jisse doctor ki working-hours se bahar bhi appointment
+        // book ho jaata tha.
+        $appointmentTime = $appointmentDate->format('H:i:s');
 
         $isAvailable = DoctorAvailability::where('doctor_id', $doctorId)
             ->where('day_of_week', $dayOfWeek)
+            ->where('start_time', '<=', $appointmentTime)
+            ->where('end_time', '>=', $appointmentTime)
             ->exists();
 
         if (!$isAvailable) {
-            return back()->withInput()->with('error', "Doctor is not available on {$dayOfWeek}!");
+            return back()->withInput()->with('error', "Doctor is not available at this time on {$dayOfWeek}. Please choose a time within their working hours.");
         }
 
         Appointment::create([
@@ -98,22 +114,24 @@ class AppointmentController extends Controller
 
     public function update(Request $request, Appointment $appointment)
     {
-        $request->validate([
+        $validated = $request->validate([
             'patient_id' => 'required|exists:patients,id',
             'doctor_id' => 'required|exists:doctors,id',
             'appointment_date' => 'required|date',
             'status' => 'required|string',
         ]);
 
-        $appointment->update($request->all());
-        
+        // FIX: $request->all() ki jagah $validated use karein — sirf allowed
+        // fields update hon, koi extra/unexpected field mass-assign na ho.
+        $appointment->update($validated);
+
         return redirect()->route('appointments.index')->with('success', 'Appointment updated successfully.');
     }
 
     public function destroy(Appointment $appointment)
     {
         $appointment->delete();
-        
+
         return redirect()->route('appointments.index')->with('success', 'Appointment deleted successfully.');
     }
 

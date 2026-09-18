@@ -29,9 +29,20 @@ class PatientController extends Controller
         return $user->hasRole($roles);
     }
 
-    public function index()
+    public function index(Request $request)
     {
         $user = Auth::user();
+        $search = $request->input('search');
+
+        $applySearch = function ($query) use ($search) {
+            if ($search) {
+                $query->where(function ($q) use ($search) {
+                    $q->where('name', 'like', "%{$search}%")
+                      ->orWhere('email', 'like', "%{$search}%")
+                      ->orWhere('phone', 'like', "%{$search}%");
+                });
+            }
+        };
 
         // Agar user Doctor hai, toh sirf uske appointment wale patients show hon
         if ($user && method_exists($user, 'hasRole') && $user->hasRole('doctor')) {
@@ -42,18 +53,26 @@ class PatientController extends Controller
                                         ->pluck('patient_id')
                                         ->unique();
 
-                $patients = Patient::whereIn('id', $patientIds)->latest()->paginate(10);
+                $patients = Patient::whereIn('id', $patientIds)
+                    ->when($search, $applySearch)
+                    ->latest()
+                    ->paginate(10)
+                    ->withQueryString();
             } else {
                 // Empty pagination instance return karein taake frontend par links() error na de
-                $patients = Patient::where('id', 0)->paginate(10);
+                $patients = Patient::where('id', 0)->paginate(10)->withQueryString();
             }
         } else {
             // Admin ya Receptionist ke liye sab patients show hon
-            $patients = Patient::latest()->paginate(10);
+            $patients = Patient::when($search, $applySearch)
+                ->latest()
+                ->paginate(10)
+                ->withQueryString();
         }
 
         return Inertia::render('Patients/Index', [
-            'patients' => $patients
+            'patients' => $patients,
+            'filters' => ['search' => $search],
         ]);
     }
 

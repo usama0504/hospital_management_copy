@@ -1,12 +1,41 @@
 <script setup>
 import { Link, router } from '@inertiajs/vue3';
+import { ref, watch } from 'vue';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 
 // Controller se ane walay props (bills data, auth info agar required ho)
 const props = defineProps({
     bills: Object,
     auth: Object, // Laravel ka auth object permissions/roles check karne ke liye agar pass ho raha ho
+    filters: Object,
 });
+
+// Search + Status filter
+const search = ref(props.filters?.search ?? '');
+const status = ref(props.filters?.status ?? '');
+let searchTimeout = null;
+
+const applyFilters = () => {
+    router.get(route('bills.index'), {
+        search: search.value || undefined,
+        status: status.value || undefined,
+    }, {
+        preserveState: true,
+        preserveScroll: true,
+        replace: true,
+    });
+};
+
+watch(search, () => {
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(applyFilters, 400);
+});
+
+watch(status, applyFilters);
+
+const clearSearch = () => {
+    search.value = '';
+};
 
 // Helper function to format date
 const formatDate = (dateString) => {
@@ -34,23 +63,53 @@ const deleteBill = (id) => {
                 <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8 gap-4">
                     <div>
                         <h2 class="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">Bills List</h2>
-                        <p class="text-xs sm:text-sm text-gray-500 font-medium mt-1">Manage and track all hospital billing records</p>
+                        <p class="text-xs sm:text-sm text-gray-500 font-medium mt-1">Manage and track all hospital
+                            billing records</p>
                     </div>
 
                     <!-- Add Bill Button (Agar user ke pas permission ho) -->
                     <div>
                         <Link :href="route('bills.create')"
                             class="inline-flex items-center justify-center bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs sm:text-sm px-5 py-3 rounded-xl shadow-lg shadow-orange-500/20 transition duration-200">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24"
+                                stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M12 4v16m8-8H4" />
                             </svg>
                             Add Bill
                         </Link>
                     </div>
                 </div>
 
+                <!-- Search + Status Filter -->
+                <div class="flex flex-col sm:flex-row gap-2.5 mb-6">
+                    <div class="relative flex-1">
+                        <svg class="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" fill="none"
+                            stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+                        </svg>
+                        <input v-model="search" type="text" placeholder="Search by patient name..."
+                            class="w-full bg-white border border-gray-200 rounded-xl pl-10 pr-9 py-2.5 text-xs font-medium text-gray-700 focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/25 transition shadow-sm" />
+                        <button v-if="search" @click="clearSearch" type="button"
+                            class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </div>
+                    <select v-model="status"
+                        class="bg-white border border-gray-200 rounded-xl px-3.5 py-2.5 text-xs font-bold text-gray-700 focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/25 transition shadow-sm sm:w-48">
+                        <option value="">All Statuses</option>
+                        <option value="Paid">Paid</option>
+                        <option value="Unpaid">Unpaid</option>
+                        <option value="Pending">Pending</option>
+                    </select>
+                </div>
+
                 <!-- Success Message Alert (Flash messages via page props agar Inertia shared mein hain) -->
-                <div v-if="$page.props.flash?.success" class="mb-6 flex items-center bg-emerald-50 border border-emerald-200 text-emerald-800 p-4 rounded-2xl text-xs sm:text-sm font-semibold shadow-sm">
+                <div v-if="$page.props.flash?.success"
+                    class="mb-6 flex items-center bg-emerald-50 border border-emerald-200 text-emerald-800 p-4 rounded-2xl text-xs sm:text-sm font-semibold shadow-sm">
                     {{ $page.props.flash.success }}
                 </div>
 
@@ -60,12 +119,19 @@ const deleteBill = (id) => {
                         <table class="min-w-full divide-y divide-gray-100 text-left">
                             <thead class="bg-gray-50/70">
                                 <tr>
-                                    <th class="py-4 px-6 text-[11px] font-bold text-gray-500 uppercase tracking-wider">Patient</th>
-                                    <th class="py-4 px-6 text-[11px] font-bold text-gray-500 uppercase tracking-wider">Doctor</th>
-                                    <th class="py-4 px-6 text-[11px] font-bold text-gray-500 uppercase tracking-wider">Amount</th>
-                                    <th class="py-4 px-6 text-[11px] font-bold text-gray-500 uppercase tracking-wider">Status</th>
-                                    <th class="py-4 px-6 text-[11px] font-bold text-gray-500 uppercase tracking-wider">Bill Date</th>
-                                    <th class="py-4 px-6 text-[11px] font-bold text-gray-500 uppercase tracking-wider text-right">Actions</th>
+                                    <th class="py-4 px-6 text-[11px] font-bold text-gray-500 uppercase tracking-wider">
+                                        Patient</th>
+                                    <th class="py-4 px-6 text-[11px] font-bold text-gray-500 uppercase tracking-wider">
+                                        Doctor</th>
+                                    <th class="py-4 px-6 text-[11px] font-bold text-gray-500 uppercase tracking-wider">
+                                        Amount</th>
+                                    <th class="py-4 px-6 text-[11px] font-bold text-gray-500 uppercase tracking-wider">
+                                        Status</th>
+                                    <th class="py-4 px-6 text-[11px] font-bold text-gray-500 uppercase tracking-wider">
+                                        Bill Date</th>
+                                    <th
+                                        class="py-4 px-6 text-[11px] font-bold text-gray-500 uppercase tracking-wider text-right">
+                                        Actions</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-gray-100 text-sm font-medium text-gray-700">
@@ -77,10 +143,13 @@ const deleteBill = (id) => {
                                         Dr. {{ bill.doctor?.name ?? 'N/A' }}
                                     </td>
                                     <td class="py-4 px-6 font-bold text-gray-900">
-                                        ${{ Number(bill.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}
+                                        ${{ Number(bill.amount).toLocaleString('en-US', {
+                                            minimumFractionDigits: 2,
+                                        maximumFractionDigits: 2 }) }}
                                     </td>
                                     <td class="py-4 px-6">
-                                        <span class="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold border"
+                                        <span
+                                            class="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold border"
                                             :class="bill.status.toLowerCase() === 'paid' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-amber-50 text-amber-700 border-amber-200'">
                                             {{ bill.status.charAt(0).toUpperCase() + bill.status.slice(1) }}
                                         </span>
@@ -89,7 +158,7 @@ const deleteBill = (id) => {
                                         {{ formatDate(bill.bill_date) }}
                                     </td>
                                     <td class="py-4 px-6 whitespace-nowrap text-right space-x-2">
-                                        
+
                                         <!-- View Receipt Button -->
                                         <Link :href="route('bills.receipt', bill.id)"
                                             class="inline-flex items-center text-xs font-bold text-sky-600 bg-sky-50 hover:bg-sky-100 px-3 py-1.5 rounded-lg transition">
@@ -119,12 +188,12 @@ const deleteBill = (id) => {
                     </div>
 
                     <!-- Pagination Links -->
-                    <div v-if="bills.links && bills.links.length > 3" class="py-4 px-6 bg-gray-50/50 border-t border-gray-100 flex justify-center">
+                    <div v-if="bills.links && bills.links.length > 3"
+                        class="py-4 px-6 bg-gray-50/50 border-t border-gray-100 flex justify-center">
                         <div class="flex flex-wrap gap-1">
                             <template v-for="(link, index) in bills.links" :key="index">
                                 <component :is="link.url ? Link : 'span'" :href="link.url" v-html="link.label"
-                                    class="px-3 py-1.5 text-xs font-bold rounded-lg border transition"
-                                    :class="[
+                                    class="px-3 py-1.5 text-xs font-bold rounded-lg border transition" :class="[
                                         link.active ? 'bg-orange-500 text-white border-orange-500 shadow-sm' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-100',
                                         !link.url ? 'opacity-50 cursor-not-allowed' : ''
                                     ]" />

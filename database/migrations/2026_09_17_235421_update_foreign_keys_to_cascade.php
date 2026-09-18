@@ -12,53 +12,49 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // 1. Pehle check karein ke agar 'bills' table mein appointment_id column nahi hai, toh add kardein
-        Schema::table('bills', function (Blueprint $table) {
-            if (!Schema::hasColumn('bills', 'appointment_id')) {
+        // 1. Bills table mein appointment_id column add karein agar already nahi hai
+        //    (ye sab drivers — sqlite aur mysql dono — pe safe hai)
+        if (!Schema::hasColumn('bills', 'appointment_id')) {
+            Schema::table('bills', function (Blueprint $table) {
                 $table->foreignId('appointment_id')->nullable()->after('patient_id');
+            });
+        }
+
+        // 2. Foreign keys ko cascade banane wala hissa SIRF MySQL/MariaDB par chalayein.
+        //    SQLite ALTER TABLE se foreign keys change karna support nahi karta,
+        //    aur information_schema.KEY_COLUMN_USAGE bhi MySQL-only hai (ye SQLite
+        //    par crash ho rahi thi). SQLite (local/dev DB) par ye migration
+        //    safely skip ho jayegi — koi error nahi aayega.
+        if (DB::connection()->getDriverName() !== 'mysql') {
+            return;
+        }
+
+        // Appointments.patient_id ki foreign key cascade banayein
+        Schema::table('appointments', function (Blueprint $table) {
+            try {
+                $table->dropForeign(['patient_id']);
+            } catch (\Throwable $e) {
+                // Foreign key exist nahi karti ya pehle se drop ho chuki — ignore karein
             }
         });
 
-        // 2. Appointments table ki foreign key update karein
         Schema::table('appointments', function (Blueprint $table) {
-            $foreignKeys = DB::select("
-                SELECT CONSTRAINT_NAME 
-                FROM information_schema.KEY_COLUMN_USAGE 
-                WHERE TABLE_SCHEMA = DATABASE() 
-                AND TABLE_NAME = 'appointments' 
-                AND COLUMN_NAME = 'patient_id' 
-                AND REFERENCED_TABLE_NAME IS NOT NULL
-            ");
-
-            foreach ($foreignKeys as $fk) {
-                try {
-                    $table->dropForeign($fk->CONSTRAINT_NAME);
-                } catch (\Throwable $e) {}
-            }
-            
             $table->foreign('patient_id')
                   ->references('id')->on('patients')
                   ->cascadeOnDelete();
         });
 
-        // 3. Bills table ki foreign keys update karein
+        // Bills ki patient_id aur appointment_id dono foreign keys cascade banayein
         Schema::table('bills', function (Blueprint $table) {
-            $foreignKeys = DB::select("
-                SELECT CONSTRAINT_NAME, COLUMN_NAME 
-                FROM information_schema.KEY_COLUMN_USAGE 
-                WHERE TABLE_SCHEMA = DATABASE() 
-                AND TABLE_NAME = 'bills' 
-                AND REFERENCED_TABLE_NAME IS NOT NULL
-            ");
+            try {
+                $table->dropForeign(['patient_id']);
+            } catch (\Throwable $e) {}
+            try {
+                $table->dropForeign(['appointment_id']);
+            } catch (\Throwable $e) {}
+        });
 
-            foreach ($foreignKeys as $fk) {
-                if (in_array($fk->COLUMN_NAME, ['patient_id', 'appointment_id'])) {
-                    try {
-                        $table->dropForeign($fk->CONSTRAINT_NAME);
-                    } catch (\Throwable $e) {}
-                }
-            }
-
+        Schema::table('bills', function (Blueprint $table) {
             $table->foreign('patient_id')
                   ->references('id')->on('patients')
                   ->cascadeOnDelete();
@@ -74,6 +70,10 @@ return new class extends Migration
      */
     public function down(): void
     {
+        if (DB::connection()->getDriverName() !== 'mysql') {
+            return;
+        }
+
         Schema::table('appointments', function (Blueprint $table) {
             try {
                 $table->dropForeign(['patient_id']);
@@ -83,6 +83,8 @@ return new class extends Migration
         Schema::table('bills', function (Blueprint $table) {
             try {
                 $table->dropForeign(['patient_id']);
+            } catch (\Throwable $e) {}
+            try {
                 $table->dropForeign(['appointment_id']);
             } catch (\Throwable $e) {}
         });

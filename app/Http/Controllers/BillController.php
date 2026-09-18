@@ -21,14 +21,25 @@ class BillController extends Controller
         }
     }
 
-    public function index()
+    public function index(Request $request)
     {
         $this->checkDoctor();
 
-        $bills = Bill::with('patient', 'doctor')->latest()->paginate(10);
+        $search = $request->input('search');
+        $status = $request->input('status');
+
+        $bills = Bill::with('patient', 'doctor')
+            ->when($search, function ($query) use ($search) {
+                $query->whereHas('patient', fn($q) => $q->where('name', 'like', "%{$search}%"));
+            })
+            ->when($status, fn($query) => $query->where('status', $status))
+            ->latest()
+            ->paginate(10)
+            ->withQueryString();
 
         return Inertia::render('Bills/Index', [
-            'bills' => $bills
+            'bills' => $bills,
+            'filters' => ['search' => $search, 'status' => $status],
         ]);
     }
 

@@ -36,7 +36,7 @@ defineProps({
                                 <span v-else class="px-2.5 py-1 bg-amber-50 text-amber-600 rounded-full font-bold capitalize">{{ bill.status }}</span>
                             </td>
                             <td class="py-4 px-6 text-xs text-gray-500">
-                                {{ bill.created_at ? new Date(bill.created_at).toLocaleDateString() : 'N/A' }}
+                                {{ bill.bill_date ? new Date(bill.bill_date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A' }}
                             </td>
                         </tr>
                     </template>

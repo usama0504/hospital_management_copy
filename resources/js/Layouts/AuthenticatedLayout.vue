@@ -6,6 +6,7 @@ const sidebarOpen = ref(false);
 
 const page = usePage();
 const user = page.props.auth?.user;
+const isDoctor = user?.roles?.some?.(r => (typeof r === 'string' ? r === 'doctor' : r?.name === 'doctor')) ?? false;
 </script>
 
 <template>
@@ -59,7 +60,7 @@ const user = page.props.auth?.user;
                     </Link>
 
                     <!-- NEW VISIT WIZARD BUTTON -->
-                    <Link :href="route('patient.visit.create')"
+                    <Link v-if="!isDoctor" :href="route('patient.visit.create')"
                         :class="route().current('patient.visit.*') ? 'bg-orange-500 text-white shadow-md shadow-orange-500/20' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'"
                         class="flex items-center gap-3 px-4 py-3 rounded-xl transition">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">

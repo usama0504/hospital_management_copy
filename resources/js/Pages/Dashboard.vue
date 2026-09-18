@@ -9,7 +9,7 @@ import TrendChartCard from '@/Components/Dashboard/TrendChartCard.vue';
 import RecentAppointmentsTable from '@/Components/Dashboard/RecentAppointmentsTable.vue';
 import RecentBillingTable from '@/Components/Dashboard/RecentBillingTable.vue';
 
-import { Line } from 'vue-chartjs';
+import { Line, Doughnut, Bar } from 'vue-chartjs';
 import {
     Chart as ChartJS,
     CategoryScale,
@@ -88,6 +88,48 @@ const trendChartOptions = {
     },
 };
 
+// NEW: Doughnut Chart — Appointment Status Breakdown (pehle ye "Patient Visit By
+// Department" ka fake hardcoded circle tha, ab real data se bana hai)
+const statusColorMap = { Scheduled: '#f59e0b', Completed: '#10b981', Cancelled: '#f43f5e' };
+const statusChartData = computed(() => {
+    const breakdown = props.statusBreakdown ?? {};
+    const labels = Object.keys(breakdown);
+    return {
+        labels,
+        datasets: [{
+            data: Object.values(breakdown),
+            backgroundColor: labels.map(l => statusColorMap[l] ?? '#6b7280'),
+            borderWidth: 0,
+        }],
+    };
+});
+const statusChartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    cutout: '68%',
+    plugins: { legend: { display: false } },
+};
+
+// NEW: Bar Chart — Doctor-wise appointment load, top 5 (pehle ye
+// "[ Bar Chart Widget Preview ]" placeholder tha, ab real data se bana hai)
+const doctorLoadChartData = computed(() => ({
+    labels: (props.doctorLoad ?? []).map(d => 'Dr. ' + d.doctor),
+    datasets: [{
+        label: 'Appointments',
+        data: (props.doctorLoad ?? []).map(d => d.total),
+        backgroundColor: '#f97316',
+        borderRadius: 6,
+        maxBarThickness: 28,
+    }],
+}));
+const doctorLoadChartOptions = {
+    indexAxis: 'y',
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: { x: { beginAtZero: true, ticks: { precision: 0 } } },
+};
+
 // Formatters
 const formatCurrency = (value) => Number(value || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const formatDate = (dateString) => dateString ? new Date(dateString).toLocaleDateString('en-GB') : 'N/A';
@@ -112,13 +154,24 @@ const formatTime = (dateString) => dateString ? new Date(dateString).toLocaleTim
 
                 <!-- Right Sidebar Column -->
                 <div class="space-y-6">
-                    <!-- Department Visits (Aap isay bhi alag component bana sakte hain) -->
+                    <!-- Appointment Status Breakdown (real Doughnut chart) -->
                     <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-                        <h3 class="text-base font-bold text-gray-800 mb-4">Patient Visit By Department</h3>
-                        <div class="flex items-center justify-center py-6">
-                            <div
-                                class="w-36 h-36 rounded-full border-[14px] border-indigo-600 border-t-rose-400 border-r-amber-400 flex items-center justify-center text-xs font-bold text-gray-600 shadow-inner">
-                                Visits
+                        <h3 class="text-base font-bold text-gray-800 mb-4">Appointment Status Breakdown</h3>
+                        <div class="flex items-center justify-center py-4">
+                            <div class="w-36 h-36">
+                                <Doughnut :data="statusChartData" :options="statusChartOptions" />
+                            </div>
+                        </div>
+                        <div class="space-y-2.5 pt-2 text-xs font-semibold">
+                            <div v-for="(count, status) in statusBreakdown" :key="status" class="flex items-center justify-between text-gray-600">
+                                <span class="flex items-center gap-2">
+                                    <span class="w-2.5 h-2.5 rounded-full" :style="{ backgroundColor: statusColorMap[status] ?? '#6b7280' }"></span>
+                                    {{ status }}
+                                </span>
+                                <span class="text-gray-900 font-bold">{{ count }}</span>
+                            </div>
+                            <div v-if="!statusBreakdown || Object.keys(statusBreakdown).length === 0" class="text-center text-gray-400 py-2">
+                                No appointment data yet.
                             </div>
                         </div>
                     </div>
@@ -163,12 +216,13 @@ const formatTime = (dateString) => dateString ? new Date(dateString).toLocaleTim
                         :formatTime="formatTime" />
                 </div>
                 <div class="space-y-6">
+                    <!-- Doctor-wise Appointment Load (real Bar chart) -->
                     <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-                        <h3 class="text-base font-bold text-gray-800 mb-4">Average Patient Visits</h3>
-                        <div
-                            class="h-44 bg-gray-50/50 rounded-xl border border-dashed border-gray-200 flex items-center justify-center text-gray-400 text-xs">
-                            [ Bar Chart Widget Preview ]
+                        <h3 class="text-base font-bold text-gray-800 mb-4">Doctor-wise Appointment Load</h3>
+                        <div class="h-44">
+                            <Bar :data="doctorLoadChartData" :options="doctorLoadChartOptions" />
                         </div>
+                        <p v-if="!doctorLoad || doctorLoad.length === 0" class="text-center text-gray-400 text-xs mt-2">No appointment data yet.</p>
                     </div>
                 </div>
             </div>
