@@ -52,10 +52,6 @@ const deletePatient = (id) => {
     }
 };
 
-const getInitial = (name) => {
-    return name ? name.charAt(0).toUpperCase() : 'P';
-};
-
 const formatDate = (dateString) => {
     if (!dateString) return '-';
     const options = { day: '2-digit', month: 'short', year: 'numeric' };
@@ -76,10 +72,10 @@ const formatDate = (dateString) => {
                             patients.</p>
                     </div>
 
-                    <!-- Add Patient Button (Admin & Receptionist dono ke liye visible) -->
+                    <!-- Add Patient Button -->
                     <div v-if="canManagePatients">
                         <Link :href="route('patients.create')"
-                            class="inline-flex items-center justify-center bg-orange-500 text-white px-4 py-2.5 rounded-xl font-bold text-xs shadow-md shadow-orange-500/20 hover:bg-orange-600 transition">
+                            class="w-full sm:w-auto inline-flex items-center justify-center bg-orange-500 text-white px-4 py-2.5 rounded-xl font-bold text-xs shadow-md shadow-orange-500/20 hover:bg-orange-600 transition">
                             <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" stroke-width="2.5"
                                 viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
@@ -117,9 +113,50 @@ const formatDate = (dateString) => {
                     <span>{{ $page.props.flash.success }}</span>
                 </div>
 
-                <!-- Table Container -->
+                <!-- Patients Data Container -->
                 <div class="bg-white border border-gray-100 shadow-sm rounded-2xl overflow-hidden">
-                    <div class="overflow-x-auto">
+
+                    <!-- Mobile View: Card Layout with Clear Labels -->
+                    <div class="block md:hidden divide-y divide-gray-100">
+                        <template v-if="patients?.data && patients.data.length > 0">
+                            <div v-for="patient in patients.data" :key="patient.id"
+                                class="p-4 space-y-3 hover:bg-gray-50/50 transition">
+                                <div class="flex items-start justify-between">
+                                    <h3 class="font-black text-gray-900 text-sm">{{ patient.name }}</h3>
+                                    <span
+                                        class="text-[11px] font-semibold bg-gray-100 text-gray-700 px-2.5 py-1 rounded-full">
+                                        DOB: {{ formatDate(patient.dob) }}
+                                    </span>
+                                </div>
+
+                                <div class="space-y-1 text-xs text-gray-600 pt-1 border-t border-gray-50">
+                                    <p><span class="font-bold text-gray-800">Email:</span> {{ patient.email }}</p>
+                                    <p><span class="font-bold text-gray-800">Phone:</span> {{ patient.phone ?? 'N/A' }}
+                                    </p>
+                                </div>
+
+                                <!-- Actions for Mobile (Centered & Equal Size) -->
+                                <div class="flex items-center justify-center gap-2.5 pt-2.5 border-t border-gray-50">
+                                    <Link v-if="canManagePatients" :href="route('patients.edit', patient.id)"
+                                        class="w-28 inline-flex items-center justify-center text-xs font-bold text-orange-600 bg-orange-50 hover:bg-orange-100 py-2 rounded-xl transition shadow-sm">
+                                        Edit
+                                    </Link>
+                                    <button v-if="isAdmin" @click="deletePatient(patient.id)" type="button"
+                                        class="w-28 inline-flex items-center justify-center text-xs font-bold text-rose-600 bg-rose-50 hover:bg-rose-100 py-2 rounded-xl transition shadow-sm">
+                                        Delete
+                                    </button>
+                                </div>
+                            </div>
+                        </template>
+                        <template v-else>
+                            <div class="py-12 text-center text-gray-400 font-medium text-xs">
+                                No patients found.
+                            </div>
+                        </template>
+                    </div>
+
+                    <!-- Desktop View: Table Layout (Centered & Equal Size Actions) -->
+                    <div class="hidden md:block overflow-x-auto">
                         <table class="min-w-full divide-y divide-gray-100 text-left">
                             <thead class="bg-gray-50/75 text-[11px] font-bold text-gray-500 uppercase tracking-wider">
                                 <tr>
@@ -127,7 +164,7 @@ const formatDate = (dateString) => {
                                     <th class="py-3.5 px-6">Email</th>
                                     <th class="py-3.5 px-6">Phone</th>
                                     <th class="py-3.5 px-6">Date of Birth</th>
-                                    <th class="py-3.5 px-6 text-right">Actions</th>
+                                    <th class="py-3.5 px-6 text-center">Actions</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-gray-100 text-xs font-medium text-gray-700">
@@ -135,31 +172,25 @@ const formatDate = (dateString) => {
                                     <tr v-for="patient in patients.data" :key="patient.id"
                                         class="hover:bg-gray-50/50 transition">
                                         <td class="py-4 px-6 font-bold text-gray-900">
-                                            <div class="flex items-center gap-3">
-                                                <div
-                                                    class="w-8 h-8 rounded-full bg-orange-100 text-orange-600 font-bold flex items-center justify-center text-xs flex-shrink-0">
-                                                    {{ getInitial(patient.name) }}
-                                                </div>
-                                                <span>{{ patient.name }}</span>
-                                            </div>
+                                            {{ patient.name }}
                                         </td>
                                         <td class="py-4 px-6 text-gray-500">{{ patient.email }}</td>
                                         <td class="py-4 px-6 text-gray-500">{{ patient.phone ?? 'N/A' }}</td>
                                         <td class="py-4 px-6 text-gray-500">
                                             {{ formatDate(patient.dob) }}
                                         </td>
-                                        <td class="py-4 px-6 text-right space-x-3 whitespace-nowrap">
-                                            <!-- Edit Button (Admin & Receptionist dono ke liye visible) -->
-                                            <Link v-if="canManagePatients" :href="route('patients.edit', patient.id)"
-                                                class="inline-flex items-center text-xs font-bold text-orange-600 bg-orange-50 hover:bg-orange-100 px-3 py-1.5 rounded-lg transition">
-                                                Edit
-                                            </Link>
-
-                                            <!-- Delete Button (Sirf Admin ke liye visible) -->
-                                            <button v-if="isAdmin" @click="deletePatient(patient.id)" type="button"
-                                                class="inline-flex items-center text-xs font-bold text-rose-600 bg-rose-50 hover:bg-rose-100 px-3 py-1.5 rounded-lg transition">
-                                                Delete
-                                            </button>
+                                        <td class="py-4 px-6 text-center whitespace-nowrap">
+                                            <div class="inline-flex items-center justify-center gap-2">
+                                                <Link v-if="canManagePatients"
+                                                    :href="route('patients.edit', patient.id)"
+                                                    class="w-24 inline-flex items-center justify-center text-xs font-bold text-orange-600 bg-orange-50 hover:bg-orange-100 py-2 rounded-xl transition shadow-sm">
+                                                    Edit
+                                                </Link>
+                                                <button v-if="isAdmin" @click="deletePatient(patient.id)" type="button"
+                                                    class="w-24 inline-flex items-center justify-center text-xs font-bold text-rose-600 bg-rose-50 hover:bg-rose-100 py-2 rounded-xl transition shadow-sm">
+                                                    Delete
+                                                </button>
+                                            </div>
                                         </td>
                                     </tr>
                                 </template>
