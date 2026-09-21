@@ -88,7 +88,9 @@ const deleteDoctor = (id) => {
                                     <th class="py-3.5 px-6">Name</th>
                                     <th class="py-3.5 px-6">Email</th>
                                     <th class="py-3.5 px-6">Phone</th>
-                                    <th class="py-3.5 px-6">Specialization</th>
+                                    <!-- <th class="py-3.5 px-6">Specialization</th> -->
+                                    <th class="py-3.5 px-6">Department</th>
+                                    <th class="py-3.5 px-6">Fee</th>
                                     <th class="py-3.5 px-6 text-right">Actions</th>
                                 </tr>
                             </thead>
@@ -98,11 +100,19 @@ const deleteDoctor = (id) => {
                                         <td class="py-4 px-6 font-bold text-gray-900">Dr. {{ doctor.name }}</td>
                                         <td class="py-4 px-6 text-gray-500">{{ doctor.email }}</td>
                                         <td class="py-4 px-6 text-gray-500">{{ doctor.phone ?? 'N/A' }}</td>
-                                        <td class="py-4 px-6">
+                                        <!-- <td class="py-4 px-6">
                                             <span
                                                 class="inline-flex items-center px-2.5 py-1 rounded-lg text-[11px] font-bold bg-orange-50 text-orange-600 border border-orange-100">
                                                 {{ doctor.specialization }}
                                             </span>
+                                        </td> -->
+
+                                        <td class="py-4 px-6 text-gray-500">
+                                            {{ doctor.department?.name ?? '—' }}
+                                        </td>
+                                        <td class="py-4 px-6 text-gray-700 font-semibold">
+                                            {{ doctor.consultation_fee ? 'Rs. ' +
+                                                Number(doctor.consultation_fee).toLocaleString() : '—' }}
                                         </td>
 
                                         <td class="py-4 px-6 text-right space-x-2">
