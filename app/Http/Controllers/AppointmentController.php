@@ -125,11 +125,7 @@ class AppointmentController extends Controller
         // FIX: $request->all() ki jagah $validated use karein — sirf allowed
         // fields update hon, koi extra/unexpected field mass-assign na ho.
         $appointment->update($validated);
-
-        if ($validated['status'] === 'Cancelled') {
-            Bill::where('appointment_id', $appointment->id)->delete();
-        }
-
+        
         return redirect()->route('appointments.index')->with('success', 'Appointment updated successfully.');
     }
 

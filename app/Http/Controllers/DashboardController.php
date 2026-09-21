@@ -15,52 +15,84 @@ class DashboardController extends Controller
     {
         $patientsCount = Patient::count();
         $doctorsCount = Doctor::count();
+
         $appointmentsCount = Appointment::where('status', '!=', 'Cancelled')->count();
+
         $operationsCount = 0;
 
-        // Real Billing Calculations from Database
-        $totalEarnings = Bill::sum('amount') ?? 0;
-        $pendingBillsCount = Bill::whereIn('status', ['Pending', 'Unpaid'])->count();
-        $paidBillsCount = Bill::where('status', 'Paid')->count();
+        $totalEarnings = Bill::where('status', 'Paid')
+            ->where(function ($query) {
+                $query->whereNull('appointment_id')
+                    ->orWhereHas('appointment', function ($query) {
+                        $query->where('status', '!=', 'Cancelled');
+                    });
+            })->sum('amount');
 
-        // Agar recent bills ki list bhi dashboard par dikhani ho
-        $recentBills = Bill::with('patient')->latest()->take(5)->get();
+        $pendingBillsCount = Bill::whereIn('status', ['Pending', 'Unpaid'])
+            ->where(function ($query) {
+                $query->whereNull('appointment_id')
+                    ->orWhereHas('appointment', function ($query) {
+                        $query->where('status', '!=', 'Cancelled');
+                    });
+            })->count();
 
-        $recentAppointments = Appointment::where('status', '!=', 'Cancelled')->with(['patient', 'doctor'])
-            ->latest()
-            ->take(5)
-            ->get();
+        $paidBillsCount = Bill::where('status', 'Paid')
+            ->where(function ($query) {
+                $query->whereNull('appointment_id')
+                    ->orWhereHas('appointment', function ($query) {
+                        $query->where('status', '!=', 'Cancelled');
+                    });
+            })->count();
+
+        $recentBills = Bill::with('patient')
+            ->where(function ($query) {
+                $query->whereNull('appointment_id')
+                    ->orWhereHas('appointment', function ($query) {
+                        $query->where('status', '!=', 'Cancelled');
+                    });
+            })->latest()->take(5)->get();
+
+        $recentAppointments = Appointment::where('status', '!=', 'Cancelled')
+            ->with(['patient', 'doctor'])->latest()->take(5)->get();
 
         $recentPatients = Patient::latest()->take(5)->get();
+
         $popularDoctors = Doctor::take(4)->get();
 
-        // Pichle 7 dinon ka appointments aur revenue trend (Line Chart ke liye)
         $trendLabels = [];
         $appointmentsTrend = [];
         $revenueTrend = [];
+
         for ($i = 6; $i >= 0; $i--) {
-            $day = Carbon::today()->subDays($i); // now() ki jagah today() use karein
+            $day = Carbon::today()->subDays($i);
+
             $trendLabels[] = $day->format('D');
-            $appointmentsTrend[] = Appointment::whereDate('appointment_date', $day->toDateString())
-                ->where('status', '!=', 'Cancelled')
-                ->count();
-            $revenueTrend[] = (float) Bill::whereDate('bill_date', $day->toDateString())->sum('amount');
+
+            $appointmentsTrend[] = Appointment::whereDate(
+                'appointment_date',
+                $day->toDateString()
+            )->where('status', '!=', 'Cancelled')->count();
+
+            $revenueTrend[] = (float) Bill::whereDate(
+                'bill_date',
+                $day->toDateString()
+            )
+                ->where('status', 'Paid')
+                ->where(function ($query) {
+                    $query->whereNull('appointment_id')
+                        ->orWhereHas('appointment', function ($query) {
+                            $query->where('status', '!=', 'Cancelled');
+                        });
+                })->sum('amount');
         }
 
-        // Appointment status breakdown (Doughnut Chart ke liye)
-        $statusBreakdown = Appointment::selectRaw('status, COUNT(*) as total')
-            ->groupBy('status')
-            ->pluck('total', 'status');
+        $statusBreakdown = Appointment::selectRaw(
+            'status, COUNT(*) as total'
+        )->groupBy('status')->pluck('total', 'status');
 
-        // Doctor-wise appointment load, top 5 (Bar Chart ke liye)
         $doctorLoad = Appointment::where('status', '!=', 'Cancelled')
-            ->selectRaw('doctor_id, COUNT(*) as total')
-            ->groupBy('doctor_id')
-            ->orderByDesc('total')
-            ->take(5)
-            ->with('doctor')
-            ->get()
-            ->map(fn($row) => [
+            ->selectRaw('doctor_id, COUNT(*) as total')->groupBy('doctor_id')->orderByDesc('total')
+            ->take(5)->with('doctor') ->get()->map(fn($row) => [
                 'doctor' => $row->doctor?->name ?? 'N/A',
                 'total' => $row->total,
             ]);
@@ -70,16 +102,20 @@ class DashboardController extends Controller
             'doctorsCount' => $doctorsCount,
             'appointmentsCount' => $appointmentsCount,
             'operationsCount' => $operationsCount,
+
             'totalEarnings' => $totalEarnings,
             'pendingBillsCount' => $pendingBillsCount,
             'paidBillsCount' => $paidBillsCount,
+
             'recentBills' => $recentBills,
             'recentAppointments' => $recentAppointments,
             'recentPatients' => $recentPatients,
             'popularDoctors' => $popularDoctors,
+
             'trendLabels' => $trendLabels,
             'appointmentsTrend' => $appointmentsTrend,
             'revenueTrend' => $revenueTrend,
+
             'statusBreakdown' => $statusBreakdown,
             'doctorLoad' => $doctorLoad,
         ]);
