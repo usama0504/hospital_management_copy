@@ -10,7 +10,7 @@ class DepartmentController extends Controller
 {
     public function index()
     {
-        $departments = Department::latest()->get();
+        $departments = Department::with('doctors')->latest()->get();
         return Inertia::render('Departments/Index', ['departments' => $departments,]);
     }
     public function create()
