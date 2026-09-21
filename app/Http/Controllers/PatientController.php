@@ -38,8 +38,8 @@ class PatientController extends Controller
             if ($search) {
                 $query->where(function ($q) use ($search) {
                     $q->where('name', 'like', "%{$search}%")
-                      ->orWhere('email', 'like', "%{$search}%")
-                      ->orWhere('phone', 'like', "%{$search}%");
+                        ->orWhere('email', 'like', "%{$search}%")
+                        ->orWhere('phone', 'like', "%{$search}%");
                 });
             }
         };
@@ -50,8 +50,9 @@ class PatientController extends Controller
 
             if ($doctor) {
                 $patientIds = Appointment::where('doctor_id', $doctor->id)
-                                        ->pluck('patient_id')
-                                        ->unique();
+                    ->where('status', '!=', 'Cancelled')
+                    ->pluck('patient_id')
+                    ->unique();
 
                 $patients = Patient::whereIn('id', $patientIds)
                     ->when($search, $applySearch)

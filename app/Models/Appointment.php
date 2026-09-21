@@ -33,4 +33,8 @@ class Appointment extends Model
     {
         return $this->hasOne(Prescription::class);
     }
+    public function bill()
+    {
+        return $this->hasOne(Bill::class);
+    }
 }

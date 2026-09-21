@@ -15,8 +15,7 @@ class DashboardController extends Controller
     {
         $patientsCount = Patient::count();
         $doctorsCount = Doctor::count();
-        $appointmentsCount = Appointment::count();
-
+        $appointmentsCount = Appointment::where('status', '!=', 'Cancelled')->count();
         $operationsCount = 0;
 
         // Real Billing Calculations from Database
@@ -27,7 +26,7 @@ class DashboardController extends Controller
         // Agar recent bills ki list bhi dashboard par dikhani ho
         $recentBills = Bill::with('patient')->latest()->take(5)->get();
 
-        $recentAppointments = Appointment::with(['patient', 'doctor'])
+        $recentAppointments = Appointment::where('status', '!=', 'Cancelled')->with(['patient', 'doctor'])
             ->latest()
             ->take(5)
             ->get();
@@ -42,7 +41,9 @@ class DashboardController extends Controller
         for ($i = 6; $i >= 0; $i--) {
             $day = Carbon::today()->subDays($i); // now() ki jagah today() use karein
             $trendLabels[] = $day->format('D');
-            $appointmentsTrend[] = Appointment::whereDate('appointment_date', $day->toDateString())->count();
+            $appointmentsTrend[] = Appointment::whereDate('appointment_date', $day->toDateString())
+                ->where('status', '!=', 'Cancelled')
+                ->count();
             $revenueTrend[] = (float) Bill::whereDate('bill_date', $day->toDateString())->sum('amount');
         }
 
@@ -52,7 +53,8 @@ class DashboardController extends Controller
             ->pluck('total', 'status');
 
         // Doctor-wise appointment load, top 5 (Bar Chart ke liye)
-        $doctorLoad = Appointment::selectRaw('doctor_id, COUNT(*) as total')
+        $doctorLoad = Appointment::where('status', '!=', 'Cancelled')
+            ->selectRaw('doctor_id, COUNT(*) as total')
             ->groupBy('doctor_id')
             ->orderByDesc('total')
             ->take(5)
