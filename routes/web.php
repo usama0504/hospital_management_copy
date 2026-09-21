@@ -17,6 +17,7 @@ use App\Http\Controllers\DoctorAvailabilityController;
 use App\Http\Controllers\ReceptionistController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\PatientVisitController;
+use App\Http\Controllers\DepartmentController;
 
 /*
 |--------------------------------------------------------------------------
@@ -123,6 +124,9 @@ Route::middleware(['auth'])->group(function () {
     // 8. Receptionist Features
     Route::get('/receptionist/today-doctors', [ReceptionistController::class, 'todayAvailability'])->name('receptionist.today');
 
+    // Departments Management
+    Route::resource('departments', DepartmentController::class)
+    ->only(['index', 'create', 'store', 'edit', 'update', 'destroy']);
 
     // 9. User Profile Management
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -138,7 +142,7 @@ Route::middleware(['auth'])->group(function () {
     });
 
     Route::middleware(['auth', 'verified'])->group(function () {
-    Route::get('/patient-visit/create', [PatientVisitController::class, 'create'])->name('patient.visit.create');
-    Route::post('/patient-visit', [PatientVisitController::class, 'store'])->name('patient.visit.store');
-});
+        Route::get('/patient-visit/create', [PatientVisitController::class, 'create'])->name('patient.visit.create');
+        Route::post('/patient-visit', [PatientVisitController::class, 'store'])->name('patient.visit.store');
+    });
 });
