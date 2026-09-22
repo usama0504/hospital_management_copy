@@ -58,7 +58,13 @@ class DashboardController extends Controller
 
         $recentPatients = Patient::latest()->take(5)->get();
 
-        $popularDoctors = Doctor::take(4)->get();
+        // FIX: Pehle ye "popular" doctors nahi the, bas pehle 4 doctors (Doctor::take(4))
+        // dikhaye ja rahe the. Ab genuinely appointment count ke hisaab se top doctors nikaalte hain.
+        $popularDoctors = Doctor::withCount('appointments')
+            ->with('department')
+            ->orderByDesc('appointments_count')
+            ->take(4)
+            ->get();
 
         $trendLabels = [];
         $appointmentsTrend = [];
@@ -99,24 +105,36 @@ class DashboardController extends Controller
             ]);
 
         $departmentStatistics = Department::with([
-            'doctors:id,department_id'
+            'doctors:id,department_id,name'
         ])
             ->withCount('doctors')
             ->get()
             ->map(function ($department) {
                 $doctorIds = $department->doctors->pluck('id');
 
-                $appointmentsCount = Appointment::whereIn(
-                    'doctor_id',
-                    $doctorIds
-                )
+                // Har doctor ke apne appointment counts nikal lein (department ke
+                // andar doctor-wise performance chart banane ke liye)
+                $appointmentCountsByDoctor = Appointment::whereIn('doctor_id', $doctorIds)
                     ->where('status', '!=', 'Cancelled')
-                    ->count();
+                    ->selectRaw('doctor_id, COUNT(*) as total')
+                    ->groupBy('doctor_id')
+                    ->pluck('total', 'doctor_id');
+
+                $doctorsBreakdown = $department->doctors->map(function ($doctor) use ($appointmentCountsByDoctor) {
+                    return [
+                        'id' => $doctor->id,
+                        'name' => $doctor->name,
+                        'appointments_count' => $appointmentCountsByDoctor[$doctor->id] ?? 0,
+                    ];
+                })->sortByDesc('appointments_count')->values();
+
+                $appointmentsCount = $doctorsBreakdown->sum('appointments_count');
 
                 return [
                     'name' => $department->name,
                     'doctors_count' => $department->doctors_count,
                     'appointments_count' => $appointmentsCount,
+                    'doctors' => $doctorsBreakdown,
                 ];
             })
             ->sortByDesc('appointments_count')

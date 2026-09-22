@@ -191,20 +191,23 @@ const formatTime = (dateString) => dateString ? new Date(dateString).toLocaleTim
                         <div class="divide-y divide-gray-100 text-sm">
                             <template v-if="popularDoctors && popularDoctors.length > 0">
                                 <div v-for="doctor in popularDoctors" :key="doctor.id"
-                                    class="px-6 py-3.5 flex items-center justify-between">
-                                    <div class="flex items-center gap-3">
+                                    class="px-6 py-3.5 flex items-center justify-between gap-3">
+                                    <div class="flex items-center gap-3 min-w-0">
                                         <div
-                                            class="w-9 h-9 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-xs">
-                                            {{ doctor.name.substring(0, 2).toUpperCase() }}
+                                            class="w-9 h-9 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center font-bold text-xs shrink-0">
+                                            {{ doctor.name?.substring(0, 2).toUpperCase() ?? 'DR' }}
                                         </div>
-                                        <div>
-                                            <p class="font-bold text-gray-900 text-xs">Dr. {{ doctor.name }}</p>
-                                            <p class="text-[11px] text-gray-400">{{ doctor.specialization ||
-                                                'Specialist' }}</p>
+                                        <div class="min-w-0">
+                                            <p class="font-bold text-gray-900 text-xs truncate">Dr. {{ doctor.name }}
+                                            </p>
+                                            <p class="text-[11px] text-gray-400 truncate">{{ doctor.department?.name ||
+                                                doctor.specialization || 'Specialist' }}</p>
                                         </div>
                                     </div>
                                     <span
-                                        class="text-[10px] font-bold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-600">Available</span>
+                                        class="text-[10px] font-bold px-2.5 py-1 rounded-full bg-orange-50 text-orange-600 shrink-0 whitespace-nowrap">
+                                        {{ doctor.appointments_count }} visits
+                                    </span>
                                 </div>
                             </template>
                             <div v-else class="p-6 text-center text-gray-400 text-xs">No doctors found in database.
@@ -213,6 +216,8 @@ const formatTime = (dateString) => dateString ? new Date(dateString).toLocaleTim
                     </div>
                 </div>
             </div>
+
+            <DepartmentStatistics :departmentStatistics="departmentStatistics" />
 
             <!-- Middle Section: Recent Appointments -->
             <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
@@ -234,14 +239,11 @@ const formatTime = (dateString) => dateString ? new Date(dateString).toLocaleTim
                 </div>
             </div>
 
-            <DepartmentStatistics :departmentStatistics="departmentStatistics" />
-
             <!-- Bottom Section: Billing -->
             <div v-if="!isDoctor" class="grid grid-cols-1 gap-6">
                 <RecentBillingTable :recentBills="recentBills" :totalEarnings="totalEarnings"
                     :formatCurrency="formatCurrency" />
             </div>
-
 
         </div>
     </AuthenticatedLayout>
