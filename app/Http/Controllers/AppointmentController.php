@@ -5,64 +5,72 @@ namespace App\Http\Controllers;
 use App\Models\Appointment;
 use App\Models\Patient;
 use App\Models\Doctor;
+use App\Models\Department;
 use App\Models\DoctorAvailability;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use App\Models\Bill;
-use Carbon\Carbon;
 use Inertia\Inertia;
 
 class AppointmentController extends Controller
 {
-    // Helper: Check if current user is a doctor and get their record
     private function getAuthenticatedDoctor()
     {
         $user = Auth::user();
-        if (method_exists($user, 'hasRole') && $user->hasRole('doctor')) {
-            return Doctor::where('email', $user->email)->first();
+
+        if (!$user || !method_exists($user, 'hasRole') || !$user->hasRole('doctor')) {
+            return null;
         }
-        return null;
+
+        return Doctor::where('email', $user->email)->first();
     }
 
     public function index(Request $request)
     {
         $doctor = $this->getAuthenticatedDoctor();
-        $search = $request->input('search');
-        $status = $request->input('status');
 
-        $appointments = Appointment::with(['patient', 'doctor'])
-            ->when($doctor, fn($query) => $query->where('doctor_id', $doctor->id))
-            ->when($search, function ($query) use ($search) {
-                $query->whereHas('patient', fn($q) => $q->where('name', 'like', "%{$search}%"));
+        $appointments = Appointment::with(['patient', 'doctor.department'])
+            ->when($doctor, function ($query) use ($doctor) {
+                $query->where('doctor_id', $doctor->id);
             })
-            ->when($status, fn($query) => $query->where('status', $status))
-            ->latest()
+            ->when($request->search, function ($query) use ($request) {
+                $query->whereHas('patient', function ($q) use ($request) {
+                    $q->where('name', 'like', '%' . $request->search . '%');
+                });
+            })
+            ->when($request->status, function ($query) use ($request) {
+                $query->where('status', $request->status);
+            })
+            ->latest('appointment_date')
             ->paginate(10)
             ->withQueryString();
 
         return Inertia::render('Appointments/Index', [
             'appointments' => $appointments,
-            'filters' => ['search' => $search, 'status' => $status],
+            'filters' => [
+                'search' => $request->search,
+                'status' => $request->status,
+            ],
         ]);
     }
 
     public function create()
     {
-        $patients = Patient::all();
         $doctor = $this->getAuthenticatedDoctor();
 
         if ($doctor) {
-            $doctors = collect([$doctor]);
+            $doctors = Doctor::with(['department', 'availabilities'])
+                ->where('id', $doctor->id)
+                ->get();
         } else {
-            $currentDay = Carbon::now()->format('l');
-            $doctorIds = DoctorAvailability::where('day_of_week', $currentDay)
-                ->where('is_active', true)
-                ->pluck('doctor_id');
-
-            $doctors = Doctor::whereIn('id', $doctorIds)->get();
+            $doctors = Doctor::with(['department', 'availabilities'])->get();
         }
 
-        return Inertia::render('Appointments/Create', compact('patients', 'doctors'));
+        return Inertia::render('Appointments/Create', [
+            'patients' => Patient::all(),
+            'departments' => Department::where('status', true)->get(),
+            'doctors' => $doctors,
+        ]);
     }
 
     public function store(Request $request)
@@ -72,26 +80,82 @@ class AppointmentController extends Controller
 
         $request->validate([
             'patient_id' => 'required|exists:patients,id',
+            'department_id' => 'required|exists:departments,id',
             'appointment_date' => 'required|date',
             'status' => 'required|string',
             'doctor_id' => $doctor ? 'nullable' : 'required|exists:doctors,id',
         ]);
 
-        $appointmentDate = Carbon::parse($request->appointment_date);
-        $dayOfWeek = $appointmentDate->format('l');
-        // FIX: sirf din nahi, exact TIME bhi check karein — pehle sirf day_of_week
-        // match hota tha, jisse doctor ki working-hours se bahar bhi appointment
-        // book ho jaata tha.
-        $appointmentTime = $appointmentDate->format('H:i:s');
+        $selectedDoctor = Doctor::findOrFail($doctorId);
 
-        $isAvailable = DoctorAvailability::where('doctor_id', $doctorId)
+        if ((int) $selectedDoctor->department_id !== (int) $request->department_id) {
+            return back()->withInput()->withErrors([
+                'doctor_id' => 'Selected doctor does not belong to this department.'
+            ]);
+        }
+
+        $appointmentStart = Carbon::parse($request->appointment_date);
+        $appointmentEnd = $appointmentStart->copy()->addMinutes(30);
+
+        if ($appointmentStart->isPast()) {
+            return back()->withInput()->withErrors([
+                'appointment_date' => 'You cannot book a past appointment time.'
+            ]);
+        }
+
+        $dayOfWeek = $appointmentStart->format('l');
+
+        $availability = DoctorAvailability::where('doctor_id', $doctorId)
             ->where('day_of_week', $dayOfWeek)
-            ->where('start_time', '<=', $appointmentTime)
-            ->where('end_time', '>=', $appointmentTime)
-            ->exists();
+            ->where('is_active', true)
+            ->first();
 
-        if (!$isAvailable) {
-            return back()->withInput()->with('error', "Doctor is not available at this time on {$dayOfWeek}. Please choose a time within their working hours.");
+        if (!$availability) {
+            return back()->withInput()->withErrors([
+                'appointment_date' => 'Doctor is not available on this day.'
+            ]);
+        }
+
+        $availabilityStart = Carbon::parse(
+            $appointmentStart->format('Y-m-d') . ' ' . $availability->start_time
+        );
+
+        $availabilityEnd = Carbon::parse(
+            $appointmentStart->format('Y-m-d') . ' ' . $availability->end_time
+        );
+
+        if (
+            $appointmentStart < $availabilityStart ||
+            $appointmentEnd > $availabilityEnd
+        ) {
+            return back()->withInput()->withErrors([
+                'appointment_date' => 'Selected time is outside the doctor\'s working hours.'
+            ]);
+        }
+
+        $minutesFromStart = $availabilityStart->diffInMinutes($appointmentStart);
+
+        if ($minutesFromStart % 30 !== 0) {
+            return back()->withInput()->withErrors([
+                'appointment_date' => 'Please select a valid 30-minute time slot.'
+            ]);
+        }
+
+        $overlap = Appointment::where('doctor_id', $doctorId)
+            ->where('status', '!=', 'Cancelled')
+            ->get()
+            ->contains(function ($existing) use ($appointmentStart, $appointmentEnd) {
+                $existingStart = Carbon::parse($existing->appointment_date);
+                $existingEnd = $existingStart->copy()->addMinutes(30);
+
+                return $appointmentStart < $existingEnd &&
+                    $appointmentEnd > $existingStart;
+            });
+
+        if ($overlap) {
+            return back()->withInput()->withErrors([
+                'appointment_date' => 'This doctor already has an appointment during this time.'
+            ]);
         }
 
         Appointment::create([
@@ -101,15 +165,24 @@ class AppointmentController extends Controller
             'status' => $request->status,
         ]);
 
-        return redirect()->route('appointments.index')->with('success', 'Appointment created successfully.');
+        return redirect()
+            ->route('appointments.index')
+            ->with('success', 'Appointment created successfully.');
     }
 
     public function edit(Appointment $appointment)
     {
+        $appointment->load('doctor');
+
+        $departments = Department::where('status', true)->get();
+
+        $doctors = Doctor::with(['department', 'availabilities'])->get();
+
         return Inertia::render('Appointments/Edit', [
             'appointment' => $appointment,
             'patients' => Patient::all(),
-            'doctors' => Doctor::all(),
+            'departments' => $departments,
+            'doctors' => $doctors,
         ]);
     }
 
@@ -117,23 +190,104 @@ class AppointmentController extends Controller
     {
         $validated = $request->validate([
             'patient_id' => 'required|exists:patients,id',
+            'department_id' => 'required|exists:departments,id',
             'doctor_id' => 'required|exists:doctors,id',
             'appointment_date' => 'required|date',
             'status' => 'required|string',
         ]);
 
-        // FIX: $request->all() ki jagah $validated use karein — sirf allowed
-        // fields update hon, koi extra/unexpected field mass-assign na ho.
-        $appointment->update($validated);
-        
-        return redirect()->route('appointments.index')->with('success', 'Appointment updated successfully.');
+        $doctor = Doctor::findOrFail($validated['doctor_id']);
+
+        if ((int) $doctor->department_id !== (int) $validated['department_id']) {
+            return back()->withInput()->withErrors([
+                'doctor_id' => 'Selected doctor does not belong to this department.'
+            ]);
+        }
+
+        $appointmentStart = Carbon::parse($validated['appointment_date']);
+        $appointmentEnd = $appointmentStart->copy()->addMinutes(30);
+
+        if ($appointmentStart->isPast()) {
+            return back()->withInput()->withErrors([
+                'appointment_date' => 'You cannot select a past appointment time.'
+            ]);
+        }
+
+        $dayOfWeek = $appointmentStart->format('l');
+
+        $availability = DoctorAvailability::where('doctor_id', $doctor->id)
+            ->where('day_of_week', $dayOfWeek)
+            ->where('is_active', true)
+            ->first();
+
+        if (!$availability) {
+            return back()->withInput()->withErrors([
+                'appointment_date' => 'Doctor is not available on this day.'
+            ]);
+        }
+
+        $availabilityStart = Carbon::parse(
+            $appointmentStart->format('Y-m-d') . ' ' . $availability->start_time
+        );
+
+        $availabilityEnd = Carbon::parse(
+            $appointmentStart->format('Y-m-d') . ' ' . $availability->end_time
+        );
+
+        if (
+            $appointmentStart < $availabilityStart ||
+            $appointmentEnd > $availabilityEnd
+        ) {
+            return back()->withInput()->withErrors([
+                'appointment_date' => 'Selected time is outside the doctor\'s working hours.'
+            ]);
+        }
+
+        $minutesFromStart = $availabilityStart->diffInMinutes($appointmentStart);
+
+        if ($minutesFromStart % 30 !== 0) {
+            return back()->withInput()->withErrors([
+                'appointment_date' => 'Please select a valid 30-minute time slot.'
+            ]);
+        }
+
+        $overlap = Appointment::where('doctor_id', $doctor->id)
+            ->where('status', '!=', 'Cancelled')
+            ->where('id', '!=', $appointment->id)
+            ->get()
+            ->contains(function ($existing) use ($appointmentStart, $appointmentEnd) {
+                $existingStart = Carbon::parse($existing->appointment_date);
+                $existingEnd = $existingStart->copy()->addMinutes(30);
+
+                return $appointmentStart < $existingEnd &&
+                    $appointmentEnd > $existingStart;
+            });
+
+        if ($overlap) {
+            return back()->withInput()->withErrors([
+                'appointment_date' => 'This doctor already has an appointment during this time.'
+            ]);
+        }
+
+        $appointment->update([
+            'patient_id' => $validated['patient_id'],
+            'doctor_id' => $validated['doctor_id'],
+            'appointment_date' => $validated['appointment_date'],
+            'status' => $validated['status'],
+        ]);
+
+        return redirect()
+            ->route('appointments.index')
+            ->with('success', 'Appointment updated successfully.');
     }
 
     public function destroy(Appointment $appointment)
     {
         $appointment->delete();
 
-        return redirect()->route('appointments.index')->with('success', 'Appointment deleted successfully.');
+        return redirect()
+            ->route('appointments.index')
+            ->with('success', 'Appointment deleted successfully.');
     }
 
     public function calendar()
@@ -141,27 +295,83 @@ class AppointmentController extends Controller
         $doctor = $this->getAuthenticatedDoctor();
 
         $appointments = Appointment::with(['patient', 'doctor'])
-            ->when($doctor, fn($query) => $query->where('doctor_id', $doctor->id))
+            ->when($doctor, function ($query) use ($doctor) {
+                $query->where('doctor_id', $doctor->id);
+            })
             ->get();
 
-        $statusColors = [
-            'Scheduled' => '#f59e0b',
-            'Completed' => '#10b981',
-            'Cancelled' => '#f43f5e',
-        ];
+        return Inertia::render('Appointments/Calendar', [
+            'appointments' => $appointments,
+        ]);
+    }
 
-        $events = $appointments->map(fn($appointment) => [
-            'id' => $appointment->id,
-            'title' => ($appointment->patient?->name ?? 'Patient') . ' — Dr. ' . ($appointment->doctor?->name ?? 'N/A'),
-            'start' => Carbon::parse($appointment->appointment_date)->toIso8601String(),
-            'color' => $statusColors[$appointment->status] ?? '#6b7280',
-            'extendedProps' => [
-                'status' => $appointment->status,
-                'patient' => $appointment->patient?->name,
-                'doctor' => $appointment->doctor?->name,
-            ],
+    public function availableSlots(Request $request)
+    {
+        $request->validate([
+            'doctor_id' => 'required|exists:doctors,id',
+            'date' => 'required|date',
+            'appointment_id' => 'nullable|exists:appointments,id',
         ]);
 
-        return Inertia::render('Appointments/Calendar', compact('events'));
+        $date = Carbon::parse($request->date);
+        $dayOfWeek = $date->format('l');
+
+        $availability = DoctorAvailability::where('doctor_id', $request->doctor_id)
+            ->where('day_of_week', $dayOfWeek)
+            ->where('is_active', true)
+            ->first();
+
+        if (!$availability) {
+            return response()->json([
+                'slots' => []
+            ]);
+        }
+
+        $start = Carbon::parse(
+            $request->date . ' ' . $availability->start_time
+        );
+
+        $end = Carbon::parse(
+            $request->date . ' ' . $availability->end_time
+        );
+
+        $appointments = Appointment::where('doctor_id', $request->doctor_id)
+            ->whereDate('appointment_date', $request->date)
+            ->where('status', '!=', 'Cancelled')
+            ->when($request->appointment_id, function ($query) use ($request) {
+                $query->where('id', '!=', $request->appointment_id);
+            })
+            ->pluck('appointment_date');
+
+        $now = Carbon::now();
+        $slots = [];
+
+        while ($start->copy()->addMinutes(30) <= $end) {
+            $slotStart = $start->copy();
+            $slotEnd = $slotStart->copy()->addMinutes(30);
+
+            if ($date->isToday() && $slotStart <= $now) {
+                $start->addMinutes(30);
+                continue;
+            }
+
+            $booked = $appointments->contains(function ($appointment) use ($slotStart, $slotEnd) {
+                $appointmentStart = Carbon::parse($appointment);
+                $appointmentEnd = $appointmentStart->copy()->addMinutes(30);
+
+                return $slotStart < $appointmentEnd &&
+                    $slotEnd > $appointmentStart;
+            });
+
+            if (!$booked) {
+                $slots[] = $slotStart->format('H:i');
+            }
+
+            $start->addMinutes(30);
+        }
+
+        return response()->json([
+            'slots' => $slots
+        ]);
     }
 }

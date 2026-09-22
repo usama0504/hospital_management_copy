@@ -6,6 +6,7 @@ use App\Models\Patient;
 use App\Models\Doctor;
 use App\Models\Appointment;
 use App\Models\Bill;
+use App\Models\Department;
 use Carbon\Carbon;
 use Inertia\Inertia;
 
@@ -92,10 +93,34 @@ class DashboardController extends Controller
 
         $doctorLoad = Appointment::where('status', '!=', 'Cancelled')
             ->selectRaw('doctor_id, COUNT(*) as total')->groupBy('doctor_id')->orderByDesc('total')
-            ->take(5)->with('doctor') ->get()->map(fn($row) => [
+            ->take(5)->with('doctor')->get()->map(fn($row) => [
                 'doctor' => $row->doctor?->name ?? 'N/A',
                 'total' => $row->total,
             ]);
+
+        $departmentStatistics = Department::with([
+            'doctors:id,department_id'
+        ])
+            ->withCount('doctors')
+            ->get()
+            ->map(function ($department) {
+                $doctorIds = $department->doctors->pluck('id');
+
+                $appointmentsCount = Appointment::whereIn(
+                    'doctor_id',
+                    $doctorIds
+                )
+                    ->where('status', '!=', 'Cancelled')
+                    ->count();
+
+                return [
+                    'name' => $department->name,
+                    'doctors_count' => $department->doctors_count,
+                    'appointments_count' => $appointmentsCount,
+                ];
+            })
+            ->sortByDesc('appointments_count')
+            ->values();
 
         return Inertia::render('Dashboard', [
             'patientsCount' => $patientsCount,
@@ -118,6 +143,7 @@ class DashboardController extends Controller
 
             'statusBreakdown' => $statusBreakdown,
             'doctorLoad' => $doctorLoad,
+            'departmentStatistics' => $departmentStatistics,
         ]);
     }
 }

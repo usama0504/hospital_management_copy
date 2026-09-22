@@ -8,6 +8,7 @@ import ActivityOverviewCards from '@/Components/Dashboard/ActivityOverviewCards.
 import TrendChartCard from '@/Components/Dashboard/TrendChartCard.vue';
 import RecentAppointmentsTable from '@/Components/Dashboard/RecentAppointmentsTable.vue';
 import RecentBillingTable from '@/Components/Dashboard/RecentBillingTable.vue';
+import DepartmentStatistics from '@/Components/Dashboard/DepartmentStatistics.vue';
 
 import { Line, Doughnut, Bar } from 'vue-chartjs';
 import {
@@ -39,6 +40,7 @@ const props = defineProps({
     revenueTrend: Array,
     statusBreakdown: Object,
     doctorLoad: Array,
+    departmentStatistics: Array,
 });
 
 // Role check computed
@@ -232,11 +234,14 @@ const formatTime = (dateString) => dateString ? new Date(dateString).toLocaleTim
                 </div>
             </div>
 
+            <DepartmentStatistics :departmentStatistics="departmentStatistics" />
+
             <!-- Bottom Section: Billing -->
             <div v-if="!isDoctor" class="grid grid-cols-1 gap-6">
                 <RecentBillingTable :recentBills="recentBills" :totalEarnings="totalEarnings"
                     :formatCurrency="formatCurrency" />
             </div>
+
 
         </div>
     </AuthenticatedLayout>

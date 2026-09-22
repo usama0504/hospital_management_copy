@@ -86,6 +86,7 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/appointments', [AppointmentController::class, 'store'])->name('appointments.store');
         Route::get('/appointments/{appointment}/edit', [AppointmentController::class, 'edit'])->name('appointments.edit');
         Route::put('/appointments/{appointment}', [AppointmentController::class, 'update'])->name('appointments.update');
+        Route::get('/appointments/available-slots', [ AppointmentController::class, 'availableSlots' ])->name('appointments.available-slots');
     });
 
     Route::delete('/appointments/{appointment}', [AppointmentController::class, 'destroy'])
@@ -119,6 +120,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/doctor/availability/{doctor_id?}', [DoctorAvailabilityController::class, 'index'])->name('doctor.availability');
     Route::post('/doctor/availability/{doctor_id?}', [DoctorAvailabilityController::class, 'store'])->name('doctor.availability.store');
     Route::delete('/doctor/availability/{id}', [DoctorAvailabilityController::class, 'destroy'])->name('doctor.availability.destroy');
+    Route::patch('/doctor/availability/{id}/toggle', [ DoctorAvailabilityController::class, 'toggle' ])->name('doctor.availability.toggle');
 
 
     // 8. Receptionist Features
