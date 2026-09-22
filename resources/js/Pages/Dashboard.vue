@@ -66,7 +66,7 @@ const trendChartData = computed(() => ({
             yAxisID: 'y',
         },
         {
-            label: 'Revenue ($)',
+            label: 'Revenue (Rs.)',
             data: props.revenueTrend ?? [],
             borderColor: '#4f46e5',
             backgroundColor: 'rgba(79,70,229,0.08)',
@@ -163,14 +163,17 @@ const formatTime = (dateString) => dateString ? new Date(dateString).toLocaleTim
                             </div>
                         </div>
                         <div class="space-y-2.5 pt-2 text-xs font-semibold">
-                            <div v-for="(count, status) in statusBreakdown" :key="status" class="flex items-center justify-between text-gray-600">
+                            <div v-for="(count, status) in statusBreakdown" :key="status"
+                                class="flex items-center justify-between text-gray-600">
                                 <span class="flex items-center gap-2">
-                                    <span class="w-2.5 h-2.5 rounded-full" :style="{ backgroundColor: statusColorMap[status] ?? '#6b7280' }"></span>
+                                    <span class="w-2.5 h-2.5 rounded-full"
+                                        :style="{ backgroundColor: statusColorMap[status] ?? '#6b7280' }"></span>
                                     {{ status }}
                                 </span>
                                 <span class="text-gray-900 font-bold">{{ count }}</span>
                             </div>
-                            <div v-if="!statusBreakdown || Object.keys(statusBreakdown).length === 0" class="text-center text-gray-400 py-2">
+                            <div v-if="!statusBreakdown || Object.keys(statusBreakdown).length === 0"
+                                class="text-center text-gray-400 py-2">
                                 No appointment data yet.
                             </div>
                         </div>
@@ -222,7 +225,9 @@ const formatTime = (dateString) => dateString ? new Date(dateString).toLocaleTim
                         <div class="h-44">
                             <Bar :data="doctorLoadChartData" :options="doctorLoadChartOptions" />
                         </div>
-                        <p v-if="!doctorLoad || doctorLoad.length === 0" class="text-center text-gray-400 text-xs mt-2">No appointment data yet.</p>
+                        <p v-if="!doctorLoad || doctorLoad.length === 0" class="text-center text-gray-400 text-xs mt-2">
+                            No
+                            appointment data yet.</p>
                     </div>
                 </div>
             </div>

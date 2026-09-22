@@ -59,7 +59,7 @@ defineProps({
             <div v-if="!isDoctor"
                 class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between">
                 <div>
-                    <p class="text-2xl font-black text-gray-900">${{ formatCurrency(totalEarnings || 0) }}</p>
+                    <p class="text-2xl font-black text-gray-900">Rs.{{ formatCurrency(totalEarnings || 0) }}</p>
                     <p class="text-xs font-semibold text-gray-400 tracking-wider uppercase mt-1">Earning</p>
                 </div>
                 <div class="w-12 h-12 rounded-xl bg-rose-50 flex items-center justify-center text-rose-500">

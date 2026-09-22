@@ -10,7 +10,8 @@ defineProps({
     <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
         <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
             <h3 class="text-base font-bold text-gray-800">Recent Billing & Payments</h3>
-            <span class="text-xs text-rose-500 font-bold">Total Earnings: ${{ formatCurrency(totalEarnings || 0) }}</span>
+            <span class="text-xs text-rose-500 font-bold">Total Earnings:Rs.{{ formatCurrency(totalEarnings || 0)
+            }}</span>
         </div>
         <div class="overflow-x-auto">
             <table class="w-full text-left border-collapse text-sm">
@@ -29,14 +30,20 @@ defineProps({
                                 {{ bill.patient?.name || 'Walk-in Patient' }}
                             </td>
                             <td class="py-4 px-6 font-extrabold text-gray-800">
-                                ${{ formatCurrency(bill.amount) }}
+                                Rs.{{ formatCurrency(bill.amount) }}
                             </td>
                             <td class="py-4 px-6 text-xs">
-                                <span v-if="bill.status && bill.status.toLowerCase() === 'paid'" class="px-2.5 py-1 bg-emerald-50 text-emerald-600 rounded-full font-bold">Paid</span>
-                                <span v-else class="px-2.5 py-1 bg-amber-50 text-amber-600 rounded-full font-bold capitalize">{{ bill.status }}</span>
+                                <span v-if="bill.status && bill.status.toLowerCase() === 'paid'"
+                                    class="px-2.5 py-1 bg-emerald-50 text-emerald-600 rounded-full font-bold">Paid</span>
+                                <span v-else
+                                    class="px-2.5 py-1 bg-amber-50 text-amber-600 rounded-full font-bold capitalize">{{
+                                        bill.status }}</span>
                             </td>
                             <td class="py-4 px-6 text-xs text-gray-500">
-                                {{ bill.bill_date ? new Date(bill.bill_date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A' }}
+                                {{ bill.bill_date ? new Date(bill.bill_date).toLocaleDateString('en-GB', {
+                                    day:
+                                        '2-digit', month: 'short', year: 'numeric'
+                                }) : 'N/A' }}
                             </td>
                         </tr>
                     </template>

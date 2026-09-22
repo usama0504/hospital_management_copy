@@ -127,9 +127,10 @@ const deleteBill = (id) => {
                         </div>
                         <div class="flex items-center justify-between pt-2.5 border-t border-gray-50">
                             <span class="text-xs font-extrabold text-gray-900">
-                                ${{ Number(bill.amount).toLocaleString('en-US', {
+                                Rs.{{ Number(bill.amount).toLocaleString('en-US', {
                                     minimumFractionDigits: 2,
-                                maximumFractionDigits: 2 }) }}
+                                    maximumFractionDigits: 2
+                                }) }}
                             </span>
                             <div class="flex items-center space-x-1.5">
                                 <!-- Receipt -->
@@ -199,9 +200,10 @@ const deleteBill = (id) => {
                                         Dr. {{ bill.doctor?.name ?? 'N/A' }}
                                     </td>
                                     <td class="py-3 px-4 font-bold text-gray-900">
-                                        ${{ Number(bill.amount).toLocaleString('en-US', {
+                                        Rs.{{ Number(bill.amount).toLocaleString('en-US', {
                                             minimumFractionDigits: 2,
-                                        maximumFractionDigits: 2 }) }}
+                                            maximumFractionDigits: 2
+                                        }) }}
                                     </td>
                                     <td class="py-3 px-4">
                                         <span
