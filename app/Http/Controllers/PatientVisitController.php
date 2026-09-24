@@ -6,8 +6,10 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use App\Models\Patient;
 use App\Models\Doctor;
+use App\Models\Department;
 use App\Models\Appointment;
 use App\Models\Bill;
+use App\Models\DoctorAvailability;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
@@ -27,7 +29,6 @@ class PatientVisitController extends Controller
     }
 
     // Wizard Form Show karne ke liye
-
     public function create()
     {
         // Agar user doctor hai toh usay access deny kar dein
@@ -35,20 +36,10 @@ class PatientVisitController extends Controller
             abort(403, 'Doctors are not authorized to create patient visits.');
         }
 
-        // Aaj ka din aur current time nikal lein
-        $currentDay = Carbon::now()->format('l'); // Maslan: Thursday
-        $currentTime = Carbon::now()->format('H:i:s'); // Maslan: 11:28:42
-
-        // Sirf wahi doctors fetch hon:
-        // 1. Jinki availability aaj ke din ho
-        // 2. Jinka end_time abhi ke current time se aage ka ho (yani waqt khatam na hua ho)
-        $doctors = Doctor::whereHas('availabilities', function ($query) use ($currentDay, $currentTime) {
-            $query->where('day_of_week', $currentDay)
-                ->where('end_time', '>', $currentTime); // Agar 11:00 baje the toh end_time 11:00 se zyada hona chahiye
-        })->get();
-
+        // AppointmentController@create jaisa hi data: department -> date -> doctor -> slots
         return Inertia::render('PatientVisit/CreateVisitWizard', [
-            'doctors' => $doctors
+            'departments' => Department::where('status', true)->get(),
+            'doctors' => Doctor::with(['department', 'availabilities'])->get(),
         ]);
     }
 
@@ -66,8 +57,9 @@ class PatientVisitController extends Controller
             'address' => 'nullable|string',
             'dob' => 'nullable|date',
 
+            'department_id' => 'required|exists:departments,id',
             'doctor_id' => 'required|exists:doctors,id',
-            'appointment_date' => 'required|date', // Yeh datetime-local format hai (e.g. 2026-09-18 14:30:00)
+            'appointment_date' => 'required|date',
             'status' => 'required|string',
 
             'amount' => 'required|numeric|min:0',
@@ -75,22 +67,72 @@ class PatientVisitController extends Controller
             'bill_date' => 'required|date',
         ]);
 
-        // --- ACCURATE TIME & DAY CHECK FOR DATETIME-LOCAL ---
-        $appointmentDateTime = Carbon::parse($validated['appointment_date']);
-        $dayOfWeek = $appointmentDateTime->format('l'); // Maslan: Thursday, Friday
-        $appointmentTime = $appointmentDateTime->format('H:i:s'); // Maslan: 14:30:00
+        // --- Appointment jaisi hi validation (AppointmentController@store) ---
+        $doctor = Doctor::findOrFail($validated['doctor_id']);
 
-        // Check karein ke doctor is din aur is exact time par available hai ya nahi
-        $isSlotAvailable = \App\Models\DoctorAvailability::where('doctor_id', $validated['doctor_id'])
+        if ((int) $doctor->department_id !== (int) $validated['department_id']) {
+            return back()->withInput()->withErrors([
+                'doctor_id' => 'Selected doctor does not belong to this department.'
+            ]);
+        }
+
+        $appointmentStart = Carbon::parse($validated['appointment_date']);
+        $appointmentEnd = $appointmentStart->copy()->addMinutes(30);
+
+        if ($appointmentStart->isPast()) {
+            return back()->withInput()->withErrors([
+                'appointment_date' => 'You cannot book a past appointment time.'
+            ]);
+        }
+
+        $dayOfWeek = $appointmentStart->format('l');
+
+        $availability = DoctorAvailability::where('doctor_id', $doctor->id)
             ->where('day_of_week', $dayOfWeek)
-            ->where('start_time', '<=', $appointmentTime)
-            ->where('end_time', '>=', $appointmentTime)
-            ->exists();
+            ->where('is_active', true)
+            ->first();
 
-        if (!$isSlotAvailable) {
-            return back()->withErrors([
-                'appointment_date' => 'Doctor is not available at this time. Please select a time within their working hours.'
-            ])->withInput();
+        if (!$availability) {
+            return back()->withInput()->withErrors([
+                'appointment_date' => 'Doctor is not available on this day.'
+            ]);
+        }
+
+        $availabilityStart = Carbon::parse(
+            $appointmentStart->format('Y-m-d') . ' ' . $availability->start_time
+        );
+
+        $availabilityEnd = Carbon::parse(
+            $appointmentStart->format('Y-m-d') . ' ' . $availability->end_time
+        );
+
+        if ($appointmentStart < $availabilityStart || $appointmentEnd > $availabilityEnd) {
+            return back()->withInput()->withErrors([
+                'appointment_date' => 'Selected time is outside the doctor\'s working hours.'
+            ]);
+        }
+
+        if ($availabilityStart->diffInMinutes($appointmentStart) % 30 !== 0) {
+            return back()->withInput()->withErrors([
+                'appointment_date' => 'Please select a valid 30-minute time slot.'
+            ]);
+        }
+
+        $overlap = Appointment::where('doctor_id', $doctor->id)
+            ->where('status', '!=', 'Cancelled')
+            ->get()
+            ->contains(function ($existing) use ($appointmentStart, $appointmentEnd) {
+                $existingStart = Carbon::parse($existing->appointment_date);
+                $existingEnd = $existingStart->copy()->addMinutes(30);
+
+                return $appointmentStart < $existingEnd &&
+                    $appointmentEnd > $existingStart;
+            });
+
+        if ($overlap) {
+            return back()->withInput()->withErrors([
+                'appointment_date' => 'This doctor already has an appointment during this time.'
+            ]);
         }
         // ----------------------------------------------------
 
@@ -101,8 +143,8 @@ class PatientVisitController extends Controller
                 'name' => $validated['name'],
                 'email' => $validated['email'],
                 'phone' => $validated['phone'],
-                'address' => $validated['address'],
-                'dob' => $validated['dob'],
+                'address' => $validated['address'] ?? null,
+                'dob' => $validated['dob'] ?? null,
             ]);
 
             $appointment = Appointment::create([

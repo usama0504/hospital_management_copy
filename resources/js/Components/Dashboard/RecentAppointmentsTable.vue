@@ -10,11 +10,32 @@ defineProps({
 
 <template>
     <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-        <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
-            <h3 class="text-base font-bold text-gray-800">Appointment Activity</h3>
+        <div class="px-4 sm:px-6 py-4 border-b border-gray-100 flex items-center justify-between gap-3">
+            <h3 class="text-sm sm:text-base font-bold text-gray-800">Appointment Activity</h3>
             <Link :href="route('appointments.index')" class="text-xs text-orange-500 font-semibold hover:underline">View All</Link>
         </div>
-        <div class="overflow-x-auto w-full">
+        <!-- Mobile: card list (table chhoti screen par side-scroll karta tha) -->
+        <div class="sm:hidden divide-y divide-gray-100">
+            <template v-if="recentAppointments && recentAppointments.length > 0">
+                <div v-for="appointment in recentAppointments" :key="appointment.id"
+                    class="px-4 py-3.5 flex items-center justify-between gap-3">
+                    <div class="min-w-0">
+                        <p class="text-sm font-bold text-gray-900 truncate">{{ appointment.patient?.name || 'N/A' }}</p>
+                        <p class="text-[11px] text-gray-500 font-medium truncate">Dr. {{ appointment.doctor?.name || 'N/A' }}</p>
+                    </div>
+                    <div class="text-right shrink-0">
+                        <p class="text-xs font-semibold text-gray-700">{{ formatDate(appointment.appointment_date) }}</p>
+                        <p class="text-[11px] text-orange-600 font-bold">{{ formatTime(appointment.appointment_date) }}</p>
+                    </div>
+                </div>
+            </template>
+            <div v-else class="px-4 py-8 text-center text-gray-400 text-sm">
+                No appointments found. Add an appointment to see it here!
+            </div>
+        </div>
+
+        <!-- Tablet / Desktop: table -->
+        <div class="hidden sm:block overflow-x-auto w-full">
             <table class="w-full text-left border-collapse text-sm">
                 <thead>
                     <tr class="bg-gray-50/60 text-gray-400 text-xs uppercase tracking-wider">

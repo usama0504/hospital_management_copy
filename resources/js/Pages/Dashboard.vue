@@ -83,10 +83,16 @@ const trendChartOptions = {
     responsive: true,
     maintainAspectRatio: false,
     interaction: { mode: 'index', intersect: false },
-    plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 11, weight: 'bold' } } } },
+    // Legend card ke header mein pehle se dikhti hai, isliye chart ke andar dobara nahi (mobile par jagah bachti hai)
+    plugins: { legend: { display: false } },
     scales: {
-        y: { type: 'linear', position: 'left', beginAtZero: true, ticks: { precision: 0 } },
-        y1: { type: 'linear', position: 'right', beginAtZero: true, grid: { drawOnChartArea: false } },
+        x: { grid: { display: false }, ticks: { font: { size: 10 }, maxRotation: 0, autoSkip: true, maxTicksLimit: 7 } },
+        y: { type: 'linear', position: 'left', beginAtZero: true, ticks: { precision: 0, font: { size: 10 } } },
+        y1: {
+            type: 'linear', position: 'right', beginAtZero: true, grid: { drawOnChartArea: false },
+            // 12000 -> 12k, taake mobile par right axis chhota rahe
+            ticks: { font: { size: 10 }, callback: (v) => (v >= 1000 ? `${v / 1000}k` : v) },
+        },
     },
 };
 
@@ -129,7 +135,10 @@ const doctorLoadChartOptions = {
     responsive: true,
     maintainAspectRatio: false,
     plugins: { legend: { display: false } },
-    scales: { x: { beginAtZero: true, ticks: { precision: 0 } } },
+    scales: {
+        x: { beginAtZero: true, ticks: { precision: 0, font: { size: 10 } } },
+        y: { ticks: { font: { size: 10 } } },
+    },
 };
 
 // Formatters
@@ -140,11 +149,11 @@ const formatTime = (dateString) => dateString ? new Date(dateString).toLocaleTim
 
 <template>
     <AuthenticatedLayout>
-        <div class="space-y-6">
+        <div class="space-y-4 sm:space-y-6 min-w-0">
 
             <!-- Top Grid -->
-            <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
-                <div class="xl:col-span-2 space-y-6">
+            <div class="grid grid-cols-1 xl:grid-cols-3 gap-4 sm:gap-6">
+                <div class="xl:col-span-2 space-y-4 sm:space-y-6 min-w-0">
                     <!-- Activity Overview Component -->
                     <ActivityOverviewCards :appointmentsCount="appointmentsCount" :operationsCount="operationsCount"
                         :patientsCount="patientsCount" :totalEarnings="totalEarnings" :isDoctor="isDoctor"
@@ -155,12 +164,12 @@ const formatTime = (dateString) => dateString ? new Date(dateString).toLocaleTim
                 </div>
 
                 <!-- Right Sidebar Column -->
-                <div class="space-y-6">
+                <div class="space-y-4 sm:space-y-6">
                     <!-- Appointment Status Breakdown (real Doughnut chart) -->
-                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                    <div class="bg-white p-4 sm:p-6 rounded-2xl shadow-sm border border-gray-100">
                         <h3 class="text-base font-bold text-gray-800 mb-4">Appointment Status Breakdown</h3>
                         <div class="flex items-center justify-center py-4">
-                            <div class="w-36 h-36">
+                            <div class="w-32 h-32 sm:w-36 sm:h-36">
                                 <Doughnut :data="statusChartData" :options="statusChartOptions" />
                             </div>
                         </div>
@@ -183,7 +192,7 @@ const formatTime = (dateString) => dateString ? new Date(dateString).toLocaleTim
 
                     <!-- Popular Doctors -->
                     <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                        <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+                        <div class="px-4 sm:px-6 py-4 border-b border-gray-100 flex items-center justify-between gap-3">
                             <h3 class="text-base font-bold text-gray-800">Popular Doctor List</h3>
                             <Link :href="route('doctors.index')"
                                 class="text-xs text-orange-500 font-semibold hover:underline">View All</Link>
@@ -191,7 +200,7 @@ const formatTime = (dateString) => dateString ? new Date(dateString).toLocaleTim
                         <div class="divide-y divide-gray-100 text-sm">
                             <template v-if="popularDoctors && popularDoctors.length > 0">
                                 <div v-for="doctor in popularDoctors" :key="doctor.id"
-                                    class="px-6 py-3.5 flex items-center justify-between gap-3">
+                                    class="px-4 sm:px-6 py-3.5 flex items-center justify-between gap-3">
                                     <div class="flex items-center gap-3 min-w-0">
                                         <div
                                             class="w-9 h-9 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center font-bold text-xs shrink-0">
@@ -220,16 +229,16 @@ const formatTime = (dateString) => dateString ? new Date(dateString).toLocaleTim
             <DepartmentStatistics :departmentStatistics="departmentStatistics" />
 
             <!-- Middle Section: Recent Appointments -->
-            <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
-                <div class="xl:col-span-2">
+            <div class="grid grid-cols-1 xl:grid-cols-3 gap-4 sm:gap-6">
+                <div class="xl:col-span-2 min-w-0">
                     <RecentAppointmentsTable :recentAppointments="recentAppointments" :formatDate="formatDate"
                         :formatTime="formatTime" />
                 </div>
-                <div class="space-y-6">
+                <div class="space-y-4 sm:space-y-6">
                     <!-- Doctor-wise Appointment Load (real Bar chart) -->
-                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                    <div class="bg-white p-4 sm:p-6 rounded-2xl shadow-sm border border-gray-100">
                         <h3 class="text-base font-bold text-gray-800 mb-4">Doctor-wise Appointment Load</h3>
-                        <div class="h-44">
+                        <div class="h-52 sm:h-44">
                             <Bar :data="doctorLoadChartData" :options="doctorLoadChartOptions" />
                         </div>
                         <p v-if="!doctorLoad || doctorLoad.length === 0" class="text-center text-gray-400 text-xs mt-2">
@@ -240,7 +249,7 @@ const formatTime = (dateString) => dateString ? new Date(dateString).toLocaleTim
             </div>
 
             <!-- Bottom Section: Billing -->
-            <div v-if="!isDoctor" class="grid grid-cols-1 gap-6">
+            <div v-if="!isDoctor" class="grid grid-cols-1 gap-4 sm:gap-6">
                 <RecentBillingTable :recentBills="recentBills" :totalEarnings="totalEarnings"
                     :formatCurrency="formatCurrency" />
             </div>

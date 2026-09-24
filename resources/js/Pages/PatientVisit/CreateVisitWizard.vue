@@ -1,14 +1,13 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue';
-import { Link, useForm, usePage } from '@inertiajs/vue3';
+import { ref, computed, watch } from 'vue';
+import { Link, useForm } from '@inertiajs/vue3';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
+import axios from 'axios';
 
 const props = defineProps({
+    departments: Array,
     doctors: Array,
 });
-
-const page = usePage();
-const authUser = page.props.auth?.user;
 
 const currentStep = ref(1);
 
@@ -21,6 +20,7 @@ const form = useForm({
     phone: '',
     address: '',
     dob: '',
+    department_id: '',
     doctor_id: '',
     appointment_date: '',
     status: 'Scheduled',
@@ -29,15 +29,78 @@ const form = useForm({
     bill_date: new Date().toISOString().split('T')[0], // Default today
 });
 
-// Agar logged-in user doctor hai, toh uska record match karke automatically select karlein
-onMounted(() => {
-    if (authUser && props.doctors) {
-        const matchedDoctor = props.doctors.find(d => d.user_id === authUser.id || d.email === authUser.email);
-        if (matchedDoctor) {
-            form.doctor_id = matchedDoctor.id;
-        }
-    }
+// --- Appointment page jaisa hi logic: department -> date -> doctor -> slots ---
+const appointmentDate = ref('');
+const availableSlots = ref([]);
+const loadingSlots = ref(false);
+
+const getSelectedDay = () => {
+    if (!appointmentDate.value) return '';
+    return new Date(appointmentDate.value + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long' });
+};
+
+const filteredDoctors = computed(() => {
+    if (!form.department_id || !appointmentDate.value) return [];
+    const selectedDay = getSelectedDay();
+
+    return props.doctors.filter(doctor => {
+        const sameDepartment = String(doctor.department_id) === String(form.department_id);
+        const availableThatDay = doctor.availabilities?.some(
+            a => a.day_of_week === selectedDay && a.is_active
+        );
+        return sameDepartment && availableThatDay;
+    });
 });
+
+const resetSelection = () => {
+    form.doctor_id = '';
+    form.appointment_date = '';
+    availableSlots.value = [];
+};
+
+const loadSlots = async () => {
+    if (!form.doctor_id || !appointmentDate.value) {
+        availableSlots.value = [];
+        return;
+    }
+
+    loadingSlots.value = true;
+    try {
+        const response = await axios.get(route('appointments.available-slots'), {
+            params: { doctor_id: form.doctor_id, date: appointmentDate.value },
+        });
+        availableSlots.value = response.data.slots;
+    } catch (error) {
+        console.error(error);
+        availableSlots.value = [];
+    } finally {
+        loadingSlots.value = false;
+    }
+};
+
+const selectSlot = (slot) => {
+    form.appointment_date = `${appointmentDate.value}T${slot}`;
+};
+
+const formatSlot = (slot) => {
+    if (!slot) return '';
+    const [hour, minute] = slot.split(':');
+    const date = new Date();
+    date.setHours(hour, minute, 0);
+    return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+};
+
+const selectedDoctor = computed(() =>
+    props.doctors.find(d => String(d.id) === String(form.doctor_id)) || null
+);
+
+// Doctor select hote hi uski consultation fee bill amount mein auto-fill ho jaye
+// (amount phir bhi Step 3 mein edit ki ja sakti hai)
+watch(() => form.doctor_id, () => {
+    form.amount = selectedDoctor.value ? selectedDoctor.value.consultation_fee ?? '' : '';
+    if (form.doctor_id && appointmentDate.value) loadSlots();
+});
+// ---------------------------------------------------------------------------
 
 // Step-wise Validation logic
 const nextStep = () => {
@@ -48,8 +111,10 @@ const nextStep = () => {
         if (!form.phone) form.setError('phone', 'The phone number field is required.');
     }
     else if (currentStep.value === 2) {
-        if (!form.doctor_id) form.setError('doctor_id', 'Please select a consulting doctor.');
-        if (!form.appointment_date) form.setError('appointment_date', 'The appointment date & time is required.');
+        if (!form.department_id) form.setError('department_id', 'Please select a department.');
+        if (!appointmentDate.value) form.setError('appointment_date', 'Please select an appointment date.');
+        else if (!form.doctor_id) form.setError('doctor_id', 'Please select a consulting doctor.');
+        else if (!form.appointment_date) form.setError('appointment_date', 'Please select an available time slot.');
     }
     else if (currentStep.value === 3) {
         if (!form.amount) form.setError('amount', 'The billing amount is required.');
@@ -78,6 +143,10 @@ const submit = () => {
 
     form.post(route('patient.visit.store'), {
         preserveScroll: true,
+        onError: (errors) => {
+            if (errors.department_id || errors.doctor_id || errors.appointment_date) currentStep.value = 2;
+            else if (errors.name || errors.email || errors.phone || errors.dob || errors.address) currentStep.value = 1;
+        },
     });
 };
 </script>
@@ -203,26 +272,78 @@ const submit = () => {
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
                                 <label
-                                    class="block text-[11px] font-bold text-gray-700 uppercase tracking-wider mb-1.5">Consulting
-                                    Doctor</label>
-                                <select v-model="form.doctor_id"
-                                    class="w-full bg-gray-50/50 border border-gray-200 rounded-xl px-3.5 py-2.5 text-xs font-medium text-gray-700 focus:outline-none focus:bg-white focus:border-orange-500 focus:ring-2 focus:ring-orange-500/25 transition">
-                                    <option value="">Select Doctor</option>
-                                    <option v-for="doctor in doctors" :key="doctor.id" :value="doctor.id">Dr. {{
-                                        doctor.name }}</option>
+                                    class="block text-[11px] font-bold text-gray-700 uppercase tracking-wider mb-1.5">Department</label>
+                                <select v-model="form.department_id" @change="resetSelection"
+                                    class="w-full bg-gray-50/50 border border-gray-200 rounded-xl px-3.5 py-2.5 text-xs font-medium text-gray-700 focus:outline-none focus:bg-white focus:border-orange-500 focus:ring-2 focus:ring-orange-500/25 transition disabled:opacity-60">
+                                    <option value="">Select Department</option>
+                                    <option v-for="department in departments" :key="department.id"
+                                        :value="department.id">
+                                        {{ department.name }}
+                                    </option>
                                 </select>
-                                <div v-if="form.errors.doctor_id" class="text-rose-500 text-[10px] mt-1 font-semibold">
-                                    {{ form.errors.doctor_id }}</div>
+                                <div v-if="form.errors.department_id"
+                                    class="text-rose-500 text-[10px] mt-1 font-semibold">{{ form.errors.department_id }}
+                                </div>
                             </div>
                             <div>
                                 <label
                                     class="block text-[11px] font-bold text-gray-700 uppercase tracking-wider mb-1.5">Appointment
-                                    Date & Time</label>
-                                <input type="datetime-local" v-model="form.appointment_date"
-                                    class="w-full bg-gray-50/50 border border-gray-200 rounded-xl px-3.5 py-2.5 text-xs font-medium text-gray-700 focus:outline-none focus:bg-white focus:border-orange-500 focus:ring-2 focus:ring-orange-500/25 transition" />
-                                <div v-if="form.errors.appointment_date"
+                                    Date</label>
+                                <input type="date" v-model="appointmentDate" @change="resetSelection"
+                                    class="w-full bg-gray-50/50 border border-gray-200 rounded-xl px-3.5 py-2.5 text-xs font-medium text-gray-700 focus:outline-none focus:bg-white focus:border-orange-500 focus:ring-2 focus:ring-orange-500/25 transition disabled:opacity-60" />
+                            </div>
+                            <div class="sm:col-span-2">
+                                <label
+                                    class="block text-[11px] font-bold text-gray-700 uppercase tracking-wider mb-1.5">Consulting
+                                    Doctor</label>
+                                <select v-model="form.doctor_id" :disabled="!form.department_id || !appointmentDate"
+                                    class="w-full bg-gray-50/50 border border-gray-200 rounded-xl px-3.5 py-2.5 text-xs font-medium text-gray-700 focus:outline-none focus:bg-white focus:border-orange-500 focus:ring-2 focus:ring-orange-500/25 transition disabled:opacity-60">
+                                    <option value="">Select Doctor</option>
+                                    <option v-for="doctor in filteredDoctors" :key="doctor.id" :value="doctor.id">
+                                        Dr. {{ doctor.name }}
+                                    </option>
+                                </select>
+                                <div v-if="form.department_id && appointmentDate && filteredDoctors.length === 0"
                                     class="text-rose-500 text-[10px] mt-1 font-semibold">
-                                    {{ form.errors.appointment_date }}</div>
+                                    No doctor available in this department on this day.
+                                </div>
+                                <div v-if="form.errors.doctor_id" class="text-rose-500 text-[10px] mt-1 font-semibold">
+                                    {{ form.errors.doctor_id }}</div>
+                            </div>
+                            <div class="sm:col-span-2">
+                                <label
+                                    class="block text-[11px] font-bold text-gray-700 uppercase tracking-wider mb-1.5">Available
+                                    Time Slots</label>
+                                <div v-if="loadingSlots"
+                                    class="text-xs text-gray-500 bg-gray-50 border border-gray-200 rounded-xl p-3">
+                                    Loading available slots...
+                                </div>
+                                <div v-else-if="availableSlots.length > 0" class="flex flex-wrap gap-2">
+                                    <button v-for="slot in availableSlots" :key="slot" type="button"
+                                        @click="selectSlot(slot)" :class="[
+                                            form.appointment_date === `${appointmentDate}T${slot}`
+                                                ? 'bg-orange-500 text-white border-orange-500 shadow-xs'
+                                                : 'bg-orange-50 text-orange-600 border-orange-200 hover:bg-orange-500 hover:text-white',
+                                            'px-3.5 py-1.5 rounded-lg border text-xs font-bold transition'
+                                        ]">
+                                        {{ formatSlot(slot) }}
+                                    </button>
+                                </div>
+                                <div v-else-if="form.doctor_id && appointmentDate && !loadingSlots"
+                                    class="text-xs text-rose-600 bg-rose-50 border border-rose-200 rounded-xl p-3 font-semibold">
+                                    No available time slots for this doctor.
+                                </div>
+                                <div v-else
+                                    class="text-xs text-gray-400 bg-gray-50 border border-gray-200 rounded-xl p-3">
+                                    Select department, date and doctor to see available time slots.
+                                </div>
+                                <div v-if="form.appointment_date" class="mt-2.5 text-xs text-gray-600">
+                                    Selected Appointment: <span class="font-bold text-orange-600">{{ appointmentDate }}
+                                        {{ formatSlot(form.appointment_date.split('T')[1]) }}</span>
+                                </div>
+                                <div v-if="form.errors.appointment_date"
+                                    class="text-rose-500 text-[10px] mt-1 font-semibold">{{ form.errors.appointment_date
+                                    }}</div>
                             </div>
                             <div class="sm:col-span-2">
                                 <label
@@ -244,6 +365,9 @@ const submit = () => {
                             <div>
                                 <label
                                     class="block text-[11px] font-bold text-gray-700 uppercase tracking-wider mb-1.5">Amount</label>
+                                <p v-if="selectedDoctor" class="text-[10px] text-gray-500 font-medium mb-1.5">
+                                    Dr. {{ selectedDoctor.name }}'s consultation fee is filled in automatically.
+                                </p>
                                 <input type="number" step="0.01" v-model="form.amount" inputmode="decimal"
                                     class="w-full bg-gray-50/50 border border-gray-200 rounded-xl px-3.5 py-2.5 text-xs font-medium text-gray-700 focus:outline-none focus:bg-white focus:border-orange-500 focus:ring-2 focus:ring-orange-500/25 transition"
                                     placeholder="0.00" />
