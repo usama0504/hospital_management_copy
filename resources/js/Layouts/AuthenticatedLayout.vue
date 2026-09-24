@@ -6,6 +6,7 @@ const sidebarOpen = ref(false);
 
 const page = usePage();
 const user = page.props.auth?.user;
+const isDoctor = user?.roles?.some?.(r => (typeof r === 'string' ? r === 'doctor' : r?.name === 'doctor')) ?? false;
 </script>
 
 <template>
@@ -47,6 +48,7 @@ const user = page.props.auth?.user;
                         </svg>
                         Dashboard
                     </Link>
+
                     <Link :href="route('appointments.index')"
                         :class="route().current('appointments.*') ? 'bg-orange-500 text-white shadow-md shadow-orange-500/20' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'"
                         class="flex items-center gap-3 px-4 py-3 rounded-xl transition">
@@ -56,6 +58,18 @@ const user = page.props.auth?.user;
                         </svg>
                         Appointment
                     </Link>
+
+                    <!-- NEW VISIT WIZARD BUTTON -->
+                    <Link v-if="!isDoctor" :href="route('patient.visit.create')"
+                        :class="route().current('patient.visit.*') ? 'bg-orange-500 text-white shadow-md shadow-orange-500/20' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'"
+                        class="flex items-center gap-3 px-4 py-3 rounded-xl transition">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        Visit Patient Appointment
+                    </Link>
+
                     <Link :href="route('prescriptions.index')"
                         :class="route().current('prescriptions.*') ? 'bg-orange-500 text-white shadow-md shadow-orange-500/20' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'"
                         class="flex items-center gap-3 px-4 py-3 rounded-xl transition">
@@ -91,6 +105,15 @@ const user = page.props.auth?.user;
                                 d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                         Doctors
+                    </Link>
+                    <Link :href="route('departments.index')"
+                        :class="route().current('departments.*') ? 'bg-orange-500 text-white shadow-md shadow-orange-500/20' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'"
+                        class="flex items-center gap-3 px-4 py-3 rounded-xl transition">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                d="M3.75 21V9.75m0 11.25h16.5M3.75 9.75L12 3l8.25 6.75M8.25 21v-6a1.5 1.5 0 011.5-1.5h4.5a1.5 1.5 0 011.5 1.5v6" />
+                        </svg>
+                        Departments
                     </Link>
                     <Link :href="route('patients.index')"
                         :class="route().current('patients.*') ? 'bg-orange-500 text-white shadow-md shadow-orange-500/20' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'"

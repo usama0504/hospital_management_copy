@@ -16,6 +16,8 @@ use App\Http\Controllers\PrescriptionController;
 use App\Http\Controllers\DoctorAvailabilityController;
 use App\Http\Controllers\ReceptionistController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\PatientVisitController;
+use App\Http\Controllers\DepartmentController;
 
 /*
 |--------------------------------------------------------------------------
@@ -77,12 +79,14 @@ Route::middleware(['auth'])->group(function () {
 
     // 4. Appointment Management
     Route::get('/appointments', [AppointmentController::class, 'index'])->name('appointments.index');
+    Route::get('/appointments/calendar', [AppointmentController::class, 'calendar'])->name('appointments.calendar');
 
     Route::middleware('permission:manage appointments')->group(function () {
         Route::get('/appointments/create', [AppointmentController::class, 'create'])->name('appointments.create');
         Route::post('/appointments', [AppointmentController::class, 'store'])->name('appointments.store');
         Route::get('/appointments/{appointment}/edit', [AppointmentController::class, 'edit'])->name('appointments.edit');
         Route::put('/appointments/{appointment}', [AppointmentController::class, 'update'])->name('appointments.update');
+        Route::get('/appointments/available-slots', [ AppointmentController::class, 'availableSlots' ])->name('appointments.available-slots');
     });
 
     Route::delete('/appointments/{appointment}', [AppointmentController::class, 'destroy'])
@@ -116,11 +120,17 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/doctor/availability/{doctor_id?}', [DoctorAvailabilityController::class, 'index'])->name('doctor.availability');
     Route::post('/doctor/availability/{doctor_id?}', [DoctorAvailabilityController::class, 'store'])->name('doctor.availability.store');
     Route::delete('/doctor/availability/{id}', [DoctorAvailabilityController::class, 'destroy'])->name('doctor.availability.destroy');
+    Route::patch('/doctor/availability/{id}/toggle', [ DoctorAvailabilityController::class, 'toggle' ])->name('doctor.availability.toggle');
 
 
     // 8. Receptionist Features
     Route::get('/receptionist/today-doctors', [ReceptionistController::class, 'todayAvailability'])->name('receptionist.today');
 
+    // Departments Management (Admin only)
+    Route::middleware('role:admin')->group(function () {
+        Route::resource('departments', DepartmentController::class)
+            ->only(['index', 'create', 'store', 'edit', 'update', 'destroy']);
+    });
 
     // 9. User Profile Management
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -133,5 +143,10 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/users', [UserController::class, 'index'])->name('users.index');
         Route::post('/users/{id}/approve', [UserController::class, 'approve'])->name('users.approve');
         Route::delete('/users/{id}', [UserController::class, 'destroy'])->name('users.destroy');
+    });
+
+    Route::middleware(['auth', 'verified'])->group(function () {
+        Route::get('/patient-visit/create', [PatientVisitController::class, 'create'])->name('patient.visit.create');
+        Route::post('/patient-visit', [PatientVisitController::class, 'store'])->name('patient.visit.store');
     });
 });

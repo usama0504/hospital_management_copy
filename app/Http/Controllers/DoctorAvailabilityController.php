@@ -77,13 +77,38 @@ class DoctorAvailabilityController extends Controller
             abort(403, 'Access Denied: Doctor profile not found.');
         }
 
+        $overlap = DoctorAvailability::where('doctor_id', $doctor->id)->where('day_of_week', $request->day_of_week)->where('is_active', true)->where(function ($query) use ($request) {
+            $query->where('start_time', '<', $request->end_time)->where('end_time', '>', $request->start_time);
+        })->exists();
+        if ($overlap) {
+            return back()->withErrors(['start_time' => 'This time slot overlaps with an existing shift.']);
+        }
+
         $doctor->availabilities()->create([
             'day_of_week' => $request->day_of_week,
-            'start_time'  => $request->start_time,
-            'end_time'    => $request->end_time,
+            'start_time' => $request->start_time,
+            'end_time' => $request->end_time,
+            'is_active' => true,
         ]);
 
         return back()->with('success', 'Availability slot added successfully!');
+    }
+
+    public function toggle($id)
+    {
+        $user = Auth::user();
+        $isAdmin = method_exists($user, 'hasRole') && $user->hasRole('admin');
+        $availability = DoctorAvailability::findOrFail($id);
+        if ($isAdmin) {
+            $availability->update(['is_active' => !$availability->is_active,]);
+            return back()->with('success', 'Availability status updated successfully!');
+        }
+        $doctor = Doctor::where('email', $user->email)->first();
+        if (!$doctor || $availability->doctor_id !== $doctor->id) {
+            abort(403, 'Access Denied: This is not your slot.');
+        }
+        $availability->update(['is_active' => !$availability->is_active,]);
+        return back()->with('success', 'Availability status updated successfully!');
     }
 
     public function destroy($id)

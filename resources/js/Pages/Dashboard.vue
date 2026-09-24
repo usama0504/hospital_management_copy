@@ -1,297 +1,257 @@
 <script setup>
 import { computed } from 'vue';
-import { Link, usePage } from '@inertiajs/vue3';
+import { Link } from '@inertiajs/vue3';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
+
+// Sub-components import karein
+import ActivityOverviewCards from '@/Components/Dashboard/ActivityOverviewCards.vue';
+import TrendChartCard from '@/Components/Dashboard/TrendChartCard.vue';
+import RecentAppointmentsTable from '@/Components/Dashboard/RecentAppointmentsTable.vue';
+import RecentBillingTable from '@/Components/Dashboard/RecentBillingTable.vue';
+import DepartmentStatistics from '@/Components/Dashboard/DepartmentStatistics.vue';
+
+import { Line, Doughnut, Bar } from 'vue-chartjs';
+import {
+    Chart as ChartJS,
+    CategoryScale,
+    LinearScale,
+    PointElement,
+    LineElement,
+    BarElement,
+    ArcElement,
+    Tooltip,
+    Legend,
+    Filler,
+} from 'chart.js';
+
+ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, ArcElement, Tooltip, Legend, Filler);
 
 const props = defineProps({
     auth: Object,
     appointmentsCount: Number,
     operationsCount: Number,
     patientsCount: Number,
-    totalEarnings:[Number, String],
+    totalEarnings: [Number, String],
     popularDoctors: Array,
     recentAppointments: Array,
     recentBills: Array,
+    trendLabels: Array,
+    appointmentsTrend: Array,
+    revenueTrend: Array,
+    statusBreakdown: Object,
+    doctorLoad: Array,
+    departmentStatistics: Array,
 });
 
+// Role check computed
 const isDoctor = computed(() => {
     const user = props.auth?.user;
     if (!user) return false;
-
-    if (typeof user.role === 'string') {
-        return user.role.toLowerCase() === 'doctor';
-    }
-
+    if (typeof user.role === 'string') return user.role.toLowerCase() === 'doctor';
     if (Array.isArray(user.roles)) {
-        return user.roles.some(r => 
-            (typeof r === 'string' && r.toLowerCase() === 'doctor') || 
-            (typeof r === 'object' && r !== null && r.name?.toLowerCase() === 'doctor')
-        );
+        return user.roles.some(r => (typeof r === 'string' && r.toLowerCase() === 'doctor') || (r?.name?.toLowerCase() === 'doctor'));
     }
-
-    if (typeof user.role === 'object' && user.role !== null) {
-        return user.role.name?.toLowerCase() === 'doctor';
-    }
-
-    return false;
+    return user.role?.name?.toLowerCase() === 'doctor';
 });
 
-const formatCurrency = (value) => {
-    return Number(value || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+// Line Chart Data
+const trendChartData = computed(() => ({
+    labels: props.trendLabels ?? [],
+    datasets: [
+        {
+            label: 'Appointments',
+            data: props.appointmentsTrend ?? [],
+            borderColor: '#f97316',
+            backgroundColor: 'rgba(249,115,22,0.1)',
+            tension: 0.4,
+            fill: true,
+            yAxisID: 'y',
+        },
+        {
+            label: 'Revenue (Rs.)',
+            data: props.revenueTrend ?? [],
+            borderColor: '#4f46e5',
+            backgroundColor: 'rgba(79,70,229,0.08)',
+            tension: 0.4,
+            fill: true,
+            yAxisID: 'y1',
+        },
+    ],
+}));
+
+const trendChartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    interaction: { mode: 'index', intersect: false },
+    // Legend card ke header mein pehle se dikhti hai, isliye chart ke andar dobara nahi (mobile par jagah bachti hai)
+    plugins: { legend: { display: false } },
+    scales: {
+        x: { grid: { display: false }, ticks: { font: { size: 10 }, maxRotation: 0, autoSkip: true, maxTicksLimit: 7 } },
+        y: { type: 'linear', position: 'left', beginAtZero: true, ticks: { precision: 0, font: { size: 10 } } },
+        y1: {
+            type: 'linear', position: 'right', beginAtZero: true, grid: { drawOnChartArea: false },
+            // 12000 -> 12k, taake mobile par right axis chhota rahe
+            ticks: { font: { size: 10 }, callback: (v) => (v >= 1000 ? `${v / 1000}k` : v) },
+        },
+    },
 };
 
-const formatDate = (dateString) => {
-    if (!dateString) return 'N/A';
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-GB');
+// NEW: Doughnut Chart — Appointment Status Breakdown (pehle ye "Patient Visit By
+// Department" ka fake hardcoded circle tha, ab real data se bana hai)
+const statusColorMap = { Scheduled: '#f59e0b', Completed: '#10b981', Cancelled: '#f43f5e' };
+const statusChartData = computed(() => {
+    const breakdown = props.statusBreakdown ?? {};
+    const labels = Object.keys(breakdown);
+    return {
+        labels,
+        datasets: [{
+            data: Object.values(breakdown),
+            backgroundColor: labels.map(l => statusColorMap[l] ?? '#6b7280'),
+            borderWidth: 0,
+        }],
+    };
+});
+const statusChartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    cutout: '68%',
+    plugins: { legend: { display: false } },
 };
 
-const formatTime = (dateString) => {
-    if (!dateString) return 'N/A';
-    const date = new Date(dateString);
-    return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+// NEW: Bar Chart — Doctor-wise appointment load, top 5 (pehle ye
+// "[ Bar Chart Widget Preview ]" placeholder tha, ab real data se bana hai)
+const doctorLoadChartData = computed(() => ({
+    labels: (props.doctorLoad ?? []).map(d => 'Dr. ' + d.doctor),
+    datasets: [{
+        label: 'Appointments',
+        data: (props.doctorLoad ?? []).map(d => d.total),
+        backgroundColor: '#f97316',
+        borderRadius: 6,
+        maxBarThickness: 28,
+    }],
+}));
+const doctorLoadChartOptions = {
+    indexAxis: 'y',
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+        x: { beginAtZero: true, ticks: { precision: 0, font: { size: 10 } } },
+        y: { ticks: { font: { size: 10 } } },
+    },
 };
+
+// Formatters
+const formatCurrency = (value) => Number(value || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const formatDate = (dateString) => dateString ? new Date(dateString).toLocaleDateString('en-GB') : 'N/A';
+const formatTime = (dateString) => dateString ? new Date(dateString).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }) : 'N/A';
 </script>
 
 <template>
     <AuthenticatedLayout>
-        <div class="space-y-6">
+        <div class="space-y-4 sm:space-y-6 min-w-0">
 
-            <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
-                <div class="xl:col-span-2 space-y-6">
-                    <div>
-                        <h3 class="text-base font-bold text-gray-800 mb-4">Activity Overview</h3>
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <!-- Top Grid -->
+            <div class="grid grid-cols-1 xl:grid-cols-3 gap-4 sm:gap-6">
+                <div class="xl:col-span-2 space-y-4 sm:space-y-6 min-w-0">
+                    <!-- Activity Overview Component -->
+                    <ActivityOverviewCards :appointmentsCount="appointmentsCount" :operationsCount="operationsCount"
+                        :patientsCount="patientsCount" :totalEarnings="totalEarnings" :isDoctor="isDoctor"
+                        :formatCurrency="formatCurrency" />
 
-                            <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between">
-                                <div>
-                                    <p class="text-2xl font-black text-gray-900">{{ appointmentsCount || 0 }}</p>
-                                    <p class="text-xs font-semibold text-gray-400 tracking-wider uppercase mt-1">Appointments</p>
-                                </div>
-                                <div class="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600">
-                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                    </svg>
-                                </div>
-                            </div>
-
-                            <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between">
-                                <div>
-                                    <p class="text-2xl font-black text-gray-900">{{ operationsCount || 0 }}</p>
-                                    <p class="text-xs font-semibold text-gray-400 tracking-wider uppercase mt-1">Operations</p>
-                                </div>
-                                <div class="w-12 h-12 rounded-xl bg-amber-50 flex items-center justify-center text-amber-500">
-                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z" />
-                                    </svg>
-                                </div>
-                            </div>
-
-                            <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between">
-                                <div>
-                                    <p class="text-2xl font-black text-gray-900">{{ patientsCount || 0 }}</p>
-                                    <p class="text-xs font-semibold text-gray-400 tracking-wider uppercase mt-1">New Patients</p>
-                                </div>
-                                <div class="w-12 h-12 rounded-xl bg-purple-50 flex items-center justify-center text-purple-600">
-                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                                    </svg>
-                                </div>
-                            </div>
-
-                            <div v-if="!isDoctor" class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between">
-                                <div>
-                                    <p class="text-2xl font-black text-gray-900">${{ formatCurrency(totalEarnings || 0) }}</p>
-                                    <p class="text-xs font-semibold text-gray-400 tracking-wider uppercase mt-1">Earning</p>
-                                </div>
-                                <div class="w-12 h-12 rounded-xl bg-rose-50 flex items-center justify-center text-rose-500">
-                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                    </svg>
-                                </div>
-                            </div>
-
-                        </div>
-                    </div>
-
-                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-                        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
-                            <h3 class="text-base font-bold text-gray-800">Hospital Survey</h3>
-                            <div class="flex flex-wrap items-center gap-4 text-xs font-semibold text-gray-500">
-                                <span class="flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-orange-400"></span> Patients 2019</span>
-                                <span class="flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-indigo-600"></span> Patients 2020</span>
-                            </div>
-                        </div>
-                        <div class="h-60 w-full bg-gray-50/50 rounded-xl border border-dashed border-gray-200 flex flex-col items-center justify-center text-gray-400 text-sm">
-                            <svg class="w-10 h-10 text-gray-300 mb-2" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
-                            </svg>
-                            <span>Interactive Line Chart Analytics Preview</span>
-                        </div>
-                    </div>
+                    <!-- Trend Chart Component -->
+                    <TrendChartCard :trendChartData="trendChartData" :trendChartOptions="trendChartOptions" />
                 </div>
 
-                <div class="space-y-6">
-
-                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-                        <h3 class="text-base font-bold text-gray-800 mb-4">Patient Visit By Department</h3>
-                        <div class="flex items-center justify-center py-6">
-                            <div class="w-36 h-36 rounded-full border-[14px] border-indigo-600 border-t-rose-400 border-r-amber-400 flex items-center justify-center text-xs font-bold text-gray-600 shadow-inner">
-                                Visits
+                <!-- Right Sidebar Column -->
+                <div class="space-y-4 sm:space-y-6">
+                    <!-- Appointment Status Breakdown (real Doughnut chart) -->
+                    <div class="bg-white p-4 sm:p-6 rounded-2xl shadow-sm border border-gray-100">
+                        <h3 class="text-base font-bold text-gray-800 mb-4">Appointment Status Breakdown</h3>
+                        <div class="flex items-center justify-center py-4">
+                            <div class="w-32 h-32 sm:w-36 sm:h-36">
+                                <Doughnut :data="statusChartData" :options="statusChartOptions" />
                             </div>
                         </div>
-                        <div class="space-y-3 pt-2 text-xs font-semibold">
-                            <div class="flex items-center justify-between text-gray-600">
-                                <span class="flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-full bg-rose-400"></span> Cardiology</span>
-                                <span class="text-gray-900 font-bold">40%</span>
+                        <div class="space-y-2.5 pt-2 text-xs font-semibold">
+                            <div v-for="(count, status) in statusBreakdown" :key="status"
+                                class="flex items-center justify-between text-gray-600">
+                                <span class="flex items-center gap-2">
+                                    <span class="w-2.5 h-2.5 rounded-full"
+                                        :style="{ backgroundColor: statusColorMap[status] ?? '#6b7280' }"></span>
+                                    {{ status }}
+                                </span>
+                                <span class="text-gray-900 font-bold">{{ count }}</span>
                             </div>
-                            <div class="flex items-center justify-between text-gray-600">
-                                <span class="flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-full bg-indigo-600"></span> Neurology</span>
-                                <span class="text-gray-900 font-bold">30%</span>
-                            </div>
-                            <div class="flex items-center justify-between text-gray-600">
-                                <span class="flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-full bg-amber-400"></span> Dermatology</span>
-                                <span class="text-gray-900 font-bold">20%</span>
+                            <div v-if="!statusBreakdown || Object.keys(statusBreakdown).length === 0"
+                                class="text-center text-gray-400 py-2">
+                                No appointment data yet.
                             </div>
                         </div>
                     </div>
 
+                    <!-- Popular Doctors -->
                     <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                        <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+                        <div class="px-4 sm:px-6 py-4 border-b border-gray-100 flex items-center justify-between gap-3">
                             <h3 class="text-base font-bold text-gray-800">Popular Doctor List</h3>
-                            <Link :href="route('doctors.index')" class="text-xs text-orange-500 font-semibold hover:underline">View All</Link>
+                            <Link :href="route('doctors.index')"
+                                class="text-xs text-orange-500 font-semibold hover:underline">View All</Link>
                         </div>
                         <div class="divide-y divide-gray-100 text-sm">
                             <template v-if="popularDoctors && popularDoctors.length > 0">
-                                <div v-for="doctor in popularDoctors" :key="doctor.id" class="px-6 py-3.5 flex items-center justify-between">
-                                    <div class="flex items-center gap-3">
-                                        <div class="w-9 h-9 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-xs">
-                                            {{ doctor.name.substring(0, 2).toUpperCase() }}
+                                <div v-for="doctor in popularDoctors" :key="doctor.id"
+                                    class="px-4 sm:px-6 py-3.5 flex items-center justify-between gap-3">
+                                    <div class="flex items-center gap-3 min-w-0">
+                                        <div
+                                            class="w-9 h-9 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center font-bold text-xs shrink-0">
+                                            {{ doctor.name?.substring(0, 2).toUpperCase() ?? 'DR' }}
                                         </div>
-                                        <div>
-                                            <p class="font-bold text-gray-900 text-xs">Dr. {{ doctor.name }}</p>
-                                            <p class="text-[11px] text-gray-400">{{ doctor.specialization || 'Specialist' }}</p>
+                                        <div class="min-w-0">
+                                            <p class="font-bold text-gray-900 text-xs truncate">Dr. {{ doctor.name }}
+                                            </p>
+                                            <p class="text-[11px] text-gray-400 truncate">{{ doctor.department?.name ||
+                                                doctor.specialization || 'Specialist' }}</p>
                                         </div>
                                     </div>
-                                    <span class="text-[10px] font-bold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-600">Available</span>
+                                    <span
+                                        class="text-[10px] font-bold px-2.5 py-1 rounded-full bg-orange-50 text-orange-600 shrink-0 whitespace-nowrap">
+                                        {{ doctor.appointments_count }} visits
+                                    </span>
                                 </div>
                             </template>
-                            <div v-else class="p-6 text-center text-gray-400 text-xs">No doctors found in database.</div>
+                            <div v-else class="p-6 text-center text-gray-400 text-xs">No doctors found in database.
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
-                <div class="xl:col-span-2 bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                    <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
-                        <h3 class="text-base font-bold text-gray-800">Appointment Activity</h3>
-                        <Link :href="route('appointments.index')" class="text-xs text-orange-500 font-semibold hover:underline">View All</Link>
-                    </div>
-                    <div class="overflow-x-auto w-full">
-                        <table class="w-full text-left border-collapse text-sm">
-                            <thead>
-                                <tr class="bg-gray-50/60 text-gray-400 text-xs uppercase tracking-wider">
-                                    <th class="py-3.5 px-4 sm:px-6 font-semibold">Name</th>
-                                    <th class="py-3.5 px-4 sm:px-6 font-semibold">Date</th>
-                                    <th class="py-3.5 px-4 sm:px-6 font-semibold">Visit Time</th>
-                                    <th class="py-3.5 px-4 sm:px-6 font-semibold">Doctor</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-gray-100 text-gray-600">
-                                <template v-if="recentAppointments && recentAppointments.length > 0">
-                                    <tr v-for="appointment in recentAppointments" :key="appointment.id" class="hover:bg-gray-50/40 transition">
-                                        <td class="py-4 px-4 sm:px-6 font-bold text-gray-900">
-                                            <span class="truncate max-w-[120px] sm:max-w-none">{{ appointment.patient?.name || 'N/A' }}</span>
-                                        </td>
-                                        <td class="py-4 px-4 sm:px-6 text-xs whitespace-nowrap">
-                                            {{ formatDate(appointment.appointment_date) }}
-                                        </td>
-                                        <td class="py-4 px-4 sm:px-6 text-xs whitespace-nowrap font-medium text-gray-700">
-                                            {{ formatTime(appointment.appointment_date) }}
-                                        </td>
-                                        <td class="py-4 px-4 sm:px-6 font-bold text-gray-800 text-xs sm:text-sm whitespace-nowrap">
-                                            Dr. {{ appointment.doctor?.name || 'N/A' }}
-                                        </td>
-                                    </tr>
-                                </template>
-                                <template v-else>
-                                    <tr>
-                                        <td colspan="4" class="text-center py-8 text-gray-400 text-sm">
-                                            No appointments found. Add an appointment to see it here!
-                                        </td>
-                                    </tr>
-                                </template>
-                            </tbody>
-                        </table>
-                    </div>
+            <DepartmentStatistics :departmentStatistics="departmentStatistics" />
+
+            <!-- Middle Section: Recent Appointments -->
+            <div class="grid grid-cols-1 xl:grid-cols-3 gap-4 sm:gap-6">
+                <div class="xl:col-span-2 min-w-0">
+                    <RecentAppointmentsTable :recentAppointments="recentAppointments" :formatDate="formatDate"
+                        :formatTime="formatTime" />
                 </div>
-
-                <div class="space-y-6">
-                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-                        <h3 class="text-base font-bold text-gray-800 mb-4">Average Patient Visits</h3>
-                        <div class="h-44 bg-gray-50/50 rounded-xl border border-dashed border-gray-200 flex items-center justify-center text-gray-400 text-xs">
-                            [ Bar Chart Widget Preview ]
+                <div class="space-y-4 sm:space-y-6">
+                    <!-- Doctor-wise Appointment Load (real Bar chart) -->
+                    <div class="bg-white p-4 sm:p-6 rounded-2xl shadow-sm border border-gray-100">
+                        <h3 class="text-base font-bold text-gray-800 mb-4">Doctor-wise Appointment Load</h3>
+                        <div class="h-52 sm:h-44">
+                            <Bar :data="doctorLoadChartData" :options="doctorLoadChartOptions" />
                         </div>
-                    </div>
-
-                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-                        <div class="flex items-center justify-between mb-4">
-                            <h3 class="text-base font-bold text-gray-800">Employes</h3>
-                            <span class="text-[11px] text-gray-400">Staff according to department</span>
-                        </div>
-                        <div class="h-44 bg-gray-50/50 rounded-xl border border-dashed border-gray-200 flex items-center justify-center text-gray-400 text-xs">
-                            [ Employees Metrics ]
-                        </div>
+                        <p v-if="!doctorLoad || doctorLoad.length === 0" class="text-center text-gray-400 text-xs mt-2">
+                            No
+                            appointment data yet.</p>
                     </div>
                 </div>
             </div>
 
-            <div v-if="!isDoctor" class="grid grid-cols-1 gap-6">
-                <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                    <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
-                        <h3 class="text-base font-bold text-gray-800">Recent Billing & Payments</h3>
-                        <span class="text-xs text-rose-500 font-bold">Total Earnings: ${{ formatCurrency(totalEarnings || 0) }}</span>
-                    </div>
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left border-collapse text-sm">
-                            <thead>
-                                <tr class="bg-gray-50/60 text-gray-400 text-xs uppercase tracking-wider">
-                                    <th class="py-3.5 px-6 font-semibold">Patient Name</th>
-                                    <th class="py-3.5 px-6 font-semibold">Amount</th>
-                                    <th class="py-3.5 px-6 font-semibold">Status</th>
-                                    <th class="py-3.5 px-6 font-semibold">Date</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-gray-100 text-gray-600">
-                                <template v-if="recentBills && recentBills.length > 0">
-                                    <tr v-for="bill in recentBills" :key="bill.id" class="hover:bg-gray-50/40 transition">
-                                        <td class="py-4 px-6 font-bold text-gray-900">
-                                            {{ bill.patient?.name || 'Walk-in Patient' }}
-                                        </td>
-                                        <td class="py-4 px-6 font-extrabold text-gray-800">
-                                            ${{ formatCurrency(bill.amount) }}
-                                        </td>
-                                        <td class="py-4 px-6 text-xs">
-                                            <span v-if="bill.status && bill.status.toLowerCase() === 'paid'" class="px-2.5 py-1 bg-emerald-50 text-emerald-600 rounded-full font-bold">Paid</span>
-                                            <span v-else class="px-2.5 py-1 bg-amber-50 text-amber-600 rounded-full font-bold capitalize">{{ bill.status }}</span>
-                                        </td>
-                                        <td class="py-4 px-6 text-xs text-gray-500">
-                                            {{ bill.created_at ? new Date(bill.created_at).toLocaleDateString() : 'N/A' }}
-                                        </td>
-                                    </tr>
-                                </template>
-                                <template v-else>
-                                    <tr>
-                                        <td colspan="4" class="text-center py-6 text-gray-400 text-xs">
-                                            No billing records found in database.
-                                        </td>
-                                    </tr>
-                                </template>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
+            <!-- Bottom Section: Billing -->
+            <div v-if="!isDoctor" class="grid grid-cols-1 gap-4 sm:gap-6">
+                <RecentBillingTable :recentBills="recentBills" :totalEarnings="totalEarnings"
+                    :formatCurrency="formatCurrency" />
             </div>
 
         </div>

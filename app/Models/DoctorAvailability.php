@@ -16,6 +16,7 @@ class DoctorAvailability extends Model
         'end_time',
         'is_active',
     ];
+    protected $casts = ['is_active' => 'boolean',];
 
     public function doctor()
     {

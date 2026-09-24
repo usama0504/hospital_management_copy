@@ -51,13 +51,14 @@ const printPage = () => {
         <div class="py-6 sm:py-8">
             <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
 
-                <div class="mb-6 flex items-center justify-between print:hidden gap-4">
+                <div
+                    class="mb-6 flex flex-col sm:flex-row items-stretch sm:items-center justify-between print:hidden gap-3">
                     <Link :href="route('prescriptions.index')"
-                        class="inline-flex items-center gap-2 text-xs font-semibold text-gray-600 hover:text-gray-900 transition bg-white px-4 py-2.5 rounded-xl border border-gray-200 shadow-sm">
+                        class="inline-flex items-center justify-center gap-2 text-xs font-semibold text-gray-600 hover:text-gray-900 transition bg-white px-4 py-2.5 rounded-xl border border-gray-200 shadow-sm">
                         &larr; Back to Prescriptions
                     </Link>
                     <button @click="printPage()"
-                        class="inline-flex items-center gap-2 bg-orange-500 text-white px-5 py-2.5 rounded-xl font-bold text-xs shadow-lg shadow-orange-500/20 hover:bg-orange-600 transition">
+                        class="inline-flex items-center justify-center gap-2 bg-orange-500 text-white px-5 py-2.5 rounded-xl font-bold text-xs shadow-lg shadow-orange-500/20 hover:bg-orange-600 transition">
                         <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24"
                             stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -90,7 +91,7 @@ const printPage = () => {
                                 class="text-[10px] font-bold text-gray-400 uppercase tracking-widest block">Prescription
                                 Reference</span>
                             <span class="text-base font-black text-orange-600">#RX-{{ formatRxId(prescription.id)
-                                }}</span>
+                            }}</span>
                         </div>
                     </div>
 
@@ -134,29 +135,67 @@ const printPage = () => {
                         <span
                             class="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-2">Prescribed
                             Medicines (Rx)</span>
-                        <div class="border border-gray-100 rounded-2xl overflow-hidden shadow-sm">
-                            <table class="w-full text-left border-collapse">
-                                <thead>
-                                    <tr
-                                        class="bg-gray-50/80 border-b border-gray-100 text-[11px] font-bold text-gray-500 uppercase tracking-wider">
-                                        <th class="py-3 px-4">Medicine</th>
-                                        <th class="py-3 px-4">Dosage</th>
-                                        <th class="py-3 px-4">Frequency</th>
-                                        <th class="py-3 px-4">Duration</th>
-                                        <th class="py-3 px-4">Instructions</th>
-                                    </tr>
-                                </thead>
-                                <tbody class="divide-y divide-gray-100 text-xs sm:text-sm">
-                                    <tr v-for="item in prescription.items" :key="item.id">
-                                        <td class="py-3 px-4 font-bold text-gray-900">{{ item.medicine_name }}</td>
-                                        <td class="py-3 px-4 text-gray-600 font-medium">{{ item.dosage || '—' }}</td>
-                                        <td class="py-3 px-4 text-gray-600 font-medium">{{ item.frequency || '—' }}</td>
-                                        <td class="py-3 px-4 text-gray-600 font-medium">{{ item.duration || '—' }}</td>
-                                        <td class="py-3 px-4 text-gray-600 font-medium">{{ item.instructions || '—' }}
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
+
+                        <!-- Mobile: stacked cards (5-column table squishes badly on small screens) -->
+                        <div class="sm:hidden space-y-2.5">
+                            <div v-for="item in prescription.items" :key="item.id"
+                                class="border border-gray-100 rounded-xl p-3.5 bg-gray-50/50">
+                                <p class="font-bold text-gray-900 text-sm mb-2">{{ item.medicine_name }}</p>
+                                <div class="grid grid-cols-2 gap-2 text-xs">
+                                    <div>
+                                        <span class="text-[10px] font-bold text-gray-400 uppercase block">Dosage</span>
+                                        <span class="text-gray-700 font-medium">{{ item.dosage || '—' }}</span>
+                                    </div>
+                                    <div>
+                                        <span
+                                            class="text-[10px] font-bold text-gray-400 uppercase block">Frequency</span>
+                                        <span class="text-gray-700 font-medium">{{ item.frequency || '—' }}</span>
+                                    </div>
+                                    <div>
+                                        <span
+                                            class="text-[10px] font-bold text-gray-400 uppercase block">Duration</span>
+                                        <span class="text-gray-700 font-medium">{{ item.duration || '—' }}</span>
+                                    </div>
+                                    <div class="col-span-2" v-if="item.instructions">
+                                        <span
+                                            class="text-[10px] font-bold text-gray-400 uppercase block">Instructions</span>
+                                        <span class="text-gray-700 font-medium">{{ item.instructions }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Tablet & up: full table, horizontally scrollable as a safety net -->
+                        <div class="hidden sm:block border border-gray-100 rounded-2xl overflow-hidden shadow-sm">
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-left border-collapse">
+                                    <thead>
+                                        <tr
+                                            class="bg-gray-50/80 border-b border-gray-100 text-[11px] font-bold text-gray-500 uppercase tracking-wider">
+                                            <th class="py-3 px-4 whitespace-nowrap">Medicine</th>
+                                            <th class="py-3 px-4 whitespace-nowrap">Dosage</th>
+                                            <th class="py-3 px-4 whitespace-nowrap">Frequency</th>
+                                            <th class="py-3 px-4 whitespace-nowrap">Duration</th>
+                                            <th class="py-3 px-4 whitespace-nowrap">Instructions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-gray-100 text-xs sm:text-sm">
+                                        <tr v-for="item in prescription.items" :key="item.id">
+                                            <td class="py-3 px-4 font-bold text-gray-900 whitespace-nowrap">{{
+                                                item.medicine_name }}</td>
+                                            <td class="py-3 px-4 text-gray-600 font-medium whitespace-nowrap">{{
+                                                item.dosage || '—' }}</td>
+                                            <td class="py-3 px-4 text-gray-600 font-medium whitespace-nowrap">{{
+                                                item.frequency || '—' }}</td>
+                                            <td class="py-3 px-4 text-gray-600 font-medium whitespace-nowrap">{{
+                                                item.duration || '—' }}</td>
+                                            <td class="py-3 px-4 text-gray-600 font-medium">{{ item.instructions || '—'
+                                                }}
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                     </div>
 

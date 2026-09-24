@@ -24,25 +24,40 @@ class PrescriptionController extends Controller
         return null;
     }
 
-    public function index()
+    public function index(Request $request)
     {
         $doctor = $this->currentDoctor();
+        $search = $request->input('search');
+
+        $applySearch = function ($query) use ($search) {
+            if ($search) {
+                $query->where(function ($q) use ($search) {
+                    $q->where('diagnosis', 'like', "%{$search}%")
+                        ->orWhereHas('patient', fn($p) => $p->where('name', 'like', "%{$search}%"));
+                });
+            }
+        };
 
         if ($doctor) {
             // Doctor ko sirf apni prescriptions dikhein
             $prescriptions = Prescription::where('doctor_id', $doctor->id)
                 ->with('patient', 'doctor')
+                ->when($search, $applySearch)
                 ->latest('prescribed_date')
-                ->paginate(10);
+                ->paginate(10)
+                ->withQueryString();
         } else {
             // Admin / Receptionist ko sab prescriptions dikhein
             $prescriptions = Prescription::with('patient', 'doctor')
+                ->when($search, $applySearch)
                 ->latest('prescribed_date')
-                ->paginate(10);
+                ->paginate(10)
+                ->withQueryString();
         }
 
         return Inertia::render('Prescriptions/Index', [
             'prescriptions' => $prescriptions,
+            'filters' => ['search' => $search],
         ]);
     }
 

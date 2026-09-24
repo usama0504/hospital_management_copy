@@ -7,6 +7,7 @@ use App\Models\Patient;
 use App\Models\Doctor;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use \App\Models\Appointment;
 use Inertia\Inertia;
 
 class BillController extends Controller
@@ -20,14 +21,25 @@ class BillController extends Controller
         }
     }
 
-    public function index()
+    public function index(Request $request)
     {
         $this->checkDoctor();
 
-        $bills = Bill::with('patient', 'doctor')->latest()->paginate(10);
-        
+        $search = $request->input('search');
+        $status = $request->input('status');
+
+        $bills = Bill::with('patient', 'doctor')
+            ->when($search, function ($query) use ($search) {
+                $query->whereHas('patient', fn($q) => $q->where('name', 'like', "%{$search}%"));
+            })
+            ->when($status, fn($query) => $query->where('status', $status))
+            ->latest()
+            ->paginate(10)
+            ->withQueryString();
+
         return Inertia::render('Bills/Index', [
-            'bills' => $bills
+            'bills' => $bills,
+            'filters' => ['search' => $search, 'status' => $status],
         ]);
     }
 
@@ -37,10 +49,12 @@ class BillController extends Controller
 
         $patients = Patient::all();
         $doctors = Doctor::all();
+        $appointments = Appointment::with('patient', 'doctor')->latest()->get(); // <-- Yeh add karein
 
         return Inertia::render('Bills/Create', [
             'patients' => $patients,
-            'doctors' => $doctors
+            'doctors' => $doctors,
+            'appointments' => $appointments // <-- Pass karein
         ]);
     }
 
@@ -51,6 +65,7 @@ class BillController extends Controller
         $request->validate([
             'patient_id' => 'required|exists:patients,id',
             'doctor_id' => 'required|exists:doctors,id',
+            'appointment_id' => 'nullable|exists:appointments,id', // <-- Yeh add karein
             'amount' => 'required|numeric',
             'status' => 'required|string',
             'bill_date' => 'required|date',

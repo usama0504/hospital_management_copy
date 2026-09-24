@@ -29,6 +29,12 @@
         "test": "tests"
     },
     "dependencies": {
+        "@fullcalendar/core": "^6.1.11",
+        "@fullcalendar/daygrid": "^6.1.11",
+        "@fullcalendar/interaction": "^6.1.11",
+        "@fullcalendar/list": "^6.1.21",
+        "@fullcalendar/timegrid": "^6.1.11",
+        "@fullcalendar/vue3": "^6.1.11",
         "@inertiajs/vue3": "^3.7.0",
         "ansi-regex": "^6.3.0",
         "ansi-styles": "^6.2.3",
@@ -43,6 +49,7 @@
         "camelcase-css": "^2.0.1",
         "caniuse-lite": "^1.0.30001810",
         "chalk": "^5.6.2",
+        "chart.js": "^4.5.1",
         "chokidar": "^3.6.0",
         "cliui": "^9.0.1",
         "cssesc": "^3.0.0",
@@ -119,6 +126,7 @@
         "util-deprecate": "^1.0.2",
         "vite-plugin-full-reload": "^1.2.0",
         "vue": "^3.5.42",
+        "vue-chartjs": "^5.3.4",
         "y18n": "^5.0.8",
         "yargs": "^18.0.0",
         "yargs-parser": "^22.0.0"
