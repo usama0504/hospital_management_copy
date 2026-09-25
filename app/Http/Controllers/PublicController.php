@@ -7,7 +7,6 @@ use App\Models\Department;
 use App\Models\Doctor;
 use App\Models\Appointment;
 use Illuminate\Http\Request;
-use App\Models\Patient;
 use Inertia\Inertia;
 
 class PublicController extends Controller
@@ -63,7 +62,7 @@ class PublicController extends Controller
         return [
             'years' => '10+',
             'doctors' => Doctor::count() ?: '50+',
-            'patients' => Patient::count()?: '1000+',
+            'patients' => '10,000+',
             'satisfaction' => '95%',
         ];
     }

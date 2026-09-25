@@ -18,6 +18,7 @@ use App\Http\Controllers\ReceptionistController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\PatientVisitController;
 use App\Http\Controllers\DepartmentController;
+use App\Http\Controllers\PublicController;
 
 /*
 |--------------------------------------------------------------------------
@@ -25,19 +26,19 @@ use App\Http\Controllers\DepartmentController;
 |--------------------------------------------------------------------------
 */
 
-Route::get('/', ['App\Http\Controllers\PublicController', 'home'])->name('public.home');
-Route::get('/about', ['App\Http\Controllers\PublicController', 'about'])->name('public.about');
-Route::get('/departments', ['App\Http\Controllers\PublicController', 'departments'])->name('public.departments');
-Route::get('/departments/{department}', ['App\Http\Controllers\PublicController', 'departmentShow'])->name('public.departments.show');
-Route::get('/our-doctors', ['App\Http\Controllers\PublicController', 'doctors'])->name('public.doctors');
-Route::get('/our-doctors/{doctor}', ['App\Http\Controllers\PublicController', 'doctorShow'])->name('public.doctors.show');
-Route::get('/book-appointment', ['App\Http\Controllers\PublicController', 'appointment'])->name('public.appointment');
-Route::post('/book-appointment', ['App\Http\Controllers\PublicController', 'appointmentStore'])->name('public.appointment.store');
-Route::get('/services', ['App\Http\Controllers\PublicController', 'services'])->name('public.services');
-Route::get('/contact', ['App\Http\Controllers\PublicController', 'contact'])->name('public.contact');
-Route::post('/contact', ['App\Http\Controllers\PublicController', 'contactStore'])->name('public.contact.store');
-Route::get('/gallery', ['App\Http\Controllers\PublicController', 'gallery'])->name('public.gallery');
-Route::get('/blog', ['App\Http\Controllers\PublicController', 'blog'])->name('public.blog');
+Route::get('/', [PublicController::class, 'home'])->name('public.home');
+Route::get('/about', [PublicController::class, 'about'])->name('public.about');
+Route::get('/our-departments', [PublicController::class, 'departments'])->name('public.departments');
+Route::get('/our-departments/{department}', [PublicController::class, 'departmentShow'])->name('public.departments.show');
+Route::get('/our-doctors', [PublicController::class, 'doctors'])->name('public.doctors');
+Route::get('/our-doctors/{doctor}', [PublicController::class, 'doctorShow'])->name('public.doctors.show');
+Route::get('/book-appointment', [PublicController::class, 'appointment'])->name('public.appointment');
+Route::post('/book-appointment', [PublicController::class, 'appointmentStore'])->name('public.appointment.store');
+Route::get('/services', [PublicController::class, 'services'])->name('public.services');
+Route::get('/contact', [PublicController::class, 'contact'])->name('public.contact');
+Route::post('/contact', [PublicController::class, 'contactStore'])->name('public.contact.store');
+Route::get('/gallery', [PublicController::class, 'gallery'])->name('public.gallery');
+Route::get('/blog', [PublicController::class, 'blog'])->name('public.blog');
 
 // Authentication Routes
 Route::get('/register', [AuthController::class, 'showRegisterForm'])->name('register');
@@ -96,7 +97,7 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/appointments', [AppointmentController::class, 'store'])->name('appointments.store');
         Route::get('/appointments/{appointment}/edit', [AppointmentController::class, 'edit'])->name('appointments.edit');
         Route::put('/appointments/{appointment}', [AppointmentController::class, 'update'])->name('appointments.update');
-        Route::get('/appointments/available-slots', [AppointmentController::class, 'availableSlots'])->name('appointments.available-slots');
+        Route::get('/appointments/available-slots', [ AppointmentController::class, 'availableSlots' ])->name('appointments.available-slots');
     });
 
     Route::delete('/appointments/{appointment}', [AppointmentController::class, 'destroy'])
@@ -130,7 +131,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/doctor/availability/{doctor_id?}', [DoctorAvailabilityController::class, 'index'])->name('doctor.availability');
     Route::post('/doctor/availability/{doctor_id?}', [DoctorAvailabilityController::class, 'store'])->name('doctor.availability.store');
     Route::delete('/doctor/availability/{id}', [DoctorAvailabilityController::class, 'destroy'])->name('doctor.availability.destroy');
-    Route::patch('/doctor/availability/{id}/toggle', [DoctorAvailabilityController::class, 'toggle'])->name('doctor.availability.toggle');
+    Route::patch('/doctor/availability/{id}/toggle', [ DoctorAvailabilityController::class, 'toggle' ])->name('doctor.availability.toggle');
 
 
     // 8. Receptionist Features

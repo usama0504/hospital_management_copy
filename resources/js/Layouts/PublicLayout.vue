@@ -10,7 +10,7 @@ const mobileOpen = ref(false);
 const nav = [
     { label: 'Home', href: '/' },
     { label: 'About', href: '/about' },
-    { label: 'Departments', href: '/departments' },
+    { label: 'Departments', href: '/our-departments' },
     { label: 'Doctors', href: '/our-doctors' },
     { label: 'Services', href: '/services' },
     { label: 'Contact', href: '/contact' },
@@ -21,7 +21,7 @@ const isActive = (href) => (href === '/' ? currentUrl.value === '/' : currentUrl
 const quickLinks = [
     { label: 'Home', href: '/' },
     { label: 'About', href: '/about' },
-    { label: 'Departments', href: '/departments' },
+    { label: 'Departments', href: '/our-departments' },
     { label: 'Doctors', href: '/our-doctors' },
     { label: 'Services', href: '/services' },
 ];
@@ -33,20 +33,18 @@ const departmentLinks = ['Cardiology', 'Pediatrics', 'Orthopedics', 'Dermatology
     <div class="min-h-screen flex flex-col bg-white font-sans text-slate-700">
         <!-- Navbar -->
         <header class="sticky top-0 z-50 bg-white/90 backdrop-blur border-b border-slate-100">
-            <nav class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+            <nav class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
                 <Link href="/" class="flex items-center gap-2 shrink-0">
-                    <span
-                        class="w-9 h-9 rounded-xl bg-brand-600 flex items-center justify-center font-heading font-extrabold text-white text-base">
-                        HC
+                    <span class="w-9 h-9 rounded-xl bg-brand-600 flex items-center justify-center">
+                        <Icon name="heart" class="w-5 h-5 text-white" />
                     </span>
-                    <span class="font-heading font-extrabold text-lg text-slate-900">Health
-                        <span class="text-brand-600">Care</span>
-                    </span>
+                    <span class="font-heading font-extrabold text-lg text-slate-900">Care<span
+                            class="text-brand-600">Plus</span></span>
                 </Link>
 
                 <div class="hidden lg:flex items-center gap-8">
                     <Link v-for="item in nav" :key="item.href" :href="item.href"
-                        :class="['text-md font-semibold transition-colors', isActive(item.href) ? 'text-brand-600' : 'text-slate-600 hover:text-brand-600']">
+                        :class="['text-sm font-semibold transition-colors', isActive(item.href) ? 'text-brand-600' : 'text-slate-600 hover:text-brand-600']">
                         {{ item.label }}
                     </Link>
                 </div>
@@ -84,15 +82,13 @@ const departmentLinks = ['Cardiology', 'Pediatrics', 'Orthopedics', 'Dermatology
 
         <!-- Footer -->
         <footer class="bg-slate-900 text-slate-300">
-            <div
-                class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10">
                 <div>
                     <div class="flex items-center gap-2 mb-3">
-                        <span
-                            class="w-9 h-9 rounded-xl bg-brand-600 flex items-center justify-center font-heading font-extrabold text-white text-base">
-                            HC
+                        <span class="w-8 h-8 rounded-lg bg-brand-600 flex items-center justify-center">
+                            <Icon name="heart" class="w-4 h-4 text-white" />
                         </span>
-                        <span class="font-heading font-extrabold text-white text-lg">Health Care</span>
+                        <span class="font-heading font-extrabold text-white text-lg">CarePlus</span>
                     </div>
                     <p class="text-sm text-slate-400 leading-relaxed">Your Health, Our Priority. Quality healthcare
                         with modern facilities and experienced medical professionals.</p>
@@ -111,7 +107,7 @@ const departmentLinks = ['Cardiology', 'Pediatrics', 'Orthopedics', 'Dermatology
                     <h4 class="font-heading font-bold text-white text-sm mb-4">Departments</h4>
                     <ul class="space-y-2.5 text-sm">
                         <li v-for="d in departmentLinks" :key="d">
-                            <Link href="/departments" class="hover:text-brand-400 transition-colors">{{ d }}</Link>
+                            <Link href="/our-departments" class="hover:text-brand-400 transition-colors">{{ d }}</Link>
                         </li>
                     </ul>
                 </div>
@@ -129,7 +125,7 @@ const departmentLinks = ['Cardiology', 'Pediatrics', 'Orthopedics', 'Dermatology
                         </li>
                         <li class="flex items-center gap-2.5">
                             <Icon name="mail" class="w-4 h-4 shrink-0 text-brand-400" />
-                            info@healthcare.com
+                            info@careplus.com
                         </li>
                     </ul>
                     <div class="flex items-center gap-3 mt-4">
@@ -144,7 +140,7 @@ const departmentLinks = ['Cardiology', 'Pediatrics', 'Orthopedics', 'Dermatology
             <div class="border-t border-slate-800 py-5">
                 <div
                     class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500">
-                    <p>&copy; {{ new Date().getFullYear() }} Health Care Hospital. All rights reserved.</p>
+                    <p>&copy; {{ new Date().getFullYear() }} CarePlus Hospital. All rights reserved.</p>
                     <div class="flex items-center gap-5">
                         <span class="hover:text-slate-300 cursor-pointer">Privacy Policy</span>
                         <span class="hover:text-slate-300 cursor-pointer">Terms &amp; Conditions</span>
