@@ -33,7 +33,10 @@ Route::get('/our-departments/{department}', [PublicController::class, 'departmen
 Route::get('/our-doctors', [PublicController::class, 'doctors'])->name('public.doctors');
 Route::get('/our-doctors/{doctor}', [PublicController::class, 'doctorShow'])->name('public.doctors.show');
 Route::get('/book-appointment', [PublicController::class, 'appointment'])->name('public.appointment');
-Route::post('/book-appointment', [PublicController::class, 'appointmentStore'])->name('public.appointment.store');
+Route::get('/book-appointment/slots', [PublicController::class, 'appointmentSlots'])
+    ->middleware('throttle:60,1')->name('public.appointment.slots');
+Route::post('/book-appointment', [PublicController::class, 'appointmentStore'])
+    ->middleware('throttle:20,1')->name('public.appointment.store');
 Route::get('/services', [PublicController::class, 'services'])->name('public.services');
 Route::get('/contact', [PublicController::class, 'contact'])->name('public.contact');
 Route::post('/contact', [PublicController::class, 'contactStore'])->name('public.contact.store');

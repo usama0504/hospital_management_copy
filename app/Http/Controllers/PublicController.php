@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\ContactMessage;
 use App\Models\Department;
 use App\Models\Doctor;
+use App\Models\Patient;
 use App\Models\Appointment;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -170,25 +171,154 @@ class PublicController extends Controller
         ]);
     }
 
+    public function appointmentSlots(Request $request)
+    {
+        $request->validate([
+            'doctor_id' => 'required|exists:doctors,id',
+            'date' => 'required|date',
+        ]);
+
+        $date = \Carbon\Carbon::parse($request->date);
+        $dayOfWeek = $date->format('l');
+
+        $availability = \App\Models\DoctorAvailability::where('doctor_id', $request->doctor_id)
+            ->where('day_of_week', $dayOfWeek)
+            ->where('is_active', true)
+            ->first();
+
+        if (! $availability) {
+            return response()->json(['slots' => []]);
+        }
+
+        $start = \Carbon\Carbon::parse($request->date . ' ' . $availability->start_time);
+        $end = \Carbon\Carbon::parse($request->date . ' ' . $availability->end_time);
+
+        $booked = Appointment::where('doctor_id', $request->doctor_id)
+            ->whereDate('appointment_date', $request->date)
+            ->where('status', '!=', 'Cancelled')
+            ->pluck('appointment_date');
+
+        $now = \Carbon\Carbon::now();
+        $slots = [];
+
+        while ($start->copy()->addMinutes(30) <= $end) {
+            $slotStart = $start->copy();
+            $slotEnd = $slotStart->copy()->addMinutes(30);
+
+            if ($date->isToday() && $slotStart <= $now) {
+                $start->addMinutes(30);
+                continue;
+            }
+
+            $isBooked = $booked->contains(function ($appointment) use ($slotStart, $slotEnd) {
+                $appointmentStart = \Carbon\Carbon::parse($appointment);
+                $appointmentEnd = $appointmentStart->copy()->addMinutes(30);
+
+                return $slotStart < $appointmentEnd && $slotEnd > $appointmentStart;
+            });
+
+            if (! $isBooked) {
+                $slots[] = $slotStart->format('H:i');
+            }
+
+            $start->addMinutes(30);
+        }
+
+        return response()->json(['slots' => $slots]);
+    }
+
     public function appointmentStore(Request $request)
     {
         $validated = $request->validate([
+            'department_id' => ['required', 'exists:departments,id'],
             'doctor_id' => ['required', 'exists:doctors,id'],
             'patient_name' => ['required', 'string', 'max:255'],
             'patient_phone' => ['required', 'string', 'max:30'],
+            'patient_email' => ['nullable', 'email', 'max:255'],
             'appointment_date' => ['required', 'date', 'after_or_equal:today'],
             'appointment_time' => ['required'],
             'notes' => ['nullable', 'string', 'max:1000'],
         ]);
 
+        $doctor = Doctor::findOrFail($validated['doctor_id']);
+
+        // --- Same checks as AppointmentController@store / PatientVisitController@store ---
+        if ((int) $doctor->department_id !== (int) $validated['department_id']) {
+            return back()->withInput()->withErrors([
+                'doctor_id' => 'Selected doctor does not belong to this department.'
+            ]);
+        }
+
+        $appointmentStart = \Carbon\Carbon::parse($validated['appointment_date'] . ' ' . $validated['appointment_time']);
+        $appointmentEnd = $appointmentStart->copy()->addMinutes(30);
+
+        if ($appointmentStart->isPast()) {
+            return back()->withInput()->withErrors([
+                'appointment_time' => 'You cannot book a past appointment time.'
+            ]);
+        }
+
+        $dayOfWeek = $appointmentStart->format('l');
+
+        $availability = \App\Models\DoctorAvailability::where('doctor_id', $doctor->id)
+            ->where('day_of_week', $dayOfWeek)
+            ->where('is_active', true)
+            ->first();
+
+        if (! $availability) {
+            return back()->withInput()->withErrors([
+                'appointment_time' => 'This doctor is not available on the selected day.'
+            ]);
+        }
+
+        $availabilityStart = \Carbon\Carbon::parse($appointmentStart->format('Y-m-d') . ' ' . $availability->start_time);
+        $availabilityEnd = \Carbon\Carbon::parse($appointmentStart->format('Y-m-d') . ' ' . $availability->end_time);
+
+        if ($appointmentStart < $availabilityStart || $appointmentEnd > $availabilityEnd) {
+            return back()->withInput()->withErrors([
+                'appointment_time' => "Selected time is outside the doctor's working hours ("
+                    . $availabilityStart->format('g:i A') . ' - ' . $availabilityEnd->format('g:i A') . ').'
+            ]);
+        }
+
+        if ($availabilityStart->diffInMinutes($appointmentStart) % 30 !== 0) {
+            return back()->withInput()->withErrors([
+                'appointment_time' => 'Please select a valid 30-minute time slot.'
+            ]);
+        }
+
+        $overlap = Appointment::where('doctor_id', $doctor->id)
+            ->where('status', '!=', 'Cancelled')
+            ->get()
+            ->contains(function ($existing) use ($appointmentStart, $appointmentEnd) {
+                $existingStart = \Carbon\Carbon::parse($existing->appointment_date);
+                $existingEnd = $existingStart->copy()->addMinutes(30);
+
+                return $appointmentStart < $existingEnd && $appointmentEnd > $existingStart;
+            });
+
+        if ($overlap) {
+            return back()->withInput()->withErrors([
+                'appointment_time' => 'This doctor already has an appointment during this time. Please pick another slot.'
+            ]);
+        }
+        // ----------------------------------------------------------------------------------
+
+        // Same identity path as the dashboard: every appointment belongs to
+        // a real Patient row via patient_id, never loose name/phone strings.
+        $email = $validated['patient_email'] ?? sprintf('guest.%s@careplus.local', preg_replace('/\D+/', '', $validated['patient_phone']));
+
+        $patient = Patient::firstOrCreate(
+            ['email' => $email],
+            ['name' => $validated['patient_name'], 'phone' => $validated['patient_phone']]
+        );
+
         Appointment::create([
-            'doctor_id' => $validated['doctor_id'],
-            'patient_name' => $validated['patient_name'],
-            'patient_phone' => $validated['patient_phone'],
-            'appointment_date' => $validated['appointment_date'],
-            'appointment_time' => $validated['appointment_time'],
-            'notes' => $validated['notes'] ?? null,
+            'patient_id' => $patient->id,
+            'doctor_id' => $doctor->id,
+            'appointment_date' => $appointmentStart,
             'status' => 'Pending',
+            'notes' => $validated['notes'] ?? null,
         ]);
 
         return redirect()->route('public.appointment')->with('success', 'Your appointment request has been received. Our team will contact you shortly to confirm.');

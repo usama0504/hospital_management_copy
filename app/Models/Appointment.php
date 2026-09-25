@@ -14,6 +14,7 @@ class Appointment extends Model
         'doctor_id',
         'appointment_date',
         'status',
+        'notes',
     ];
 
     // Patient relation: ek appointment ka ek patient hota hai

@@ -1,6 +1,7 @@
 <script setup>
 import { useForm } from '@inertiajs/vue3';
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
+import axios from 'axios';
 import PublicLayout from '@/Layouts/PublicLayout.vue';
 import PageHero from '@/Components/Public/PageHero.vue';
 import Icon from '@/Components/Public/Icon.vue';
@@ -22,6 +23,7 @@ const form = useForm({
     appointment_time: '',
     patient_name: '',
     patient_phone: '',
+    patient_email: '',
     notes: '',
 });
 
@@ -41,6 +43,47 @@ const selectedDoctor = computed(() => props.doctors.find((d) => String(d.id) ===
 const selectedDepartment = computed(() => props.departments.find((d) => String(d.id) === String(form.department_id)));
 
 const minDate = new Date().toISOString().split('T')[0];
+
+const availableSlots = ref([]);
+const slotsLoading = ref(false);
+const slotsError = ref('');
+let slotRequestId = 0;
+
+const fetchSlots = async () => {
+    if (!form.doctor_id || !form.appointment_date) {
+        availableSlots.value = [];
+        return;
+    }
+    const id = ++slotRequestId;
+    slotsLoading.value = true;
+    slotsError.value = '';
+    try {
+        const { data } = await axios.get('/book-appointment/slots', {
+            params: { doctor_id: form.doctor_id, date: form.appointment_date },
+        });
+        if (id === slotRequestId) availableSlots.value = data.slots;
+    } catch (e) {
+        if (id === slotRequestId) {
+            availableSlots.value = [];
+            slotsError.value = 'Could not load times. Please try again.';
+        }
+    } finally {
+        if (id === slotRequestId) slotsLoading.value = false;
+    }
+};
+
+watch(() => [form.doctor_id, form.appointment_date], () => {
+    form.appointment_time = '';
+    fetchSlots();
+});
+
+const formatSlot = (t) => {
+    const [h, m] = t.split(':');
+    const hour = parseInt(h, 10);
+    const suffix = hour >= 12 ? 'PM' : 'AM';
+    const h12 = hour % 12 === 0 ? 12 : hour % 12;
+    return `${h12}:${m} ${suffix}`;
+};
 
 const next = () => { if (step.value < 5) step.value++; };
 const back = () => { if (step.value > 1) step.value--; };
@@ -66,7 +109,8 @@ const submit = () => {
         <PageHero title="Book Appointment" subtitle="Schedule Your Visit in Easy Steps" />
 
         <section class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-14">
-            <div v-if="$page.props.flash?.success" class="mb-8 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm font-semibold px-5 py-4">
+            <div v-if="$page.props.flash?.success"
+                class="mb-8 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm font-semibold px-5 py-4">
                 {{ $page.props.flash.success }}
             </div>
 
@@ -74,13 +118,16 @@ const submit = () => {
             <div class="flex items-center justify-between mb-10">
                 <template v-for="(label, i) in steps" :key="label">
                     <div class="flex flex-col items-center flex-1">
-                        <span :class="['w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold', step > i ? 'bg-brand-600 text-white' : step === i + 1 ? 'bg-brand-600 text-white ring-4 ring-brand-100' : 'bg-slate-100 text-slate-400']">
+                        <span
+                            :class="['w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold', step > i ? 'bg-brand-600 text-white' : step === i + 1 ? 'bg-brand-600 text-white ring-4 ring-brand-100' : 'bg-slate-100 text-slate-400']">
                             <Icon v-if="step > i + 1" name="check" class="w-4 h-4" />
                             <template v-else>{{ i + 1 }}</template>
                         </span>
-                        <span class="hidden sm:block text-[11px] mt-1.5 font-semibold text-slate-400 text-center">{{ label }}</span>
+                        <span class="hidden sm:block text-[11px] mt-1.5 font-semibold text-slate-400 text-center">{{
+                            label }}</span>
                     </div>
-                    <div v-if="i < steps.length - 1" :class="['h-0.5 flex-1 -mt-4 sm:-mt-5', step > i + 1 ? 'bg-brand-600' : 'bg-slate-100']"></div>
+                    <div v-if="i < steps.length - 1"
+                        :class="['h-0.5 flex-1 -mt-4 sm:-mt-5', step > i + 1 ? 'bg-brand-600' : 'bg-slate-100']"></div>
                 </template>
             </div>
 
@@ -111,7 +158,8 @@ const submit = () => {
                         </div>
                     </button>
                 </div>
-                <p v-if="!filteredDoctors.length" class="text-sm text-slate-400">No doctors available in this department yet.</p>
+                <p v-if="!filteredDoctors.length" class="text-sm text-slate-400">No doctors available in this department
+                    yet.</p>
             </div>
 
             <!-- Step 3: Date & Time -->
@@ -120,18 +168,34 @@ const submit = () => {
                     <h2 class="font-heading font-bold text-lg text-slate-900">Choose Date &amp; Time</h2>
                     <button type="button" @click="back" class="text-xs font-bold text-brand-600">&larr; Back</button>
                 </div>
-                <div class="grid sm:grid-cols-2 gap-4">
-                    <div>
-                        <label class="text-xs font-bold text-slate-500 mb-1.5 block">Date</label>
-                        <input v-model="form.appointment_date" type="date" :min="minDate"
-                            class="w-full rounded-xl border-slate-200 text-sm focus:border-brand-400 focus:ring-brand-400" />
-                    </div>
-                    <div>
-                        <label class="text-xs font-bold text-slate-500 mb-1.5 block">Time</label>
-                        <input v-model="form.appointment_time" type="time"
-                            class="w-full rounded-xl border-slate-200 text-sm focus:border-brand-400 focus:ring-brand-400" />
+                <div>
+                    <label class="text-xs font-bold text-slate-500 mb-1.5 block">Date</label>
+                    <input v-model="form.appointment_date" type="date" :min="minDate"
+                        class="w-full sm:w-64 rounded-xl border-slate-200 text-sm focus:border-brand-400 focus:ring-brand-400" />
+                </div>
+
+                <div class="mt-5" aria-live="polite">
+                    <label class="text-xs font-bold text-slate-500 mb-2 block">Available time slots</label>
+                    <p v-if="!form.appointment_date" class="text-sm text-slate-400">Choose a date to see open times.</p>
+                    <p v-else-if="slotsLoading" class="text-sm text-slate-400">Loading available slots...</p>
+                    <p v-else-if="slotsError" class="text-sm text-rose-500">{{ slotsError }}</p>
+                    <p v-else-if="!availableSlots.length" class="text-sm text-slate-400">
+                        No available time slots for this doctor on this day. Please pick another date.
+                    </p>
+                    <div v-else class="flex flex-wrap gap-2">
+                        <button v-for="slot in availableSlots" :key="slot" type="button"
+                            @click="form.appointment_time = slot"
+                            :class="['px-4 py-2 rounded-lg text-sm font-semibold border transition', form.appointment_time === slot ? 'bg-brand-600 border-brand-600 text-white' : 'border-slate-200 text-slate-600 hover:border-brand-300']">
+                            {{ formatSlot(slot) }}
+                        </button>
                     </div>
                 </div>
+
+                <p v-if="form.errors.appointment_time || form.errors.appointment_date"
+                    class="mt-4 text-sm text-rose-500">
+                    {{ form.errors.appointment_time || form.errors.appointment_date }}
+                </p>
+
                 <button type="button" @click="next" :disabled="!canContinueDate"
                     class="mt-6 w-full bg-brand-600 disabled:bg-slate-200 disabled:text-slate-400 text-white font-bold py-3 rounded-xl hover:bg-brand-700 transition">
                     Continue
@@ -153,6 +217,11 @@ const submit = () => {
                     <div>
                         <label class="text-xs font-bold text-slate-500 mb-1.5 block">Phone Number</label>
                         <input v-model="form.patient_phone" type="text" placeholder="03xx-xxxxxxx"
+                            class="w-full rounded-xl border-slate-200 text-sm focus:border-brand-400 focus:ring-brand-400" />
+                    </div>
+                    <div>
+                        <label class="text-xs font-bold text-slate-500 mb-1.5 block">Email (optional)</label>
+                        <input v-model="form.patient_email" type="email" placeholder="you@example.com"
                             class="w-full rounded-xl border-slate-200 text-sm focus:border-brand-400 focus:ring-brand-400" />
                     </div>
                     <div>
@@ -184,15 +253,18 @@ const submit = () => {
                     </div>
                     <div class="flex justify-between px-5 py-3.5 text-sm">
                         <span class="text-slate-400">Date &amp; Time</span>
-                        <span class="font-semibold text-slate-800">{{ form.appointment_date }} at {{ form.appointment_time }}</span>
+                        <span class="font-semibold text-slate-800">{{ form.appointment_date }} at {{
+                            form.appointment_time }}</span>
                     </div>
                     <div class="flex justify-between px-5 py-3.5 text-sm">
                         <span class="text-slate-400">Patient</span>
-                        <span class="font-semibold text-slate-800">{{ form.patient_name }} &middot; {{ form.patient_phone }}</span>
+                        <span class="font-semibold text-slate-800">{{ form.patient_name }} &middot; {{
+                            form.patient_phone }}</span>
                     </div>
                 </div>
-                <p v-if="form.errors.doctor_id || form.errors.appointment_date" class="text-sm text-rose-500 mb-4">
-                    Please check the details above and try again.
+                <p v-if="form.errors.doctor_id || form.errors.appointment_date || form.errors.appointment_time"
+                    class="text-sm text-rose-500 mb-4">
+                    {{ form.errors.appointment_time || form.errors.appointment_date || 'Please check the details above  and try again.' }}
                 </p>
                 <button type="button" @click="submit" :disabled="form.processing"
                     class="w-full bg-brand-600 text-white font-bold py-3.5 rounded-xl hover:bg-brand-700 transition disabled:opacity-60">
