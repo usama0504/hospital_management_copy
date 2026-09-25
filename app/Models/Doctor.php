@@ -17,6 +17,9 @@ class Doctor extends Model
         'specialization',
         'department_id',
         'consultation_fee',
+        'photo_url',
+        'experience_years',
+        'bio',
     ];
 
     public function appointments()
