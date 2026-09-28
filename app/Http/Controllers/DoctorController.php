@@ -6,6 +6,7 @@ use App\Models\Doctor;
 use App\Models\User;
 use App\Models\Department;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Inertia\Inertia;
 
@@ -17,6 +18,35 @@ class DoctorController extends Controller
 
         return Inertia::render('Doctors/Index', [
             'doctors' => $doctors
+        ]);
+    }
+
+    public function show(Doctor $doctor)
+    {
+        $user = Auth::user();
+        $isDoctor = $user && method_exists($user, 'hasRole') && $user->hasRole('doctor');
+
+        $doctor->load(['department', 'availabilities']);
+
+        $stats = [
+            'total_appointments' => $doctor->appointments()->count(),
+            'total_patients' => $doctor->appointments()->distinct('patient_id')->count('patient_id'),
+            'upcoming_appointments' => $doctor->appointments()
+                ->where('status', '!=', 'Cancelled')
+                ->where('appointment_date', '>=', now())
+                ->count(),
+        ];
+
+        // Doctor role wale user ko dusre doctors ke patients ki list nahi dikhate
+        $recentAppointments = $isDoctor
+            ? []
+            : $doctor->appointments()->with('patient')->latest('appointment_date')->limit(10)->get();
+
+        return Inertia::render('Doctors/Show', [
+            'doctor' => $doctor,
+            'stats' => $stats,
+            'recentAppointments' => $recentAppointments,
+            'showAppointments' => !$isDoctor,
         ]);
     }
 
@@ -33,6 +63,7 @@ class DoctorController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email|unique:doctors,email',
             'phone' => 'required|string',
+            'gender' => 'required|in:Male,Female,Other',
             'specialization' => 'required|string',
             'password' => 'required|string|min:6', // Admin password set karega
             'department_id' => 'nullable|exists:departments,id',
@@ -56,6 +87,7 @@ class DoctorController extends Controller
             'name' => $validated['name'],
             'email' => $validated['email'],
             'phone' => $validated['phone'],
+            'gender' => $validated['gender'],
             'specialization' => $validated['specialization'],
             'department_id' => $validated['department_id'] ?? null,
             'consultation_fee' => $validated['consultation_fee'] ?? 0,
@@ -78,6 +110,7 @@ class DoctorController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:doctors,email,' . $doctor->id,
             'phone' => 'required|string',
+            'gender' => 'required|in:Male,Female,Other',
             'specialization' => 'required|string',
             'department_id' => 'nullable|exists:departments,id',
             'consultation_fee' => 'nullable|numeric|min:0',

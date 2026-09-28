@@ -73,7 +73,11 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/patients/{patient}/edit', [PatientController::class, 'edit'])->name('patients.edit');
         Route::put('/patients/{patient}', [PatientController::class, 'update'])->name('patients.update');
     });
-
+  
+      Route::get('/patients/{patient}', [PatientController::class, 'show'])
+        ->whereNumber('patient')
+        ->name('patients.show');
+        
     Route::delete('/patients/{patient}', [PatientController::class, 'destroy'])
         ->middleware('role:admin')
         ->name('patients.destroy');
@@ -89,6 +93,9 @@ Route::middleware(['auth'])->group(function () {
         Route::put('/doctors/{doctor}', [DoctorController::class, 'update'])->name('doctors.update');
         Route::delete('/doctors/{doctor}', [DoctorController::class, 'destroy'])->name('doctors.destroy');
     });
+       Route::get('/doctors/{doctor}', [DoctorController::class, 'show'])
+        ->whereNumber('doctor')
+        ->name('doctors.show');
 
 
     // 4. Appointment Management

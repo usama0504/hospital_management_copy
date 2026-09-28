@@ -14,12 +14,10 @@ class Doctor extends Model
         'name',
         'email',
         'phone',
+        'gender',
         'specialization',
         'department_id',
         'consultation_fee',
-        'photo_url',
-        'experience_years',
-        'bio',
     ];
 
     public function appointments()

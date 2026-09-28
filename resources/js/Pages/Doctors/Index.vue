@@ -107,42 +107,57 @@ const deleteDoctor = (id) => {
                                             Number(doctor.consultation_fee).toLocaleString() : '—' }}
                                     </span>
                                 </div>
+                                <div class="text-xs text-gray-600 pt-1">
+                                    <span>Gender:  {{ doctor.gender ?? '—' }}</span>
+                                </div>
 
                                 <!-- Mobile Actions -->
-                                <div v-if="hasRole('admin')"
-                                    class="flex items-center justify-end gap-1.5 pt-2 border-t border-gray-100">
-                                    <!-- Availability Icon Button -->
-                                    <Link :href="`/doctor/availability?doctor_id=${doctor.id}`"
-                                        class="w-7 h-7 inline-flex items-center justify-center rounded-lg bg-gray-50 text-orange-600 hover:bg-orange-50 transition shadow-2xs"
-                                        title="Manage Doctor Availability">
+                                <div class="flex items-center justify-end gap-1.5 pt-2 border-t border-gray-100">
+                                    <Link :href="route('doctors.show', doctor.id)"
+                                        class="w-7 h-7 inline-flex items-center justify-center rounded-lg bg-gray-50 text-emerald-600 hover:bg-emerald-50 transition shadow-2xs"
+                                        title="View Details">
                                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2"
                                             viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round"
-                                                d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
+                                            <path stroke-linecap="round" stroke-linejoin="round"
+                                                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                                         </svg>
                                     </Link>
+                                    <div v-if="hasRole('admin')" class="inline-flex items-center justify-end gap-1.5">
+                                        <!-- Availability Icon Button -->
+                                        <Link :href="`/doctor/availability?doctor_id=${doctor.id}`"
+                                            class="w-7 h-7 inline-flex items-center justify-center rounded-lg bg-gray-50 text-orange-600 hover:bg-orange-50 transition shadow-2xs"
+                                            title="Manage Doctor Availability">
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2"
+                                                viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round"
+                                                    d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                            </svg>
+                                        </Link>
 
-                                    <!-- Edit Icon Button -->
-                                    <Link :href="`/doctors/${doctor.id}/edit`"
-                                        class="w-7 h-7 inline-flex items-center justify-center rounded-lg bg-gray-50 text-blue-600 hover:bg-blue-50 transition shadow-2xs"
-                                        title="Edit Doctor">
-                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2"
-                                            viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round"
-                                                d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.862 4.487zm0 0L19.5 7.125" />
-                                        </svg>
-                                    </Link>
+                                        <!-- Edit Icon Button -->
+                                        <Link :href="`/doctors/${doctor.id}/edit`"
+                                            class="w-7 h-7 inline-flex items-center justify-center rounded-lg bg-gray-50 text-blue-600 hover:bg-blue-50 transition shadow-2xs"
+                                            title="Edit Doctor">
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2"
+                                                viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round"
+                                                    d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.862 4.487zm0 0L19.5 7.125" />
+                                            </svg>
+                                        </Link>
 
-                                    <!-- Delete Icon Button -->
-                                    <button @click="deleteDoctor(doctor.id)" type="button"
-                                        class="w-7 h-7 inline-flex items-center justify-center rounded-lg bg-gray-50 text-rose-600 hover:bg-rose-50 transition shadow-2xs"
-                                        title="Delete Doctor">
-                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2"
-                                            viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round"
-                                                d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
-                                        </svg>
-                                    </button>
+                                        <!-- Delete Icon Button -->
+                                        <button @click="deleteDoctor(doctor.id)" type="button"
+                                            class="w-7 h-7 inline-flex items-center justify-center rounded-lg bg-gray-50 text-rose-600 hover:bg-rose-50 transition shadow-2xs"
+                                            title="Delete Doctor">
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2"
+                                                viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round"
+                                                    d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                                            </svg>
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -154,8 +169,9 @@ const deleteDoctor = (id) => {
                                     class="bg-gray-50/75 text-[11px] font-bold text-gray-500 uppercase tracking-wider">
                                     <tr>
                                         <th class="py-3.5 px-6">Name</th>
-                                        <th class="py-3.5 px-6">Email</th>
+                                        <!-- <th class="py-3.5 px-6">Email</th> -->
                                         <th class="py-3.5 px-6">Phone</th>
+                                        <th class="py-3.5 px-6">Gender</th>
                                         <th class="py-3.5 px-6">Department</th>
                                         <th class="py-3.5 px-6">Fee</th>
                                         <th class="py-3.5 px-6 text-right">Actions</th>
@@ -165,8 +181,9 @@ const deleteDoctor = (id) => {
                                     <tr v-for="doctor in doctors.data" :key="doctor.id"
                                         class="hover:bg-gray-50/50 transition">
                                         <td class="py-4 px-6 font-bold text-gray-900">Dr. {{ doctor.name }}</td>
-                                        <td class="py-4 px-6 text-gray-500">{{ doctor.email }}</td>
+                                        <!-- <td class="py-4 px-6 text-gray-500">{{ doctor.email }}</td> -->
                                         <td class="py-4 px-6 text-gray-500">{{ doctor.phone ?? 'N/A' }}</td>
+                                        <td class="py-4 px-6 text-gray-500">{{ doctor.gender ?? '—' }}</td>
                                         <td class="py-4 px-6 text-gray-500">
                                             {{ doctor.department?.name ?? '—' }}
                                         </td>
@@ -175,40 +192,53 @@ const deleteDoctor = (id) => {
                                                 Number(doctor.consultation_fee).toLocaleString() : '—' }}
                                         </td>
                                         <td class="py-4 px-6 text-right">
-                                            <div v-if="hasRole('admin')"
-                                                class="inline-flex items-center justify-end gap-1.5">
-                                                <!-- Availability Icon Button -->
-                                                <Link :href="`/doctor/availability?doctor_id=${doctor.id}`"
-                                                    class="w-7 h-7 inline-flex items-center justify-center rounded-lg bg-gray-50 text-orange-600 hover:bg-orange-50 transition shadow-2xs"
-                                                    title="Manage Doctor Availability">
+                                            <div class="inline-flex items-center justify-end gap-1.5">
+                                                <Link :href="route('doctors.show', doctor.id)"
+                                                    class="w-7 h-7 inline-flex items-center justify-center rounded-lg bg-gray-50 text-emerald-600 hover:bg-emerald-50 transition shadow-2xs"
+                                                    title="View Details">
                                                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor"
                                                         stroke-width="2" viewBox="0 0 24 24">
                                                         <path stroke-linecap="round" stroke-linejoin="round"
-                                                            d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                            d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
+                                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                                                     </svg>
                                                 </Link>
+                                                <div v-if="hasRole('admin')"
+                                                    class="inline-flex items-center justify-end gap-1.5">
+                                                    <!-- Availability Icon Button -->
+                                                    <Link :href="`/doctor/availability?doctor_id=${doctor.id}`"
+                                                        class="w-7 h-7 inline-flex items-center justify-center rounded-lg bg-gray-50 text-orange-600 hover:bg-orange-50 transition shadow-2xs"
+                                                        title="Manage Doctor Availability">
+                                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor"
+                                                            stroke-width="2" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round"
+                                                                d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                        </svg>
+                                                    </Link>
 
-                                                <!-- Edit Icon Button -->
-                                                <Link :href="`/doctors/${doctor.id}/edit`"
-                                                    class="w-7 h-7 inline-flex items-center justify-center rounded-lg bg-gray-50 text-blue-600 hover:bg-blue-50 transition shadow-2xs"
-                                                    title="Edit Doctor">
-                                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor"
-                                                        stroke-width="2" viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round"
-                                                            d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.862 4.487zm0 0L19.5 7.125" />
-                                                    </svg>
-                                                </Link>
+                                                    <!-- Edit Icon Button -->
+                                                    <Link :href="`/doctors/${doctor.id}/edit`"
+                                                        class="w-7 h-7 inline-flex items-center justify-center rounded-lg bg-gray-50 text-blue-600 hover:bg-blue-50 transition shadow-2xs"
+                                                        title="Edit Doctor">
+                                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor"
+                                                            stroke-width="2" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round"
+                                                                d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.862 4.487zm0 0L19.5 7.125" />
+                                                        </svg>
+                                                    </Link>
 
-                                                <!-- Delete Icon Button -->
-                                                <button @click="deleteDoctor(doctor.id)" type="button"
-                                                    class="w-7 h-7 inline-flex items-center justify-center rounded-lg bg-gray-50 text-rose-600 hover:bg-rose-50 transition shadow-2xs"
-                                                    title="Delete Doctor">
-                                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor"
-                                                        stroke-width="2" viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round"
-                                                            d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
-                                                    </svg>
-                                                </button>
+                                                    <!-- Delete Icon Button -->
+                                                    <button @click="deleteDoctor(doctor.id)" type="button"
+                                                        class="w-7 h-7 inline-flex items-center justify-center rounded-lg bg-gray-50 text-rose-600 hover:bg-rose-50 transition shadow-2xs"
+                                                        title="Delete Doctor">
+                                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor"
+                                                            stroke-width="2" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round"
+                                                                d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                                                        </svg>
+                                                    </button>
+                                                </div>
                                             </div>
                                         </td>
                                     </tr>
