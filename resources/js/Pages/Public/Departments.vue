@@ -4,6 +4,8 @@ import PublicLayout from '@/Layouts/PublicLayout.vue';
 import PageHero from '@/Components/Public/PageHero.vue';
 import Icon from '@/Components/Public/Icon.vue';
 
+import departBg from '@/images/department-bg.png';
+
 const props = defineProps({
     departments: { type: Array, default: () => [] },
     meta: { type: Object, default: () => ({}) },
@@ -14,7 +16,7 @@ const iconFor = (name) => props.meta?.[name]?.icon || 'stethoscope';
 
 <template>
     <PublicLayout>
-        <PageHero title="Our Departments" subtitle="Specialized Care for Every Stage of Life" />
+        <PageHero title="Our Departments" subtitle="Specialized Care for Every Stage of Life"  :bgImage="departBg" />
 
         <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-20">
             <div v-if="departments.length" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">

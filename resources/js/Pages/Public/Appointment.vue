@@ -7,6 +7,8 @@ import PageHero from '@/Components/Public/PageHero.vue';
 import Icon from '@/Components/Public/Icon.vue';
 import Avatar from '@/Components/Public/Avatar.vue';
 
+import appointBg from '@/images/appointment-bg.png';
+
 const props = defineProps({
     departments: { type: Array, default: () => [] },
     doctors: { type: Array, default: () => [] },
@@ -106,7 +108,7 @@ const submit = () => {
 
 <template>
     <PublicLayout>
-        <PageHero title="Book Appointment" subtitle="Schedule Your Visit in Easy Steps" />
+        <PageHero title="Book Appointment" subtitle="Schedule Your Visit in Easy Steps" :bgImage="appointBg" />
 
         <section class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-14">
             <div v-if="$page.props.flash?.success"

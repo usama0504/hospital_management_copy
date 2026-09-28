@@ -6,6 +6,8 @@ import PageHero from '@/Components/Public/PageHero.vue';
 import Icon from '@/Components/Public/Icon.vue';
 import Avatar from '@/Components/Public/Avatar.vue';
 
+import doctorBg from '@/images/doctor-bg.png';
+
 const props = defineProps({
     doctors: { type: Object, required: true },
     departments: { type: Array, default: () => [] },
@@ -25,7 +27,7 @@ const applyFilters = () => {
 
 <template>
     <PublicLayout>
-        <PageHero title="Our Doctors" subtitle="Meet Our Experienced Medical Professionals" />
+        <PageHero title="Our Doctors" subtitle="Meet Our Experienced Medical Professionals" :bgImage="doctorBg" />
 
         <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
             <div class="flex flex-col sm:flex-row gap-3 mb-10">

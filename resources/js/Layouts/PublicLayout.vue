@@ -34,13 +34,14 @@ const departmentLinks = ['Cardiology', 'Pediatrics', 'Orthopedics', 'Dermatology
         <!-- Navbar -->
         <header class="sticky top-0 z-50 bg-white/90 backdrop-blur border-b border-slate-100">
             <nav class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-                <Link href="/" class="flex items-center gap-2 shrink-0">
-                    <span class="w-9 h-9 rounded-xl bg-brand-600 flex items-center justify-center">
-                        <Icon name="heart" class="w-5 h-5 text-white" />
-                    </span>
-                    <span class="font-heading font-extrabold text-lg text-slate-900">Care<span
-                            class="text-brand-600">Plus</span></span>
-                </Link>
+                 <Link href="/" class="flex items-center gap-2 shrink-0">
+                     <span class="w-9 h-9 rounded-xl bg-brand-600 flex items-center justify-center font-heading font-extrabold text-white text-base">
+                           HC
+                     </span>
+                        <span class="font-heading font-extrabold text-lg text-slate-900">Health
+                             <span class="text-brand-600">Care</span>
+                        </span>
+                   </Link>
 
                 <div class="hidden lg:flex items-center gap-8">
                     <Link v-for="item in nav" :key="item.href" :href="item.href"
@@ -84,11 +85,13 @@ const departmentLinks = ['Cardiology', 'Pediatrics', 'Orthopedics', 'Dermatology
         <footer class="bg-slate-900 text-slate-300">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10">
                 <div>
-                    <div class="flex items-center gap-2 mb-3">
-                        <span class="w-8 h-8 rounded-lg bg-brand-600 flex items-center justify-center">
-                            <Icon name="heart" class="w-4 h-4 text-white" />
+                    <div class="flex items-center gap-1.5 mb-3">
+                        <span class="w-9 h-9 rounded-xl bg-brand-600 flex items-center justify-center font-heading font-extrabold text-white text-base">
+                            HC
                         </span>
-                        <span class="font-heading font-extrabold text-white text-lg">CarePlus</span>
+                       <span class="font-heading font-extrabold text-lg text-white">Health
+                          <span class="text-white">Care</span>
+                       </span>
                     </div>
                     <p class="text-sm text-slate-400 leading-relaxed">Your Health, Our Priority. Quality healthcare
                         with modern facilities and experienced medical professionals.</p>
@@ -140,7 +143,7 @@ const departmentLinks = ['Cardiology', 'Pediatrics', 'Orthopedics', 'Dermatology
             <div class="border-t border-slate-800 py-5">
                 <div
                     class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500">
-                    <p>&copy; {{ new Date().getFullYear() }} CarePlus Hospital. All rights reserved.</p>
+                    <p>&copy; {{ new Date().getFullYear() }} Health Care Hospital. All rights reserved.</p>
                     <div class="flex items-center gap-5">
                         <span class="hover:text-slate-300 cursor-pointer">Privacy Policy</span>
                         <span class="hover:text-slate-300 cursor-pointer">Terms &amp; Conditions</span>
