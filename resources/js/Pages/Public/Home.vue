@@ -3,6 +3,8 @@ import { Link } from '@inertiajs/vue3';
 import PublicLayout from '@/Layouts/PublicLayout.vue';
 import Icon from '@/Components/Public/Icon.vue';
 import Avatar from '@/Components/Public/Avatar.vue';
+import heroBg from '@/images/herobgd.png';
+import heroDoc from '@/images/herodoc.png';
 
 const props = defineProps({
     departments: { type: Array, default: () => [] },
@@ -19,9 +21,9 @@ const highlights = [
 ];
 
 const news = [
-    { title: 'Tips for a Healthy Heart', date: 'Mar 10, 2024' },
-    { title: 'Importance of Regular Checkups', date: 'Mar 5, 2024' },
-    { title: 'Child Health and Nutrition', date: 'Feb 28, 2024' },
+    { title: 'Tips for a Healthy Heart', date: 'Mar 10, 2024',image:'https://plus.unsplash.com/premium_photo-1726837239315-8f00466be229?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8ODF8fG5ld3MlMjBob3NwaXRhbCUyMGltYWdlc3xlbnwwfHwwfHx8MA%3D%3D' },
+    { title: 'Importance of Regular Checkups', date: 'Mar 5, 2024',image:'https://plus.unsplash.com/premium_photo-1682089159103-d09b46d1cce8?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTA4fHxuZXdzJTIwaG9zcGl0YWwlMjBpbWFnZXN8ZW58MHx8MHx8fDA%3D' },
+    { title: 'Child Health and Nutrition', date: 'Feb 28, 2024',image:'https://media.istockphoto.com/id/475105054/photo/she-loves-eat-fresh-fruit.webp?a=1&b=1&s=612x612&w=0&k=20&c=A2G3xf9dS5pX5UoHb94GJVpRQhcdKSMEth4j6bylllg=' },
 ];
 
 const iconFor = (name) => props.meta?.[name]?.icon || 'stethoscope';
@@ -30,173 +32,223 @@ const iconFor = (name) => props.meta?.[name]?.icon || 'stethoscope';
 <template>
     <PublicLayout>
         <!-- Hero Section with Background Clinic Image -->
-        <section class="relative bg-slate-900 overflow-hidden pt-12 pb-20">
-            <!-- Background Image with Gradient Overlay -->
-            <div class="absolute inset-0 z-0">
-                <img 
-                    src="https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?q=80&w=1600&auto=format&fit=crop" 
-                    alt="Hospital Background" 
-                    class="w-full h-full object-cover opacity-25"
-                />
-                <div class="absolute inset-0 bg-gradient-to-r from-white via-white/95 to-white/60"></div>
-            </div>
+  <section class="relative w-full bg-white overflow-hidden pt-4 pb-6">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <!-- Banner Container -->
+                <div class="relative  overflow-hidden shadow-sm">
+                    <img 
+                        :src="heroBg" 
+                        alt="Hero Banner" 
+                        class="w-full h-[300px] sm:h-[460px] lg:h-[500px] object-cover object-center"
+                    />
 
-            <div class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid lg:grid-cols-12 gap-8 items-center">
-                <!-- Left Text Side -->
-                <div class="lg:col-span-7 space-y-6">
-                    <h1 class="font-heading font-extrabold text-4xl sm:text-6xl text-slate-900 tracking-tight leading-[1.1]">
-                        Your Health<br />
-                        <span class="text-brand-600">Our Priority</span>
-                    </h1>
-                    <p class="text-slate-600 text-base sm:text-lg max-w-md leading-relaxed font-normal">
-                        Providing quality healthcare with modern facilities and experienced medical professionals.
-                    </p>
-                    <div class="flex flex-wrap items-center gap-4 pt-2">
-                        <Link href="/book-appointment"
-                            class="inline-flex items-center gap-2 bg-brand-600 text-white font-bold px-7 py-3.5 rounded-xl hover:bg-brand-700 transition shadow-lg shadow-brand-600/20 text-sm">
-                            Book Appointment
-                        </Link>
-                        <Link href="/about"
-                            class="inline-flex items-center gap-2 bg-white text-slate-700 font-bold px-7 py-3.5 rounded-xl border border-slate-200 hover:bg-slate-50 transition text-sm shadow-sm">
-                            Learn More
-                        </Link>
-                    </div>
-                </div>
-
-                <!-- Right Doctor Image Side -->
-                <div class="lg:col-span-5 flex justify-center lg:justify-end">
-                    <div class="w-full max-w-[380px] aspect-[4/5] relative flex items-end justify-center">
-                        <img
-                            src="https://images.unsplash.com/photo-1758691462651-611d730c5272?q=80&amp;w=1400&amp;auto=format&amp;fit=crop"
-                            alt="CarePlus doctor" class="w-full h-full object-cover object-top rounded-3xl shadow-xl" loading="eager" />
+                    <!-- Content Overlay on Left Side -->
+                    <div class="absolute inset-0 flex items-center px-8 sm:px-12 lg:px-28">
+                        <div class="max-w-xl space-y-5">
+                            <h1 class="font-heading font-extrabold text-4xl sm:text-5xl lg:text-6xl text-slate-900 tracking-tight leading-[1.1]">
+                                Your Health<br />
+                                <span class="text-teal-600">Our Priority</span>
+                            </h1>
+                            <p class="text-slate-600 text-sm sm:text-base max-w-md leading-relaxed font-medium">
+                                Providing quality healthcare with modern facilities and experienced medical professionals.
+                            </p>
+                            <div class="flex flex-wrap items-center gap-3 pt-2">
+                                <Link href="/book-appointment"
+                                    class="inline-flex items-center gap-2 bg-[#0d9488] text-white font-bold px-6 py-3 rounded-xl hover:bg-[#0f766e] transition shadow-md text-sm">
+                                    Book Appointment
+                                </Link>
+                                <Link href="/about"
+                                    class="inline-flex items-center gap-2 bg-white/90 backdrop-blur text-slate-700 font-bold px-6 py-3 rounded-xl border border-slate-200 hover:bg-white transition text-sm shadow-sm">
+                                    Learn More
+                                </Link>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
         </section>
 
-        <!-- Feature Strip (Hero ke neeche alag se) -->
-        <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-10 relative z-20 mb-16">
-            <div class="bg-white rounded-2xl border border-slate-100 shadow-xl shadow-slate-200/60 grid grid-cols-2 lg:grid-cols-4 divide-y sm:divide-y-0 lg:divide-x divide-slate-100">
-                <div v-for="h in highlights" :key="h.title" class="flex items-center gap-4 p-6">
-                    <span class="w-12 h-12 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center shrink-0">
+        <!-- Feature Strip (Alag-alag individual cards/divs ke sath) -->
+        <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 mb-10">
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-5">
+                <div v-for="h in highlights" :key="h.title" class="bg-gray-100 p-5 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-all flex flex-col items-center gap-4">
+                    <span class="w-12 h-12 rounded-xl bg-teal-50 text-teal-600 flex items-center justify-center shrink-0">
                         <Icon :name="h.icon" class="w-6 h-6" />
                     </span>
-                    <div class="min-w-0">
+                    <div class="min-w-0 flex flex-col  items-center">
                         <p class="text-sm font-bold text-slate-900 truncate">{{ h.title }}</p>
-                        <p class="text-xs text-slate-400 truncate mt-0.5">{{ h.desc }}</p>
+                        <p class="text-xs text-slate-400 truncate mt-1">{{ h.desc }}</p>
                     </div>
                 </div>
             </div>
         </section>
 
         <!-- Departments -->
-        <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-            <div class="flex items-end justify-between mb-8">
-                <div>
-                    <p class="text-brand-600 font-bold text-xs uppercase tracking-wider mb-1">What We Offer</p>
-                    <h2 class="font-heading font-extrabold text-2xl sm:text-3xl text-slate-900">Our Departments</h2>
-                </div>
-                <Link href="/our-departments" class="hidden sm:inline-flex items-center gap-1 text-sm font-bold text-brand-600 hover:gap-2 transition-all">
-                    View All <Icon name="arrow-right" class="w-4 h-4" />
-                </Link>
-            </div>
+    <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+        <!-- Header with Title & View All Link -->
+        <div class="flex items-center justify-between mb-6">
+            <h2 class="font-heading font-extrabold text-2xl sm:text-3xl text-[#0F3557]">Our Departments</h2>
+            <Link href="/our-departments" class="text-sm font-bold text-slate-500 hover:text-teal-600 transition-all flex items-center gap-1">
+                View All &rarr;
+            </Link>
+        </div>
 
-            <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
-                <Link v-for="d in departments" :key="d.id" :href="`/our-departments/${d.id}`"
-                    class="group p-5 rounded-2xl border border-slate-100 hover:border-brand-200 hover:shadow-xl hover:shadow-slate-100 transition-all bg-white">
-                    <span class="w-12 h-12 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center mb-4 group-hover:bg-brand-600 group-hover:text-white transition-colors">
-                        <Icon :name="iconFor(d.name)" class="w-6 h-6" />
+        <!-- Cards Grid -->
+        <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            <Link v-for="d in departments" :key="d.id" :href="`/our-departments/${d.id}`"
+                class="group rounded-3xl overflow-hidden border border-slate-100 hover:shadow-xl hover:shadow-slate-100 transition-all bg-white flex flex-col">
+                
+                <!-- Top Half: Light Blue background with Icon or Image -->
+                <div class="h-44 bg-[#f0f4f9] flex items-center justify-center p-4 group-hover:bg-[#e4ebf5] transition-colors">
+                    <span class="text-teal-600">
+                        <img v-if="d.image_url" :src="d.image_url" :alt="d.name" class="w-20 h-20 object-contain" />
+                        <Icon v-else :name="iconFor(d.name)" class="w-16 h-16 text-teal-600" />
                     </span>
-                    <h3 class="font-heading font-bold text-slate-900 text-base mb-1">{{ d.name }}</h3>
-                    <p class="text-xs text-slate-400 line-clamp-2 leading-relaxed">{{ d.description || 'Specialized, compassionate care from our expert team.' }}</p>
-                </Link>
-            </div>
-        </section>
+                </div>
+
+                <!-- Bottom Half: White background with Title & Description -->
+                <div class="p-5 text-center bg-white flex-1 flex flex-col justify-center">
+                    <h3 class="font-heading font-bold text-[#0f172a] text-lg mb-1">{{ d.name }}</h3>
+                    <p class="text-xs text-slate-400 line-clamp-1">{{ d.description || 'Specialized medical care' }}</p>
+                </div>
+            </Link>
+        </div>
+    </section>
 
         <!-- Doctors -->
-        <section class="bg-slate-50/50 py-10">
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div class="flex items-end justify-between mb-8">
-                    <div>
-                        <p class="text-brand-600 font-bold text-xs uppercase tracking-wider mb-1">Meet The Team</p>
-                        <h2 class="font-heading font-extrabold text-2xl sm:text-3xl text-slate-900">Our Doctors</h2>
-                    </div>
-                    <Link href="/our-doctors" class="hidden sm:inline-flex items-center gap-1 text-sm font-bold text-brand-600 hover:gap-2 transition-all">
-                        View All <Icon name="arrow-right" class="w-4 h-4" />
-                    </Link>
-                </div>
+<section class="py-10 bg-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <!-- Header -->
+            <div class="flex items-center justify-between mb-8">
+                <h2 class="font-heading font-extrabold text-2xl sm:text-3xl text-[#0f172a]">Our Doctors</h2>
+                <Link href="/our-doctors" class="text-sm font-bold text-slate-500 hover:text-teal-600 transition-all flex items-center gap-1">
+                    View All &rarr;
+                </Link>
+            </div>
 
-                <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
-                    <div v-for="doc in doctors" :key="doc.id"
-                        class="bg-white rounded-2xl p-5 text-center border border-slate-100 hover:shadow-xl hover:shadow-slate-100 transition-all flex flex-col items-center">
-                        <Avatar :name="doc.name" :photo-url="doc.photo_url" size="lg" class="mx-auto mb-3" />
-                        <h3 class="font-heading font-bold text-slate-900 text-base">{{ doc.name }}</h3>
-                        <p class="text-xs text-brand-600 font-semibold mt-0.5 mb-4">{{ doc.department?.name || doc.specialization }}</p>
+            <!-- Doctors Grid -->
+            <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div v-for="doc in doctors" :key="doc.id"
+                    class="rounded-3xl overflow-hidden border border-slate-100 hover:shadow-xl hover:shadow-slate-100 transition-all bg-white flex flex-col">
+                    
+                    <!-- Top Half: Light blue background with doctor image -->
+                    <div class="h-52 bg-[#f0f4f9] overflow-hidden flex items-end justify-center">
+                        <img v-if="doc.photo_url" :src="doc.photo_url" :alt="doc.name" class="w-full h-full object-cover object-top" />
+                        <div v-else class="w-full h-full flex items-center justify-center text-slate-400">
+                            <Avatar :name="doc.name" size="lg" />
+                        </div>
+                    </div>
+
+                    <!-- Bottom Half: White background with details and button -->
+                    <div class="p-5 text-center bg-white flex-1 flex flex-col justify-between">
+                        <div>
+                            <h3 class="font-heading font-bold text-[#0f172a] text-base mb-0.5">{{ doc.name }}</h3>
+                            <p class="text-xs text-slate-400 font-medium mb-4">{{ doc.department?.name || doc.specialization }}</p>
+                        </div>
                         <Link :href="`/our-doctors/${doc.id}`"
-                            class="w-full mt-auto text-xs font-bold bg-brand-600 text-white py-2.5 rounded-xl hover:bg-brand-700 transition shadow-sm">
+                            class="w-full text-xs font-bold bg-[#014d88] hover:bg-[#013b6d] text-white py-2.5 rounded-xl transition shadow-sm text-center">
                             View Profile
                         </Link>
                     </div>
                 </div>
             </div>
-        </section>
+        </div>
+    </section>
 
-        <!-- Stats -->
         <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-            <div class="grid grid-cols-2 lg:grid-cols-4 gap-6 text-center">
-                <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
-                    <p class="font-heading font-extrabold text-3xl sm:text-4xl text-brand-600">{{ stats.years }}</p>
-                    <p class="text-xs text-slate-400 font-bold mt-1 uppercase tracking-wider">Years Experience</p>
-                </div>
-                <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
-                    <p class="font-heading font-extrabold text-3xl sm:text-4xl text-brand-600">{{ stats.doctors }}</p>
-                    <p class="text-xs text-slate-400 font-bold mt-1 uppercase tracking-wider">Expert Doctors</p>
-                </div>
-                <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
-                    <p class="font-heading font-extrabold text-3xl sm:text-4xl text-brand-600">{{ stats.patients }}</p>
-                    <p class="text-xs text-slate-400 font-bold mt-1 uppercase tracking-wider">Happy Patients</p>
-                </div>
-                <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
-                    <p class="font-heading font-extrabold text-3xl sm:text-4xl text-brand-600">{{ stats.satisfaction }}</p>
-                    <p class="text-xs text-slate-400 font-bold mt-1 uppercase tracking-wider">Positive Reviews</p>
-                </div>
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-6 text-center">
+            
+            <!-- Years Experience -->
+            <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
+                <p class="font-heading font-extrabold text-3xl sm:text-4xl text-[#0d9488]">{{ stats.years || '10+' }}</p>
+                <p class="text-xs text-slate-500 font-bold mt-1 uppercase tracking-wider">Years Experience</p>
             </div>
-        </section>
+
+            <!-- Expert Doctors -->
+            <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
+                <p class="font-heading font-extrabold text-3xl sm:text-4xl text-[#0b314a]">{{ stats.doctors || '50+' }}</p>
+                <p class="text-xs text-slate-500 font-bold mt-1 uppercase tracking-wider">Expert Doctors</p>
+            </div>
+
+            <!-- Happy Patients -->
+            <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
+                <p class="font-heading font-extrabold text-3xl sm:text-4xl text-[#0d9488]">{{ stats.patients || '10,000+' }}</p>
+                <p class="text-xs text-slate-500 font-bold mt-1 uppercase tracking-wider">Happy Patients</p>
+            </div>
+
+            <!-- Positive Reviews -->
+            <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
+                <p class="font-heading font-extrabold text-3xl sm:text-4xl text-[#0b314a]">{{ stats.satisfaction || '95%' }}</p>
+                <p class="text-xs text-slate-500 font-bold mt-1 uppercase tracking-wider">Positive Reviews</p>
+            </div>
+
+        </div>
+    </section>
 
         <!-- CTA -->
-        <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-            <div class="rounded-3xl bg-brand-700 px-6 sm:px-12 py-8 flex flex-col sm:flex-row items-center justify-between gap-6 shadow-xl">
-                <div class="text-center sm:text-left">
-                    <h3 class="font-heading font-extrabold text-xl sm:text-2xl text-white">Book Your Appointment Today</h3>
-                    <p class="text-brand-100 text-sm mt-1">Get the best medical care from our experienced doctors.</p>
-                </div>
-                <Link href="/book-appointment"
-                    class="shrink-0 bg-white text-brand-700 font-bold px-6 py-3.5 rounded-xl hover:bg-brand-50 transition shadow-md">
+       <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <div class="relative overflow-hidden rounded-2xl bg-gradient-to-r from-[#0b314a] to-[#0d9488] shadow-lg">
+
+           <div class="flex items-center min-h-[150px]">
+
+              <div class="w-28 sm:w-36 md:w-44 h-[150px] shrink-0">
+                <img :src="heroDoc"alt="Doctor Consultation" class="w-full h-full object-cover object-top"/>
+              </div>
+             <div class="flex-1 px-5 sm:px-7">
+                <h3 class="font-heading font-extrabold text-lg sm:text-xl md:text-2xl text-white leading-tight">
+                    Book Your Appointment Today
+                </h3>
+                <p class="text-teal-100 text-xs sm:text-sm mt-1">
+                    Get the best medical care from our experienced doctors.
+                </p>
+            </div>
+            <div class="pr-5 sm:pr-7">
+                <Link
+                    href="/book-appointment"
+                    class="inline-flex items-center justify-center bg-white text-[#0b314a] font-bold px-5 py-4 rounded-xl hover:bg-slate-100 transition shadow-md text-xs sm:text-sm whitespace-nowrap">
                     Book Appointment
                 </Link>
             </div>
-        </section>
+           </div>
+          </div>
+      </section>
 
         <!-- Latest News -->
-        <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 mb-8">
-            <div class="files flex items-end justify-between mb-8">
-                <h2 class="font-heading font-extrabold text-2xl sm:text-3xl text-slate-900">Latest News</h2>
-                <Link href="/blog" class="hidden sm:inline-flex items-center gap-1 text-sm font-bold text-brand-600 hover:gap-2 transition-all">
-                    View All <Icon name="arrow-right" class="w-4 h-4" />
-                </Link>
-            </div>
-            <div class="grid sm:grid-cols-3 gap-5">
-                <Link v-for="n in news" :key="n.title" href="/blog"
-                    class="rounded-2xl overflow-hidden border border-slate-100 hover:shadow-xl hover:shadow-slate-100 transition-all group bg-white">
-                    <div class="h-36 bg-gradient-to-br from-brand-50 to-brand-100 flex items-center justify-center">
-                        <Icon name="heart" class="w-10 h-10 text-brand-400 group-hover:scale-110 transition-transform" />
-                    </div>
-                    <div class="p-5">
-                        <p class="text-[11px] text-slate-400 font-semibold">{{ n.date }}</p>
-                        <h3 class="font-heading font-bold text-slate-900 text-base mt-1 group-hover:text-brand-600 transition-colors">{{ n.title }}</h3>
-                    </div>
-                </Link>
-            </div>
-        </section>
+     <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 mb-8">
+        <!-- Header -->
+        <div class="flex items-center justify-between mb-8">
+            <h2 class="font-heading font-extrabold text-2xl sm:text-3xl text-[#0f172a]">Latest News</h2>
+            <Link href="/blog" class="text-sm font-bold text-slate-500 hover:text-teal-600 transition-all flex items-center gap-1">
+                View All &rarr;
+            </Link>
+        </div>
+
+        <!-- News Cards Grid -->
+        <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            <Link v-for="n in news" :key="n.id" href="/blog"
+                class="rounded-3xl p-4 border border-slate-100 hover:shadow-xl hover:shadow-slate-100 transition-all group bg-white flex items-center gap-4">
+                
+                <!-- Left Side: Har news card ke liye uski apni random/static image -->
+                <div class="w-28 h-28 rounded-2xl overflow-hidden shrink-0 bg-slate-100">
+                    <img 
+                        :src="n.image" 
+                        :alt="n.title" 
+                        class="w-full h-full object-cover group-hover:scale-105 transition-transform" 
+                    />
+                </div>
+
+                <!-- Right Side: Content -->
+                <div class="flex-1 min-w-0 py-1">
+                    <p class="text-[11px] text-slate-400 font-semibold mb-1">{{ n.date }}</p>
+                    <h3 class="font-heading font-bold text-[#0f172a] text-sm sm:text-base leading-snug line-clamp-2 group-hover:text-teal-600 transition-colors mb-2">
+                        {{ n.title }}
+                    </h3>
+                    <span class="inline-flex items-center gap-1 text-xs font-bold text-teal-600">
+                        Read More &rarr;
+                    </span>
+                </div>
+            </Link>
+        </div>
+    </section>
     </PublicLayout>
 </template>
