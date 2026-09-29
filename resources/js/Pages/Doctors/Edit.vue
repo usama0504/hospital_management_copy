@@ -1,5 +1,6 @@
 <script setup>
 import { Link, useForm } from '@inertiajs/vue3';
+import { ref } from 'vue';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 
 // Controller se ane wala doctor prop
@@ -17,14 +18,36 @@ const form = useForm({
     specialization: props.doctor.specialization ?? '',
     department_id: props.doctor.department_id ?? '',
     consultation_fee: props.doctor.consultation_fee ?? '',
+    photo_url: null,
+    remove_photo: false,
 });
 
-// Form update handler (PUT request to update route)
+const photoPreview = ref(props.doctor.photo_url ?? null);
+const onPhotoChange = (e) => {
+    const file = e.target.files[0] || null;
+    form.photo_url = file;
+    photoPreview.value = file ? URL.createObjectURL(file) : (props.doctor.photo_url ?? null);
+};
+
+// Form update handler (PUT request to update route).
+// File upload ke sath PUT sahi se kaam nahi karta, is liye POST
+// bhejte hain aur _method=put spoof karte hain (Inertia ka standard tareeqa).
 const submit = () => {
-    form.put(route('doctors.update', props.doctor.id), {
+    form.transform((data) => ({
+        ...data,
+        _method: 'put',
+    })).post(route('doctors.update', props.doctor.id), {
         preserveScroll: true,
+        forceFormData: true,
     });
 };
+
+const removePhoto = () => {
+    form.photo_url = null;
+    form.remove_photo = true;
+    photoPreview.value = null;
+};
+
 </script>
 
 <template>
@@ -140,6 +163,33 @@ const submit = () => {
                             <div v-if="form.errors.consultation_fee"
                                 class="text-rose-600 text-[11px] mt-1 font-semibold">{{ form.errors.consultation_fee }}
                             </div>
+                        </div>
+
+                        <!-- Photo Field -->
+                        <div class="sm:col-span-2">
+                            <label for="photo_url"
+                                class="block text-[11px] font-bold text-gray-700 uppercase tracking-wider mb-1.5">Doctor
+                                Photo</label>
+                            <div class="flex items-center gap-4">
+                                <img v-if="photoPreview" :src="photoPreview" alt="Preview"
+                                    class="w-16 h-16 rounded-xl object-cover border border-gray-200" />
+                                <div v-else
+                                    class="w-16 h-16 rounded-xl bg-gray-50 border border-dashed border-gray-300 flex items-center justify-center text-gray-300 text-[10px] font-bold">
+                                    No Photo
+                                </div>
+                                <input type="file" id="photo_url" accept="image/*" @change="onPhotoChange"
+                                    class="text-xs font-medium text-gray-600 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-orange-50 file:text-orange-600 hover:file:bg-orange-100" />
+                            </div>
+                            <div v-if="form.errors.photo_url" class="text-rose-600 text-[11px] mt-1 font-semibold">{{
+                                form.errors.photo_url }}</div>
+                                <button
+    v-if="props.doctor.photo_url"
+    type="button"
+    @click="removePhoto"
+    class="text-xs font-bold text-rose-600 hover:text-rose-700"
+>
+    Remove Photo
+</button>
                         </div>
                     </div>
 

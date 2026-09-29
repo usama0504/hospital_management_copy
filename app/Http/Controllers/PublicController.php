@@ -63,7 +63,7 @@ class PublicController extends Controller
         return [
             'years' => '10+',
             'doctors' => Doctor::count() ?: '50+',
-            'patients' => '10,000+',
+            'patients' => Patient::count() ?:'10,000+',
             'satisfaction' => '95%',
         ];
     }
@@ -235,6 +235,7 @@ class PublicController extends Controller
             'patient_name' => ['required', 'string', 'max:255'],
             'patient_phone' => ['required', 'string', 'max:30'],
             'patient_email' => ['nullable', 'email', 'max:255'],
+            'patient_gender' => ['required', 'in:Male,Female,Other'],
             'appointment_date' => ['required', 'date', 'after_or_equal:today'],
             'appointment_time' => ['required'],
             'notes' => ['nullable', 'string', 'max:1000'],
@@ -310,8 +311,18 @@ class PublicController extends Controller
 
         $patient = Patient::firstOrCreate(
             ['email' => $email],
-            ['name' => $validated['patient_name'], 'phone' => $validated['patient_phone']]
+            [
+                'name' => $validated['patient_name'],
+                'phone' => $validated['patient_phone'],
+                'gender' => $validated['patient_gender'],
+            ]
         );
+
+        // Agar patient pehle se maujood hai lekin gender abhi set nahi
+        // hua, to public form se aya gender bhi save kar dein.
+        if (! $patient->gender) {
+            $patient->update(['gender' => $validated['patient_gender']]);
+        }
 
         Appointment::create([
             'patient_id' => $patient->id,

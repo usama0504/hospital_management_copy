@@ -90,9 +90,17 @@ const deleteDoctor = (id) => {
                         <div class="block sm:hidden divide-y divide-gray-100">
                             <div v-for="doctor in doctors.data" :key="doctor.id" class="p-4 space-y-3 bg-white">
                                 <div class="flex items-start justify-between gap-2">
-                                    <div>
-                                        <h3 class="font-bold text-sm text-gray-900">Dr. {{ doctor.name }}</h3>
-                                        <p class="text-xs text-gray-500">{{ doctor.email }}</p>
+                                    <div class="flex items-center gap-2.5">
+                                        <img v-if="doctor.photo_url" :src="doctor.photo_url" :alt="doctor.name"
+                                            class="w-9 h-9 rounded-lg object-cover border border-gray-100 shrink-0" />
+                                        <div v-else
+                                            class="w-9 h-9 rounded-lg bg-orange-50 text-orange-600 flex items-center justify-center text-xs font-black shrink-0">
+                                            {{ doctor.name?.charAt(0)?.toUpperCase() }}
+                                        </div>
+                                        <div>
+                                            <h3 class="font-bold text-sm text-gray-900">Dr. {{ doctor.name }}</h3>
+                                            <p class="text-xs text-gray-500">{{ doctor.email }}</p>
+                                        </div>
                                     </div>
                                     <span
                                         class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-orange-50 text-orange-600 border border-orange-100">
@@ -180,7 +188,17 @@ const deleteDoctor = (id) => {
                                 <tbody class="divide-y divide-gray-100 text-xs font-medium text-gray-700">
                                     <tr v-for="doctor in doctors.data" :key="doctor.id"
                                         class="hover:bg-gray-50/50 transition">
-                                        <td class="py-4 px-6 font-bold text-gray-900">Dr. {{ doctor.name }}</td>
+                                        <td class="py-4 px-6 font-bold text-gray-900">
+                                            <div class="flex items-center gap-2.5">
+                                                <img v-if="doctor.photo_url" :src="doctor.photo_url" :alt="doctor.name"
+                                                    class="w-8 h-8 rounded-lg object-cover border border-gray-100 shrink-0" />
+                                                <div v-else
+                                                    class="w-8 h-8 rounded-lg bg-orange-50 text-orange-600 flex items-center justify-center text-[10px] font-black shrink-0">
+                                                    {{ doctor.name?.charAt(0)?.toUpperCase() }}
+                                                </div>
+                                                <span>Dr. {{ doctor.name }}</span>
+                                            </div>
+                                        </td>
                                         <!-- <td class="py-4 px-6 text-gray-500">{{ doctor.email }}</td> -->
                                         <td class="py-4 px-6 text-gray-500">{{ doctor.phone ?? 'N/A' }}</td>
                                         <td class="py-4 px-6 text-gray-500">{{ doctor.gender ?? '—' }}</td>

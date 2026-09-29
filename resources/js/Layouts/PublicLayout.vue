@@ -26,7 +26,7 @@ const quickLinks = [
     { label: 'Services', href: '/services' },
 ];
 
-const departmentLinks = ['Cardiology', 'Pediatrics', 'Orthopedics', 'Dermatology', 'General Medicine'];
+const departmentLinks = computed(() => page.props.publicDepartments || []);
 </script>
 
 <template>
@@ -109,8 +109,9 @@ const departmentLinks = ['Cardiology', 'Pediatrics', 'Orthopedics', 'Dermatology
                 <div>
                     <h4 class="font-heading font-bold text-white text-sm mb-4">Departments</h4>
                     <ul class="space-y-2.5 text-sm">
-                        <li v-for="d in departmentLinks" :key="d">
-                            <Link href="/our-departments" class="hover:text-brand-400 transition-colors">{{ d }}</Link>
+                        <li v-for="d in departmentLinks" :key="d.id">
+                            <Link :href="`/our-departments/${d.id}`"
+                                class="hover:text-brand-400 transition-colors">{{ d.name }}</Link>
                         </li>
                     </ul>
                 </div>

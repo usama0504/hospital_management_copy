@@ -8,6 +8,7 @@ use App\Models\Department;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 
 class DoctorController extends Controller
@@ -68,6 +69,7 @@ class DoctorController extends Controller
             'password' => 'required|string|min:6', // Admin password set karega
             'department_id' => 'nullable|exists:departments,id',
             'consultation_fee' => 'nullable|numeric|min:0',
+            'photo_url' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
         ]);
 
         // 1. User create karein taake doctor login kar sakay
@@ -81,7 +83,15 @@ class DoctorController extends Controller
         $user->assignRole('doctor');
         $user->forceFill(['is_approved' => true])->save();
 
-        // 2. Doctors table mein entry karein
+        // 2. Photo upload karein (agar admin ne image di hai)
+        $photoUrl = null;
+
+        if ($request->hasFile('photo_url')) {
+            $path = $request->file('photo_url')->store('doctors', 'public');
+            $photoUrl = Storage::url($path);
+        }
+
+        // 3. Doctors table mein entry karein
         Doctor::create([
             'user_id' => $user->id,
             'name' => $validated['name'],
@@ -91,6 +101,7 @@ class DoctorController extends Controller
             'specialization' => $validated['specialization'],
             'department_id' => $validated['department_id'] ?? null,
             'consultation_fee' => $validated['consultation_fee'] ?? 0,
+            'photo_url' => $photoUrl,
         ]);
 
         return redirect()->route('doctors.index')->with('success', 'Doctor added successfully and can now log in.');
@@ -114,11 +125,35 @@ class DoctorController extends Controller
             'specialization' => 'required|string',
             'department_id' => 'nullable|exists:departments,id',
             'consultation_fee' => 'nullable|numeric|min:0',
+            'photo_url' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
         ]);
 
         // FIX: $request->all() ki jagah sirf validated fields update karein
-        // (mass-assignment se bachne ke liye)
-        $doctor->update($validated);
+        // (mass-assignment se bachne ke liye). 'photo' khud DB column nahi
+        // hai, is liye pehle update array se nikal dein.
+        $data = collect($validated)->except('photo_url')->toArray();
+
+        // Agar admin ne nayi photo di hai, to purani photo storage se
+        // delete kar ke nayi save kar dein.
+        if ($request->boolean('remove_photo') && $doctor->photo_url) {
+            Storage::disk('public')->delete(
+                str_replace('/storage/', '', $doctor->photo_url)
+            );
+
+            $data['photo_url'] = null;
+        }
+        if ($request->hasFile('photo_url')) {
+            if ($doctor->photo_url) {
+                Storage::disk('public')->delete(
+                    str_replace('/storage/', '', $doctor->photo_url)
+                );
+            }
+            $data['photo_url'] = Storage::url(
+                $request->file('photo_url')->store('doctors', 'public')
+            );
+        }
+
+        $doctor->update($data);
 
         // Agar doctors table mein user_id link hai aur user table update karna ho toh wo bhi kar sakte hain
         if ($doctor->user_id) {

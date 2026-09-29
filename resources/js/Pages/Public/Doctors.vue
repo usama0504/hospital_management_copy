@@ -52,7 +52,11 @@ const applyFilters = () => {
                     class="bg-white rounded-2xl p-6 text-center border border-slate-100 hover:shadow-lg hover:shadow-slate-200/60 transition-all">
                     <Avatar :name="doc.name" :photo-url="doc.photo_url" size="lg" class="mx-auto mb-4" />
                     <h3 class="font-heading font-bold text-slate-900">Dr. {{ doc.name }}</h3>
-                    <p class="text-xs text-brand-600 font-semibold mb-4">{{ doc.department?.name || doc.specialization }}</p>
+                    <p class="text-xs text-brand-600 font-semibold mb-2">{{ doc.department?.name || doc.specialization }}</p>
+                    <p v-if="doc.consultation_fee" class="text-[11px] font-bold text-slate-500 mb-4">
+                        Consultation: <span class="text-brand-700">Rs. {{ doc.consultation_fee }}</span>
+                    </p>
+                    <div v-else class="mb-4"></div>
                     <Link :href="`/our-doctors/${doc.id}`"
                         class="block text-xs font-bold bg-brand-600 text-white py-2.5 rounded-lg hover:bg-brand-700 transition">
                         View Profile

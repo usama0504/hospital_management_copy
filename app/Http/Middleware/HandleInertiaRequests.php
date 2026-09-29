@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\Department;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -50,6 +51,14 @@ class HandleInertiaRequests extends Middleware
                 'warning' => fn () => $request->session()->get('warning'),
                 'password_success' => fn () => $request->session()->get('password_success'),
             ],
+
+            // Public site footer ki "Departments" list ke liye — taake har
+            // department apne hi (id-wale) page par link kare, ek hi generic
+            // URL par nahi.
+            'publicDepartments' => fn () => Department::where('status', true)
+                ->orderBy('name')
+                ->take(5)
+                ->get(['id', 'name']),
         ];
     }
 }

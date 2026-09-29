@@ -68,7 +68,9 @@ const statusClass = (status) => {
                 <!-- Profile Card -->
                 <div class="bg-white border border-gray-100 shadow-sm rounded-2xl p-6 sm:p-8">
                     <div class="flex items-center gap-4 mb-6">
-                        <div
+                        <img v-if="doctor.photo_url" :src="doctor.photo_url" :alt="doctor.name"
+                            class="w-14 h-14 rounded-2xl object-cover border border-gray-100" />
+                        <div v-else
                             class="w-14 h-14 rounded-2xl bg-orange-100 text-orange-600 flex items-center justify-center text-xl font-black">
                             {{ doctor.name?.charAt(0)?.toUpperCase() }}
                         </div>

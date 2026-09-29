@@ -26,6 +26,7 @@ const form = useForm({
     patient_name: '',
     patient_phone: '',
     patient_email: '',
+    patient_gender: '',
     notes: '',
 });
 
@@ -94,7 +95,7 @@ const chooseDepartment = (id) => { form.department_id = id; form.doctor_id = '';
 const chooseDoctor = (id) => { form.doctor_id = id; next(); };
 
 const canContinueDate = computed(() => form.appointment_date && form.appointment_time);
-const canContinuePatient = computed(() => form.patient_name && form.patient_phone);
+const canContinuePatient = computed(() => form.patient_name && form.patient_phone && form.patient_gender);
 
 const submit = () => {
     form.post('/book-appointment', {
@@ -154,10 +155,14 @@ const submit = () => {
                     <button v-for="d in filteredDoctors" :key="d.id" type="button" @click="chooseDoctor(d.id)"
                         :class="['p-4 rounded-xl border flex items-center gap-3 text-left transition', String(form.doctor_id) === String(d.id) ? 'border-brand-500 bg-brand-50' : 'border-slate-200 hover:border-brand-300']">
                         <Avatar :name="d.name" :photo-url="d.photo_url" size="sm" />
-                        <div class="min-w-0">
+                        <div class="min-w-0 flex-1">
                             <p class="text-sm font-bold text-slate-800 truncate">Dr. {{ d.name }}</p>
                             <p class="text-xs text-slate-400 truncate">{{ d.specialization }}</p>
                         </div>
+                        <span v-if="d.consultation_fee"
+                            class="shrink-0 text-[11px] font-bold text-brand-600 bg-brand-50 px-2 py-1 rounded-lg">
+                            Rs. {{ d.consultation_fee }}
+                        </span>
                     </button>
                 </div>
                 <p v-if="!filteredDoctors.length" class="text-sm text-slate-400">No doctors available in this department
@@ -222,6 +227,18 @@ const submit = () => {
                             class="w-full rounded-xl border-slate-200 text-sm focus:border-brand-400 focus:ring-brand-400" />
                     </div>
                     <div>
+                        <label class="text-xs font-bold text-slate-500 mb-1.5 block">Gender</label>
+                        <select v-model="form.patient_gender"
+                            class="w-full rounded-xl border-slate-200 text-sm focus:border-brand-400 focus:ring-brand-400">
+                            <option value="" disabled>Select Gender</option>
+                            <option value="Male">Male</option>
+                            <option value="Female">Female</option>
+                            <option value="Other">Other</option>
+                        </select>
+                        <p v-if="form.errors.patient_gender" class="text-xs text-rose-500 mt-1">{{
+                            form.errors.patient_gender }}</p>
+                    </div>
+                    <div>
                         <label class="text-xs font-bold text-slate-500 mb-1.5 block">Email (optional)</label>
                         <input v-model="form.patient_email" type="email" placeholder="you@example.com"
                             class="w-full rounded-xl border-slate-200 text-sm focus:border-brand-400 focus:ring-brand-400" />
@@ -262,6 +279,15 @@ const submit = () => {
                         <span class="text-slate-400">Patient</span>
                         <span class="font-semibold text-slate-800">{{ form.patient_name }} &middot; {{
                             form.patient_phone }}</span>
+                    </div>
+                    <div class="flex justify-between px-5 py-3.5 text-sm">
+                        <span class="text-slate-400">Gender</span>
+                        <span class="font-semibold text-slate-800">{{ form.patient_gender || '-' }}</span>
+                    </div>
+                    <div v-if="selectedDoctor?.consultation_fee"
+                        class="flex justify-between px-5 py-3.5 text-sm bg-brand-50/60">
+                        <span class="text-brand-700 font-bold">Consultation Fee (payable at hospital)</span>
+                        <span class="font-black text-brand-700">Rs. {{ selectedDoctor.consultation_fee }}</span>
                     </div>
                 </div>
                 <p v-if="form.errors.doctor_id || form.errors.appointment_date || form.errors.appointment_time"
