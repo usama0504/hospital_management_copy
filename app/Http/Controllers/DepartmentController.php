@@ -52,7 +52,7 @@ class DepartmentController extends Controller
         $data = collect($validated)->except('image')->toArray();
 
         if ($request->hasFile('image')) {
-            // Purani image storage se hata dein taake disk na bhare
+
             if ($department->image_url) {
                 Storage::disk('public')->delete(str_replace('/storage/', '', $department->image_url));
             }
@@ -65,6 +65,11 @@ class DepartmentController extends Controller
     }
     public function destroy(Department $department)
     {
+   
+        if ($department->image_url) {
+            Storage::disk('public')->delete(str_replace('/storage/', '', $department->image_url));
+        }
+
         $department->delete();
         return redirect()->route('departments.index')->with('success', 'Department deleted successfully.');
     }

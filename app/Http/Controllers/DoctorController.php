@@ -38,7 +38,6 @@ class DoctorController extends Controller
                 ->count(),
         ];
 
-        // Doctor role wale user ko dusre doctors ke patients ki list nahi dikhate
         $recentAppointments = $isDoctor
             ? []
             : $doctor->appointments()->with('patient')->latest('appointment_date')->limit(10)->get();
@@ -66,24 +65,18 @@ class DoctorController extends Controller
             'phone' => 'required|string',
             'gender' => 'required|in:Male,Female,Other',
             'specialization' => 'required|string',
-            'password' => 'required|string|min:6', // Admin password set karega
+            'password' => 'required|string|min:6', 
             'department_id' => 'nullable|exists:departments,id',
             'consultation_fee' => 'nullable|numeric|min:0',
             'photo_url' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
         ]);
-
-        // 1. User create karein taake doctor login kar sakay
         $user = User::create([
             'name' => $validated['name'],
             'email' => $validated['email'],
             'password' => Hash::make($validated['password']),
         ]);
-
-        // Role assign karein aur account direct approve kar dein
         $user->assignRole('doctor');
         $user->forceFill(['is_approved' => true])->save();
-
-        // 2. Photo upload karein (agar admin ne image di hai)
         $photoUrl = null;
 
         if ($request->hasFile('photo_url')) {
@@ -91,7 +84,6 @@ class DoctorController extends Controller
             $photoUrl = Storage::url($path);
         }
 
-        // 3. Doctors table mein entry karein
         Doctor::create([
             'user_id' => $user->id,
             'name' => $validated['name'],
@@ -128,9 +120,6 @@ class DoctorController extends Controller
             'photo_url' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
         ]);
 
-        // FIX: $request->all() ki jagah sirf validated fields update karein
-        // (mass-assignment se bachne ke liye). 'photo' khud DB column nahi
-        // hai, is liye pehle update array se nikal dein.
         $data = collect($validated)->except('photo_url')->toArray();
 
         // Agar admin ne nayi photo di hai, to purani photo storage se
@@ -155,7 +144,6 @@ class DoctorController extends Controller
 
         $doctor->update($data);
 
-        // Agar doctors table mein user_id link hai aur user table update karna ho toh wo bhi kar sakte hain
         if ($doctor->user_id) {
             $user = User::find($doctor->user_id);
             if ($user) {
@@ -174,6 +162,10 @@ class DoctorController extends Controller
         // Optional: Agar aap chahte hain ke doctor delete hone par user account bhi delete ho jaye
         if ($doctor->user_id) {
             User::where('id', $doctor->user_id)->delete();
+        }
+
+        if ($doctor->photo_url) {
+            Storage::disk('public')->delete(str_replace('/storage/', '', $doctor->photo_url));
         }
 
         $doctor->delete();

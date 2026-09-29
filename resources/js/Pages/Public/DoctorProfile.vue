@@ -82,7 +82,10 @@ const formatTime = (t) => {
             <aside class="space-y-5">
                 <div class="rounded-2xl border border-slate-100 p-6">
                     <h3 class="font-heading font-bold text-slate-900 mb-4">Consultation Fee</h3>
-                    <p class="font-heading font-extrabold text-2xl text-brand-600">Rs. {{ doctor.consultation_fee || '1,500' }}</p>
+                      <p v-if="doctor.consultation_fee" class="font-heading font-extrabold text-2xl text-brand-600">
+                                Rs. {{ doctor.consultation_fee }}
+                       </p>
+                      <p v-else class="font-heading font-bold text-lg text-slate-500">Contact for pricing</p>
                     <p class="text-xs text-slate-400 mt-1">Per visit</p>
                 </div>
                 <div v-if="related.length" class="rounded-2xl border border-slate-100 p-6">
