@@ -5,6 +5,8 @@ import PublicLayout from '@/Layouts/PublicLayout.vue';
 import PageHero from '@/Components/Public/PageHero.vue';
 import Icon from '@/Components/Public/Icon.vue';
 
+import serviceBg from '@/images/servicebg.png';
+
 const props = defineProps({
     services: { type: Array, default: () => [] },
 });
@@ -18,7 +20,7 @@ const filtered = computed(() => {
 
 <template>
     <PublicLayout>
-        <PageHero title="Our Medical Services" subtitle="Comprehensive Healthcare Services For You" />
+        <PageHero title="Our Medical Services" subtitle="Comprehensive Healthcare Services For You" :bgImage="serviceBg" />
 
         <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14">
             <div class="relative max-w-md mx-auto mb-12">

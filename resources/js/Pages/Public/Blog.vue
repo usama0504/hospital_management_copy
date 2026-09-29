@@ -4,6 +4,8 @@ import PublicLayout from '@/Layouts/PublicLayout.vue';
 import PageHero from '@/Components/Public/PageHero.vue';
 import Icon from '@/Components/Public/Icon.vue';
 
+import blogsBg from '@/images/blogs-bg.png';
+
 const props = defineProps({
     posts: { type: Array, default: () => [] },
 });
@@ -17,7 +19,7 @@ const filtered = computed(() => {
 
 <template>
     <PublicLayout>
-        <PageHero title="Latest News" subtitle="Stay Updated with Our Health Tips and News" />
+        <PageHero title="Latest News" subtitle="Stay Updated with Our Health Tips and News" :bgImage="blogsBg" />
 
         <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14">
             <div class="relative max-w-md mx-auto mb-12">

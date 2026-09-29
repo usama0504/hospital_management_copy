@@ -271,9 +271,8 @@ const submit = () => {
                         <span class="font-semibold text-slate-800">Dr. {{ selectedDoctor?.name || '-' }}</span>
                     </div>
                     <div class="flex justify-between px-5 py-3.5 text-sm">
-                        <span class="text-slate-400">Date &amp; Time</span>
-                        <span class="font-semibold text-slate-800">{{ form.appointment_date }} at {{
-                            form.appointment_time }}</span>
+                       <span class="text-slate-400">Date &amp; Time</span>
+                       <span class="font-semibold text-slate-800">{{ form.appointment_date }} at {{ formatSlot(form.appointment_time) }}</span>
                     </div>
                     <div class="flex justify-between px-5 py-3.5 text-sm">
                         <span class="text-slate-400">Patient</span>

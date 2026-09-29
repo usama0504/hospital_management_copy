@@ -4,6 +4,8 @@ import PublicLayout from '@/Layouts/PublicLayout.vue';
 import PageHero from '@/Components/Public/PageHero.vue';
 import Icon from '@/Components/Public/Icon.vue';
 
+import contactBg from '@/images/contact.png';
+
 const form = useForm({
     name: '',
     email: '',
@@ -21,7 +23,7 @@ const submit = () => {
 
 <template>
     <PublicLayout>
-        <PageHero title="Contact Us" subtitle="We're Here to Help You" />
+        <PageHero title="Contact Us" subtitle="We're Here to Help You" :bgImage="contactBg" />
 
         <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 grid lg:grid-cols-[1fr,1.2fr] gap-12">
             <div>
