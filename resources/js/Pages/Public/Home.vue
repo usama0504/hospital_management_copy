@@ -84,106 +84,93 @@ const iconFor = (name) => props.meta?.[name]?.icon || 'stethoscope';
         </section>
 
         <!-- Departments -->
-    <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-        <!-- Header with Title & View All Link -->
-        <div class="flex items-center justify-between mb-6">
+          <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <!-- Header with Title & View All Link -->
+    <div class="flex items-center justify-between mb-8">
+        <div>
             <h2 class="font-heading font-extrabold text-2xl sm:text-3xl text-[#0F3557]">Our Departments</h2>
-            <Link href="/our-departments" class="text-sm font-bold text-slate-500 hover:text-teal-600 transition-all flex items-center gap-1">
-                View All &rarr;
-            </Link>
+            <p class="text-sm text-slate-500 mt-1">Explore our specialized medical departments and expert care.</p>
         </div>
+        <Link href="/our-departments" class="text-sm font-bold text-slate-500 hover:text-teal-600 transition-all flex items-center gap-1">
+            View All &rarr;
+        </Link>
+    </div>
 
-        <!-- Cards Grid -->
-        <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            <Link v-for="d in departments" :key="d.id" :href="`/our-departments/${d.id}`"
-                class="group rounded-3xl overflow-hidden border border-slate-100 hover:shadow-xl hover:shadow-slate-100 transition-all bg-white flex flex-col">
-                
-                <!-- Top Half: Light Blue background with Icon or Image -->
-                <div class="h-44 bg-[#f0f4f9] flex items-center justify-center p-4 group-hover:bg-[#e4ebf5] transition-colors">
-                    <span class="text-teal-600">
-                        <img v-if="d.image_url" :src="d.image_url" :alt="d.name" class="w-20 h-20 object-contain" />
-                        <Icon v-else :name="iconFor(d.name)" class="w-16 h-16 text-teal-600" />
-                    </span>
+    <!-- Cards Grid -->
+    <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <Link v-for="d in departments" :key="d.id" :href="`/our-departments/${d.id}`"
+            class="group relative rounded-2xl overflow-hidden border border-slate-100 bg-white shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col">
+            
+            <!-- Top Half: Full Image (object-left so right side is protected from cutting) -->
+            <div class="h-48 relative overflow-hidden bg-slate-100">
+                <template v-if="d.image_url">
+                    <img :src="d.image_url" :alt="d.name" class="w-full h-full object-cover object-right group-hover:scale-110 transition-transform duration-500" />
+                    <!-- Subtly gradient overlay taake image aur khoobsurat lagay -->
+                    <div class="absolute inset-0 bg-gradient-to-t from-slate-950/60 via-transparent to-transparent opacity-50 group-hover:opacity-30 transition-opacity"></div>
+                </template>
+                <template v-else>
+                    <div class="w-full h-full bg-gradient-to-br from-teal-50 to-blue-50 flex items-center justify-center text-teal-600">
+                        <Icon :name="iconFor(d.name)" class="w-16 h-16" />
+                    </div>
+                </template>
+            </div>
+
+            <!-- Bottom Half: Content Area -->
+            <div class="p-5 bg-white flex-1 flex flex-col justify-between">
+                <div>
+                    <h3 class="font-heading font-bold text-[#0f172a] text-lg mb-1 group-hover:text-teal-600 transition-colors">{{ d.name }}</h3>
+                    <p class="text-xs text-slate-500 line-clamp-2 leading-relaxed">{{ d.description || 'Specialized medical care and advanced treatments.' }}</p>
                 </div>
 
-                <!-- Bottom Half: White background with Title & Description -->
-                <div class="p-5 text-center bg-white flex-1 flex flex-col justify-center">
-                    <h3 class="font-heading font-bold text-[#0f172a] text-lg mb-1">{{ d.name }}</h3>
-                    <p class="text-xs text-slate-400 line-clamp-1">{{ d.description || 'Specialized medical care' }}</p>
+                <div class="mt-4 pt-3 border-t border-slate-50 flex items-center justify-between text-xs font-semibold text-teal-600">
+                    <span>Explore Department</span>
+                    <span class="transform group-hover:translate-x-1 transition-transform">&rarr;</span>
                 </div>
-            </Link>
-        </div>
-    </section>
+            </div>
+        </Link>
+    </div>
+</section>
 
         <!-- Doctors -->
-<section class="py-10 bg-white">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <!-- Header -->
-            <div class="flex items-center justify-between mb-8">
-                <h2 class="font-heading font-extrabold text-2xl sm:text-3xl text-[#0f172a]">Our Doctors</h2>
-                <Link href="/our-doctors" class="text-sm font-bold text-slate-500 hover:text-teal-600 transition-all flex items-center gap-1">
-                    View All &rarr;
+      <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <!-- Header with Title & View All Link -->
+    <div class="flex items-center justify-between mb-8">
+        <h2 class="font-heading font-extrabold text-2xl sm:text-3xl text-[#0F3557]">Our Doctors</h2>
+        <Link href="/our-doctors" class="text-sm font-bold text-slate-500 hover:text-teal-600 transition-all flex items-center gap-1">
+            View All &rarr;
+        </Link>
+    </div>
+
+    <!-- Cards Grid (4 Columns matching your reference image) -->
+    <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div v-for="doc in doctors" :key="doc.id"
+            class="rounded-3xl overflow-hidden border border-slate-100 bg-white shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col">
+
+            <div class="h-56 w-full bg-slate-100 overflow-hidden relative">
+                <template v-if="doc.photo_url">
+                    <img :src="doc.photo_url" :alt="doc.name" class="w-full h-full object-cover object-top" />
+                </template>
+                <template v-else>
+                    <div class="w-full h-full flex items-center justify-center text-slate-400">
+                        <Avatar :name="doc.name" size="lg" />
+                    </div>
+                </template>
+            </div>
+
+            <div class="p-5 text-center bg-white flex-1 flex flex-col justify-between">
+                <div>
+                    <h3 class="font-heading font-bold text-[#0F3557] text-base mb-0.5">Dr. {{ doc.name }}</h3>
+                    <p class="text-sm text-slate-400 font-medium mb-5">{{ doc.department?.name || doc.specialization || 'Specialist' }}</p>
+                </div>
+
+                <Link :href="`/our-doctors/${doc.id}`"
+                    class="w-full text-xs font-bold bg-[#014d88] hover:bg-[#013b6d] text-white py-2.5 rounded-full transition-all shadow-sm text-center block tracking-wide">
+                    View Profile
                 </Link>
             </div>
-
-            <!-- Doctors Grid -->
-            <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                <div v-for="doc in doctors" :key="doc.id"
-                    class="rounded-3xl overflow-hidden border border-slate-100 hover:shadow-xl hover:shadow-slate-100 transition-all bg-white flex flex-col">
-                    
-                    <!-- Top Half: Light blue background with doctor image -->
-                    <div class="h-52 bg-[#f0f4f9] overflow-hidden flex items-end justify-center">
-                        <img v-if="doc.photo_url" :src="doc.photo_url" :alt="doc.name" class="w-full h-full object-cover object-top" />
-                        <div v-else class="w-full h-full flex items-center justify-center text-slate-400">
-                            <Avatar :name="doc.name" size="lg" />
-                        </div>
-                    </div>
-
-                    <!-- Bottom Half: White background with details and button -->
-                    <div class="p-5 text-center bg-white flex-1 flex flex-col justify-between">
-                        <div>
-                            <h3 class="font-heading font-bold text-[#0f172a] text-base mb-0.5">{{ doc.name }}</h3>
-                            <p class="text-xs text-slate-400 font-medium mb-4">{{ doc.department?.name || doc.specialization }}</p>
-                        </div>
-                        <Link :href="`/our-doctors/${doc.id}`"
-                            class="w-full text-xs font-bold bg-[#014d88] hover:bg-[#013b6d] text-white py-2.5 rounded-xl transition shadow-sm text-center">
-                            View Profile
-                        </Link>
-                    </div>
-                </div>
-            </div>
         </div>
-    </section>
-
-        <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-        <div class="grid grid-cols-2 lg:grid-cols-4 gap-6 text-center">
-            
-            <!-- Years Experience -->
-            <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
-                <p class="font-heading font-extrabold text-3xl sm:text-4xl text-[#0d9488]">{{ stats.years || '10+' }}</p>
-                <p class="text-xs text-slate-500 font-bold mt-1 uppercase tracking-wider">Years Experience</p>
-            </div>
-
-            <!-- Expert Doctors -->
-            <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
-                <p class="font-heading font-extrabold text-3xl sm:text-4xl text-[#0b314a]">{{ stats.doctors || '50+' }}</p>
-                <p class="text-xs text-slate-500 font-bold mt-1 uppercase tracking-wider">Expert Doctors</p>
-            </div>
-
-            <!-- Happy Patients -->
-            <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
-                <p class="font-heading font-extrabold text-3xl sm:text-4xl text-[#0d9488]">{{ stats.patients || '10,000+' }}</p>
-                <p class="text-xs text-slate-500 font-bold mt-1 uppercase tracking-wider">Happy Patients</p>
-            </div>
-
-            <!-- Positive Reviews -->
-            <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
-                <p class="font-heading font-extrabold text-3xl sm:text-4xl text-[#0b314a]">{{ stats.satisfaction || '95%' }}</p>
-                <p class="text-xs text-slate-500 font-bold mt-1 uppercase tracking-wider">Positive Reviews</p>
-            </div>
-
-        </div>
-    </section>
+    </div>
+</section>
 
         <!-- CTA -->
        <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">

@@ -13,23 +13,38 @@ defineProps({
 </script>
 
 <template>
-    <PublicLayout>
-        <section class="relative bg-slate-900 py-16 sm:py-20 overflow-hidden">
-            <div class="absolute inset-0 bg-gradient-to-br from-brand-900 via-slate-900 to-slate-900"></div>
-            <div class="absolute -right-24 -top-24 w-96 h-96 rounded-full bg-brand-600/20 blur-3xl"></div>
-            <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-                <span class="inline-flex w-14 h-14 rounded-2xl bg-white/10 text-white items-center justify-center mb-4">
-                    <Icon :name="icon" class="w-7 h-7" />
-                </span>
-                <h1 class="font-heading font-extrabold text-3xl sm:text-4xl text-white">{{ department.name }}</h1>
-                <p class="mt-3 text-slate-300 max-w-2xl mx-auto">Advanced, dedicated care for a healthier life.</p>
-            </div>
-        </section>
+  <PublicLayout>
+       <!-- Hero Section -->
+      <section class="relative bg-slate-900 overflow-hidden h-56 sm:h-64 flex items-center">
 
+         <div v-if="department.image_url" class="absolute inset-0 z-0">
+             <img :src="department.image_url":alt="department.name" class="w-full h-full object-cover object-center"/>
+
+             <div class="absolute inset-0 bg-slate-900/40"></div>
+         </div>
+
+          <div v-else class="absolute inset-0 bg-gradient-to-r from-brand-900 to-slate-900 z-0"></div>
+
+           <div class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
+               <div class="max-w-xl pl-4 sm:pl-8 lg:pl-12">
+                   <h1 class="font-heading font-extrabold text-4xl sm:text-4xl text-white tracking-tight drop-shadow-md">
+                     {{ department.name }}
+                   </h1>
+                  <p class="mt-2 text-white/80 text-lg sm:text-base font-medium drop-shadow">
+                     {{ department.description
+                     ? department.description.substring(0, 80) + '...' : `Advanced ${department.name} Care for a Healthier Life` }}
+                 </p>
+             </div>
+          </div> 
+      </section>
+
+        <!-- Main Section -->
         <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-20 grid lg:grid-cols-2 gap-12">
             <div>
-                <div class="aspect-video rounded-2xl bg-gradient-to-br from-brand-100 to-brand-200 flex items-center justify-center mb-8">
-                    <Icon :name="icon" class="w-20 h-20 text-brand-400" />
+                <div class="aspect-video rounded-2xl overflow-hidden bg-gradient-to-br from-brand-100 to-brand-200 flex items-center justify-center mb-8 shadow-sm">
+                    <img v-if="department.image_url" :src="department.image_url" :alt="department.name"
+                        class="w-full h-full object-cover" />
+                    <Icon v-else :name="icon" class="w-20 h-20 text-brand-400" />
                 </div>
                 <h2 class="font-heading font-bold text-2xl text-slate-900 mb-3">{{ department.name }}</h2>
                 <p class="text-slate-500 leading-relaxed">
@@ -50,7 +65,7 @@ defineProps({
 
                 <h3 class="font-heading font-bold text-xl text-slate-900 mb-5">Our {{ department.name }} Specialists</h3>
                 <div v-if="doctors.length" class="grid sm:grid-cols-2 gap-4 mb-8">
-                    <div v-for="doc in doctors" :key="doc.id" class="bg-white rounded-xl p-4 border border-slate-100 flex items-center gap-3">
+                    <div v-for="doc in doctors" :key="doc.id" class="bg-white rounded-xl p-4 border border-slate-100 flex items-center gap-3 shadow-sm">
                         <Avatar :name="doc.name" :photo-url="doc.photo_url" size="md" />
                         <div class="min-w-0">
                             <p class="font-heading font-bold text-sm text-slate-900 truncate">Dr. {{ doc.name }}</p>

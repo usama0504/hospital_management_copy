@@ -1,15 +1,24 @@
 <script setup>
 import { useForm, Link } from '@inertiajs/vue3';
+import { ref } from 'vue';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 
 const form = useForm({
     name: '',
     description: '',
     status: true,
+    image: null,
 });
 
+const photoPreview = ref(null);
+const onPhotoChange = (e) => {
+    const file = e.target.files[0] || null;
+    form.image = file;
+    photoPreview.value = file ? URL.createObjectURL(file) : null;
+};
+
 const submit = () => {
-    form.post(route('departments.store'));
+    form.post(route('departments.store'), { forceFormData: true });
 };
 </script>
 
@@ -43,6 +52,21 @@ const submit = () => {
                         <textarea v-model="form.description" rows="4" placeholder="Enter department description"
                             class="w-full bg-gray-50/50 border border-gray-200 rounded-xl px-3.5 py-2.5 text-xs font-medium text-gray-700 focus:outline-none focus:bg-white focus:border-orange-500 focus:ring-2 focus:ring-orange-500/25 transition"></textarea>
                         <div v-if="form.errors.description" class="text-rose-500 text-[10px] mt-1 font-semibold">{{ form.errors.description }}</div>
+                    </div>
+
+                    <div>
+                        <label class="block text-[11px] font-bold text-gray-700 uppercase tracking-wider mb-1.5">Department Picture</label>
+                        <div class="flex items-center gap-4">
+                            <img v-if="photoPreview" :src="photoPreview" alt="Preview"
+                                class="w-16 h-16 rounded-xl object-cover border border-gray-200" />
+                            <div v-else
+                                class="w-16 h-16 rounded-xl bg-gray-50 border border-dashed border-gray-300 flex items-center justify-center text-gray-300 text-[10px] font-bold">
+                                No Photo
+                            </div>
+                            <input type="file" accept="image/*" @change="onPhotoChange"
+                                class="text-xs font-medium text-gray-600 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-orange-50 file:text-orange-600 hover:file:bg-orange-100" />
+                        </div>
+                        <div v-if="form.errors.image" class="text-rose-500 text-[10px] mt-1 font-semibold">{{ form.errors.image }}</div>
                     </div>
 
                     <label class="flex items-center gap-2.5 cursor-pointer w-fit">
