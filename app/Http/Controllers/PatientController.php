@@ -98,12 +98,49 @@ class PatientController extends Controller
             'email' => 'required|email|unique:patients,email',
             'phone' => 'required|string',
             'address' => 'nullable|string',
+            'gender' => 'required|in:Male,Female,Other',
             'dob' => 'nullable|date',
         ]);
 
         Patient::create($request->all());
 
         return redirect()->route('patients.index')->with('success', 'Patient added successfully.');
+    }
+
+    public function show(Patient $patient)
+    {
+        $user = Auth::user();
+        $isDoctor = $this->userHasRole('doctor');
+
+        // Doctor sirf apne patients ki details dekh sakta hai
+        if ($isDoctor) {
+            $doctor = Doctor::where('email', $user->email)->first();
+
+            $hasAccess = $doctor && Appointment::where('doctor_id', $doctor->id)
+                ->where('patient_id', $patient->id)
+                ->where('status', '!=', 'Cancelled')
+                ->exists();
+
+            if (!$hasAccess) {
+                abort(403, 'You can only view your own patients.');
+            }
+        }
+
+        $patient->load([
+            'appointments' => fn($q) => $q->with('doctor.department')->latest('appointment_date'),
+            'prescriptions' => fn($q) => $q->with(['doctor', 'items'])->latest('prescribed_date'),
+        ]);
+
+        // Billing information doctor ko nahi dikhayi jaati
+        if (!$isDoctor) {
+            $patient->load(['bills' => fn($q) => $q->with('doctor')->latest('bill_date')]);
+        }
+
+        return Inertia::render('Patients/Show', [
+            'patient' => $patient,
+            'canManagePatients' => $this->userHasRole(['admin', 'receptionist']),
+            'canViewBills' => !$isDoctor,
+        ]);
     }
 
     public function edit(Patient $patient)
@@ -128,6 +165,7 @@ class PatientController extends Controller
             'email' => 'required|email|unique:patients,email,' . $patient->id,
             'phone' => 'required|string',
             'address' => 'nullable|string',
+            'gender' => 'required|in:Male,Female,Other',
             'dob' => 'nullable|date',
         ]);
 
