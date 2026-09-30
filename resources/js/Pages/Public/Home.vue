@@ -164,7 +164,7 @@ const iconFor = (name) => props.meta?.[name]?.icon || 'stethoscope';
                 </div>
 
                 <Link :href="`/our-doctors/${doc.id}`"
-                    class="w-full text-xs font-bold bg-[#014d88] hover:bg-[#013b6d] text-white py-2.5 rounded-full transition-all shadow-sm text-center block tracking-wide">
+                    class="w-full text-xs font-bold bg-brand-600 hover:bg-brand-700 text-white py-2.5 rounded-full transition-all shadow-sm text-center block tracking-wide">
                     View Profile
                 </Link>
             </div>
