@@ -41,6 +41,21 @@ class Doctor extends Model
     {
         return $this->hasMany(Prescription::class);
     }
+
+    public function reviews()
+    {
+        return $this->hasMany(Review::class)->where('is_approved', true)->latest();
+    }
+
+    public function getAverageRatingAttribute()
+    {
+        return round($this->reviews()->avg('rating') ?? 0, 1);
+    }
+
+    public function getReviewsCountAttribute()
+    {
+        return $this->reviews()->count();
+    }
     public function department()
     {
         return $this->belongsTo(Department::class);
