@@ -33,7 +33,7 @@ const departmentLinks = computed(() => page.props.publicDepartments || []);
     <div class="min-h-screen flex flex-col bg-white font-sans text-slate-700">
         <!-- Navbar -->
         <header class="sticky top-0 z-50 bg-white/90 backdrop-blur border-b border-slate-100">
-            <nav class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <nav class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
                  <Link href="/" class="flex items-center gap-2 shrink-0">
                      <span class="w-9 h-9 rounded-xl bg-brand-600 flex items-center justify-center font-heading font-extrabold text-white text-base">
                            HC
@@ -45,14 +45,14 @@ const departmentLinks = computed(() => page.props.publicDepartments || []);
 
                 <div class="hidden lg:flex items-center gap-8">
                     <Link v-for="item in nav" :key="item.href" :href="item.href"
-                        :class="['text-sm font-semibold transition-colors', isActive(item.href) ? 'text-brand-600' : 'text-slate-600 hover:text-brand-600']">
+                        :class="['text-md font-semibold transition-colors', isActive(item.href) ? 'text-brand-600' : 'text-slate-600 hover:text-brand-600']">
                         {{ item.label }}
                     </Link>
                 </div>
 
                 <div class="hidden lg:block">
                     <Link href="/book-appointment"
-                        class="inline-flex items-center gap-1.5 bg-brand-600 text-white text-sm font-bold px-5 py-2.5 rounded-xl hover:bg-brand-700 transition shadow-sm shadow-brand-600/20">
+                        class="inline-flex items-center gap-1.5 bg-brand-600 text-white text-md font-bold px-5 py-2.5 rounded-xl hover:bg-brand-700 transition shadow-sm shadow-brand-600/20">
                         Book Appointment
                     </Link>
                 </div>
@@ -100,8 +100,8 @@ const departmentLinks = computed(() => page.props.publicDepartments || []);
                 <div>
                     <h4 class="font-heading font-bold text-white text-sm mb-4">Quick Links</h4>
                     <ul class="space-y-2.5 text-sm">
-                        <li v-for="l in quickLinks" :key="l.href">
-                            <Link :href="l.href" class="hover:text-brand-400 transition-colors">{{ l.label }}</Link>
+                        <li v-for="link in quickLinks" :key="link.href">
+                            <Link :href="link.href" class="hover:text-brand-400 transition-colors">{{ link.label }}</Link>
                         </li>
                     </ul>
                 </div>
@@ -125,11 +125,11 @@ const departmentLinks = computed(() => page.props.publicDepartments || []);
                         </li>
                         <li class="flex items-center gap-2.5">
                             <Icon name="phone" class="w-4 h-4 shrink-0 text-brand-400" />
-                            +92 300 1234567
+                            +92 3238573455
                         </li>
                         <li class="flex items-center gap-2.5">
                             <Icon name="mail" class="w-4 h-4 shrink-0 text-brand-400" />
-                            info@careplus.com
+                            info@hhealthcare.com
                         </li>
                     </ul>
                     <div class="flex items-center gap-3 mt-4">

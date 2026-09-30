@@ -46,7 +46,7 @@ const submit = () => {
                         </span>
                         <div>
                             <p class="text-sm font-bold text-slate-800">Contact Information</p>
-                            <p class="text-sm text-slate-400">+92 300 1234567</p>
+                            <p class="text-sm text-slate-400">+92 3238573455</p>
                         </div>
                     </div>
                     <div class="flex items-start gap-3">
@@ -56,7 +56,7 @@ const submit = () => {
                         </span>
                         <div>
                             <p class="text-sm font-bold text-slate-800">Email</p>
-                            <p class="text-sm text-slate-400">info@careplus.com</p>
+                            <p class="text-sm text-slate-400">info@healthcare.com</p>
                         </div>
                     </div>
                     <div class="flex items-start gap-3">
@@ -66,8 +66,8 @@ const submit = () => {
                         </span>
                         <div>
                             <p class="text-sm font-bold text-slate-800">Working Hours</p>
-                            <p class="text-sm text-slate-400">Mon - Fri: 8:00 AM - 8:00 PM<br />Sat - Sun: 9:00 AM -
-                                5:00 PM</p>
+                            <p class="text-sm text-slate-400">Mon - Fri: 9:00 AM - 12:00 AM<br />Sat - Sun: 10:00 AM -
+                                11:00 PM</p>
                         </div>
                     </div>
                 </div>
@@ -79,7 +79,7 @@ const submit = () => {
                     </span>
                     <div>
                         <p class="text-sm font-bold text-rose-700">Emergency</p>
-                        <p class="text-xs text-rose-400">+92 300 0234567 &middot; Available 24/7</p>
+                        <p class="text-xs text-rose-400">+92 3000234567 &middot; Available 24/7</p>
                     </div>
                 </div>
             </div>
