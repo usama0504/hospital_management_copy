@@ -32,6 +32,8 @@ Route::get('/our-departments', [PublicController::class, 'departments'])->name('
 Route::get('/our-departments/{department}', [PublicController::class, 'departmentShow'])->name('public.departments.show');
 Route::get('/our-doctors', [PublicController::class, 'doctors'])->name('public.doctors');
 Route::get('/our-doctors/{doctor}', [PublicController::class, 'doctorShow'])->name('public.doctors.show');
+Route::post('/our-doctors/{doctor}/reviews', [PublicController::class, 'reviewStore'])
+    ->middleware('throttle:10,1')->name('public.doctors.reviews.store');
 Route::get('/book-appointment', [PublicController::class, 'appointment'])->name('public.appointment');
 Route::get('/book-appointment/slots', [PublicController::class, 'appointmentSlots'])
     ->middleware('throttle:60,1')->name('public.appointment.slots');

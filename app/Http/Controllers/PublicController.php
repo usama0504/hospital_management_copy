@@ -88,13 +88,18 @@ class PublicController extends Controller
         ]);
     }
 
-    public function departments()
+    public function departments(Request $request)
     {
-        $departments = Department::withCount('doctors')->where('status', true)->get();
+        $query = Department::withCount('doctors')->where('status', true);
+
+        if ($request->filled('search')) {
+            $query->where('name', 'like', '%' . $request->search . '%');
+        }
 
         return Inertia::render('Public/Departments', [
-            'departments' => $departments,
+            'departments' => $query->orderBy('name')->get(),
             'meta' => $this->departmentMeta(),
+            'filters' => $request->only(['search']),
         ]);
     }
 
@@ -119,23 +124,38 @@ class PublicController extends Controller
 
     public function doctors(Request $request)
     {
-        $query = Doctor::with('department');
+        $query = Doctor::with('department')->withAvg('reviews', 'rating')->withCount('reviews');
 
         if ($request->filled('search')) {
-            $query->where('name', 'like', '%' . $request->search . '%');
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', '%' . $search . '%')
+                    ->orWhere('specialization', 'like', '%' . $search . '%');
+            });
         }
 
         if ($request->filled('department_id')) {
             $query->where('department_id', $request->department_id);
         }
 
-        $doctors = $query->orderBy('name')->paginate(9)->withQueryString();
+        if ($request->filled('gender')) {
+            $query->where('gender', $request->gender);
+        }
+
+        match ($request->query('sort')) {
+            'fee_low' => $query->orderBy('consultation_fee'),
+            'fee_high' => $query->orderByDesc('consultation_fee'),
+            'rating' => $query->orderByDesc('reviews_avg_rating'),
+            default => $query->orderBy('name'),
+        };
+
+        $doctors = $query->paginate(9)->withQueryString();
         $departments = Department::where('status', true)->get();
 
         return Inertia::render('Public/Doctors', [
             'doctors' => $doctors,
             'departments' => $departments,
-            'filters' => $request->only(['search', 'department_id']),
+            'filters' => $request->only(['search', 'department_id', 'gender', 'sort']),
         ]);
     }
 
@@ -144,6 +164,10 @@ class PublicController extends Controller
         $doctor->load(['department', 'availabilities' => function ($q) {
             $q->where('is_active', true);
         }]);
+        $doctor->loadAvg('reviews', 'rating');
+        $doctor->loadCount('reviews');
+
+        $reviews = $doctor->reviews()->latest()->take(20)->get();
 
         $related = Doctor::where('department_id', $doctor->department_id)
             ->where('id', '!=', $doctor->id)
@@ -152,8 +176,22 @@ class PublicController extends Controller
 
         return Inertia::render('Public/DoctorProfile', [
             'doctor' => $doctor,
+            'reviews' => $reviews,
             'related' => $related,
         ]);
+    }
+
+    public function reviewStore(Request $request, Doctor $doctor)
+    {
+        $validated = $request->validate([
+            'patient_name' => ['required', 'string', 'max:255'],
+            'rating' => ['required', 'integer', 'min:1', 'max:5'],
+            'comment' => ['nullable', 'string', 'max:1000'],
+        ]);
+
+        $doctor->reviews()->create($validated);
+
+        return back()->with('success', 'Thank you! Your review has been posted.');
     }
 
     public function appointment(Request $request)

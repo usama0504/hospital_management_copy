@@ -1,5 +1,6 @@
 <script setup>
-import { Link } from '@inertiajs/vue3';
+import { Link, router } from '@inertiajs/vue3';
+import { ref } from 'vue';
 import PublicLayout from '@/Layouts/PublicLayout.vue';
 import PageHero from '@/Components/Public/PageHero.vue';
 import Icon from '@/Components/Public/Icon.vue';
@@ -9,7 +10,13 @@ import departBg from '@/images/department-bg.png';
 const props = defineProps({
     departments: { type: Array, default: () => [] },
     meta: { type: Object, default: () => ({}) },
+    filters: { type: Object, default: () => ({}) },
 });
+
+const search = ref(props.filters.search || '');
+const applySearch = () => {
+    router.get('/our-departments', { search: search.value || undefined }, { preserveState: true, replace: true });
+};
 
 const iconFor = (name) => props.meta?.[name]?.icon || 'stethoscope';
 </script>
@@ -19,6 +26,11 @@ const iconFor = (name) => props.meta?.[name]?.icon || 'stethoscope';
         <PageHero title="Our Departments" subtitle="Specialized Care for Every Stage of Life"  :bgImage="departBg" />
 
         <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-20">
+            <div class="relative max-w-md mb-10">
+                <Icon name="search" class="w-4 h-4 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" />
+                <input v-model="search" @keyup.enter="applySearch" type="text" placeholder="Search departments..."
+                    class="w-full pl-11 pr-4 py-3 rounded-xl border border-slate-200 text-sm focus:border-brand-400 focus:ring-brand-400" />
+            </div>
             <div v-if="departments.length" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 <Link v-for="d in departments" :key="d.id" :href="`/our-departments/${d.id}`"
                     class="group rounded-2xl border border-slate-100 hover:border-brand-200 hover:shadow-lg hover:shadow-slate-200/60 transition-all bg-white overflow-hidden">
@@ -48,7 +60,9 @@ const iconFor = (name) => props.meta?.[name]?.icon || 'stethoscope';
                 </Link>
             </div>
             <div v-else class="text-center py-20">
-                <p class="text-slate-400">Departments will appear here once they are added from the admin panel.</p>
+                <p class="text-slate-400">
+                    {{ search ? 'No departments match your search.' : 'Departments will appear here once they are added from the admin panel.' }}
+                </p>
             </div>
         </section>
     </PublicLayout>
