@@ -54,6 +54,7 @@ class PatientVisitController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|email|max:255',
             'phone' => 'required|string|max:50',
+            'gender' => 'required|in:Male,Female,Other',
             'address' => 'nullable|string',
             'dob' => 'nullable|date',
 
@@ -143,6 +144,7 @@ class PatientVisitController extends Controller
                 'name' => $validated['name'],
                 'email' => $validated['email'],
                 'phone' => $validated['phone'],
+                'gender' => $validated['gender'],
                 'address' => $validated['address'] ?? null,
                 'dob' => $validated['dob'] ?? null,
             ]);

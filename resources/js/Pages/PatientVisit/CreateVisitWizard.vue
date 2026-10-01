@@ -19,6 +19,7 @@ const form = useForm({
     email: '',
     phone: '',
     address: '',
+    gender: '',
     dob: '',
     department_id: '',
     doctor_id: '',
@@ -145,7 +146,7 @@ const submit = () => {
         preserveScroll: true,
         onError: (errors) => {
             if (errors.department_id || errors.doctor_id || errors.appointment_date) currentStep.value = 2;
-            else if (errors.name || errors.email || errors.phone || errors.dob || errors.address) currentStep.value = 1;
+            else if (errors.name || errors.email || errors.phone || errors.gender || errors.dob || errors.address) currentStep.value = 1;
         },
     });
 };
@@ -248,6 +249,19 @@ const submit = () => {
                                 <input type="text" v-model="form.phone"
                                     class="w-full bg-gray-50/50 border border-gray-200 rounded-xl px-3.5 py-2.5 text-xs font-medium text-gray-700 focus:outline-none focus:bg-white focus:border-orange-500 focus:ring-2 focus:ring-orange-500/25 transition"
                                     placeholder="+92..." />
+                            </div>
+                            <div>
+                                <label
+                                    class="block text-[11px] font-bold text-gray-700 uppercase tracking-wider mb-1.5">Gender</label>
+                                <select v-model="form.gender"
+                                    class="w-full bg-gray-50/50 border border-gray-200 rounded-xl px-3.5 py-2.5 text-xs font-medium text-gray-700 focus:outline-none focus:bg-white focus:border-orange-500 focus:ring-2 focus:ring-orange-500/25 transition">
+                                    <option value="" disabled>Select Gender</option>
+                                    <option value="Male">Male</option>
+                                    <option value="Female">Female</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                                <div v-if="form.errors.gender" class="text-rose-600 text-[11px] mt-1 font-semibold">{{
+                                    form.errors.gender }}</div>
                             </div>
                             <div>
                                 <label

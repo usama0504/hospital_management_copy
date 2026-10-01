@@ -10,6 +10,7 @@ class Patient extends Model
         'name',
         'email',
         'phone',
+        'gender',
         'dob',
         'address',
     ];
@@ -17,6 +18,16 @@ class Patient extends Model
     protected $casts = [
         'dob' => 'date',
     ];
+
+    public function appointments()
+    {
+        return $this->hasMany(Appointment::class);
+    }
+
+    public function bills()
+    {
+        return $this->hasMany(Bill::class);
+    }
 
     public function prescriptions()
     {

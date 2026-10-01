@@ -133,9 +133,22 @@ const formatDate = (dateString) => {
                                         patient.email }}</p>
                                     <p><span class="font-bold text-gray-800">Phone:</span> {{ patient.phone ?? 'N/A' }}
                                     </p>
+                                    <p><span class="font-bold text-gray-800">Gender:</span> {{ patient.gender ?? 'N/A'
+                                    }}</p>
                                 </div>
 
                                 <div class="flex items-center justify-end gap-2 pt-2.5 border-t border-gray-50">
+                                    <Link :href="route('patients.show', patient.id)"
+                                        class="w-7 h-7 inline-flex items-center justify-center rounded-lg bg-gray-50 text-emerald-600 hover:bg-emerald-50 transition shadow-2xs"
+                                        title="View Details">
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2"
+                                            viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round"
+                                                d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
+                                            <path stroke-linecap="round" stroke-linejoin="round"
+                                                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                        </svg>
+                                    </Link>
                                     <Link v-if="canManagePatients" :href="route('patients.edit', patient.id)"
                                         class="w-7 h-7 inline-flex items-center justify-center rounded-lg bg-gray-50 text-blue-600 hover:bg-blue-50 transition shadow-2xs"
                                         title="Edit">
@@ -170,8 +183,9 @@ const formatDate = (dateString) => {
                             <thead class="bg-gray-50/75 text-[11px] font-bold text-gray-500 uppercase tracking-wider">
                                 <tr>
                                     <th class="py-3.5 px-6">Name</th>
-                                    <th class="py-3.5 px-6">Email</th>
+                                    <!-- <th class="py-3.5 px-6">Email</th> -->
                                     <th class="py-3.5 px-6">Phone</th>
+                                    <th class="py-3.5 px-6">Gender</th>
                                     <th class="py-3.5 px-6">Date of Birth</th>
                                     <th class="py-3.5 px-6 text-right">Actions</th>
                                 </tr>
@@ -184,14 +198,27 @@ const formatDate = (dateString) => {
                                         <td class="py-4 px-6 font-bold text-gray-900 max-w-xs break-words">
                                             {{ patient.name }}
                                         </td>
-                                        <td class="py-4 px-6 text-gray-500 max-w-xs break-all">{{ patient.email }}</td>
+                                        <!-- <td class="py-4 px-6 text-gray-500 max-w-xs break-all">{{ patient.email }}</td> -->
                                         <td class="py-4 px-6 text-gray-500 whitespace-nowrap">{{ patient.phone ?? 'N/A'
                                             }}</td>
+                                        <td class="py-4 px-6 text-gray-500 whitespace-nowrap">{{ patient.gender ?? '-'
+                                        }}</td>
                                         <td class="py-4 px-6 text-gray-500 whitespace-nowrap">
                                             {{ formatDate(patient.dob) }}
                                         </td>
                                         <td class="py-4 px-6 text-right whitespace-nowrap">
                                             <div class="inline-flex items-center justify-end gap-1.5">
+                                                <Link :href="route('patients.show', patient.id)"
+                                                    class="w-7 h-7 inline-flex items-center justify-center rounded-lg bg-gray-50 text-emerald-600 hover:bg-emerald-50 transition shadow-2xs"
+                                                    title="View Details">
+                                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor"
+                                                        stroke-width="2" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                                            d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
+                                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                    </svg>
+                                                </Link>
                                                 <Link v-if="canManagePatients"
                                                     :href="route('patients.edit', patient.id)"
                                                     class="w-7 h-7 inline-flex items-center justify-center rounded-lg bg-gray-50 text-blue-600 hover:bg-blue-50 transition shadow-2xs"
@@ -217,7 +244,7 @@ const formatDate = (dateString) => {
                                 </template>
                                 <template v-else>
                                     <tr>
-                                        <td colspan="5" class="py-12 text-center text-gray-400 font-medium text-xs">
+                                        <td colspan="6" class="py-12 text-center text-gray-400 font-medium text-xs">
                                             No patients found.
                                         </td>
                                     </tr>

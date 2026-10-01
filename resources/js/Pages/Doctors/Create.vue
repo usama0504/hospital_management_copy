@@ -1,5 +1,6 @@
 <script setup>
 import { Link, useForm } from '@inertiajs/vue3';
+import { ref } from 'vue';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 
 const props = defineProps({
@@ -11,16 +12,26 @@ const form = useForm({
     name: '',
     email: '',
     phone: '',
+    gender: '',
     specialization: '',
     password: '',
     department_id: '',
     consultation_fee: '',
+    photo_url: null,
 });
+
+const photoPreview = ref(null);
+const onPhotoChange = (e) => {
+    const file = e.target.files[0] || null;
+    form.photo_url = file;
+    photoPreview.value = file ? URL.createObjectURL(file) : null;
+};
 
 // Form store handler (POST request to store route)
 const submit = () => {
     form.post(route('doctors.store'), {
         preserveScroll: true,
+        forceFormData: true,
     });
 };
 </script>
@@ -87,6 +98,21 @@ const submit = () => {
                                 }}</div>
                         </div>
 
+                        <!-- Gender Field -->
+                        <div>
+                            <label for="gender"
+                                class="block text-[11px] font-bold text-gray-700 uppercase tracking-wider mb-1.5">Gender</label>
+                            <select id="gender" v-model="form.gender" required
+                                class="w-full bg-gray-50/50 border border-gray-200 rounded-xl px-4 py-3 text-xs font-medium text-gray-700 focus:outline-none focus:bg-white focus:border-orange-500 focus:ring-2 focus:ring-orange-500/25 transition">
+                                <option value="" disabled>Select Gender</option>
+                                <option value="Male">Male</option>
+                                <option value="Female">Female</option>
+                                <option value="Other">Other</option>
+                            </select>
+                            <div v-if="form.errors.gender" class="text-rose-600 text-[11px] mt-1 font-semibold">{{
+                                form.errors.gender }}</div>
+                        </div>
+
                         <!-- Specialization Field -->
                         <div>
                             <label for="specialization"
@@ -123,6 +149,25 @@ const submit = () => {
                             <div v-if="form.errors.consultation_fee"
                                 class="text-rose-600 text-[11px] mt-1 font-semibold">{{ form.errors.consultation_fee }}
                             </div>
+                        </div>
+
+                        <!-- Photo Field -->
+                        <div class="sm:col-span-2">
+                            <label for="photo_url"
+                                class="block text-[11px] font-bold text-gray-700 uppercase tracking-wider mb-1.5">Doctor
+                                Photo</label>
+                            <div class="flex items-center gap-4">
+                                <img v-if="photoPreview" :src="photoPreview" alt="Preview"
+                                    class="w-16 h-16 rounded-xl object-cover border border-gray-200" />
+                                <div v-else
+                                    class="w-16 h-16 rounded-xl bg-gray-50 border border-dashed border-gray-300 flex items-center justify-center text-gray-300 text-[10px] font-bold">
+                                    No Photo
+                                </div>
+                                <input type="file" id="photo_url" accept="image/*" @change="onPhotoChange"
+                                    class="text-xs font-medium text-gray-600 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-orange-50 file:text-orange-600 hover:file:bg-orange-100" />
+                            </div>
+                            <div v-if="form.errors.photo_url" class="text-rose-600 text-[11px] mt-1 font-semibold">{{
+                                form.errors.photo_url }}</div>
                         </div>
 
                         <!-- Password Field -->

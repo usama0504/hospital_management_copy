@@ -9,7 +9,7 @@ use App\Models\Doctor;
 class Department extends Model
 {
     use HasFactory;
-    protected $fillable = ['name', 'description', 'status',];
+    protected $fillable = ['name', 'description','image_url' ,'status',];
     protected $casts = ['status' => 'boolean',];
 
     public function doctors()

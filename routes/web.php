@@ -18,16 +18,32 @@ use App\Http\Controllers\ReceptionistController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\PatientVisitController;
 use App\Http\Controllers\DepartmentController;
+use App\Http\Controllers\PublicController;
 
 /*
 |--------------------------------------------------------------------------
-| Public / Guest Routes
+| Public Website Routes (CarePlus marketing site)
 |--------------------------------------------------------------------------
 */
 
-Route::get('/', function () {
-    return redirect()->route('dashboard');
-});
+Route::get('/', [PublicController::class, 'home'])->name('public.home');
+Route::get('/about', [PublicController::class, 'about'])->name('public.about');
+Route::get('/our-departments', [PublicController::class, 'departments'])->name('public.departments');
+Route::get('/our-departments/{department}', [PublicController::class, 'departmentShow'])->name('public.departments.show');
+Route::get('/our-doctors', [PublicController::class, 'doctors'])->name('public.doctors');
+Route::get('/our-doctors/{doctor}', [PublicController::class, 'doctorShow'])->name('public.doctors.show');
+Route::post('/our-doctors/{doctor}/reviews', [PublicController::class, 'reviewStore'])
+    ->middleware('throttle:10,1')->name('public.doctors.reviews.store');
+Route::get('/book-appointment', [PublicController::class, 'appointment'])->name('public.appointment');
+Route::get('/book-appointment/slots', [PublicController::class, 'appointmentSlots'])
+    ->middleware('throttle:60,1')->name('public.appointment.slots');
+Route::post('/book-appointment', [PublicController::class, 'appointmentStore'])
+    ->middleware('throttle:20,1')->name('public.appointment.store');
+Route::get('/services', [PublicController::class, 'services'])->name('public.services');
+Route::get('/contact', [PublicController::class, 'contact'])->name('public.contact');
+Route::post('/contact', [PublicController::class, 'contactStore'])->name('public.contact.store');
+Route::get('/gallery', [PublicController::class, 'gallery'])->name('public.gallery');
+Route::get('/blog', [PublicController::class, 'blog'])->name('public.blog');
 
 // Authentication Routes
 Route::get('/register', [AuthController::class, 'showRegisterForm'])->name('register');
@@ -59,7 +75,11 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/patients/{patient}/edit', [PatientController::class, 'edit'])->name('patients.edit');
         Route::put('/patients/{patient}', [PatientController::class, 'update'])->name('patients.update');
     });
-
+  
+      Route::get('/patients/{patient}', [PatientController::class, 'show'])
+        ->whereNumber('patient')
+        ->name('patients.show');
+        
     Route::delete('/patients/{patient}', [PatientController::class, 'destroy'])
         ->middleware('role:admin')
         ->name('patients.destroy');
@@ -75,6 +95,9 @@ Route::middleware(['auth'])->group(function () {
         Route::put('/doctors/{doctor}', [DoctorController::class, 'update'])->name('doctors.update');
         Route::delete('/doctors/{doctor}', [DoctorController::class, 'destroy'])->name('doctors.destroy');
     });
+       Route::get('/doctors/{doctor}', [DoctorController::class, 'show'])
+        ->whereNumber('doctor')
+        ->name('doctors.show');
 
 
     // 4. Appointment Management
