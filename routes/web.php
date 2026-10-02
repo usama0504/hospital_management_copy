@@ -16,9 +16,14 @@ use App\Http\Controllers\PrescriptionController;
 use App\Http\Controllers\DoctorAvailabilityController;
 use App\Http\Controllers\ReceptionistController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\PasswordResetController;
 use App\Http\Controllers\PatientVisitController;
 use App\Http\Controllers\DepartmentController;
 use App\Http\Controllers\PublicController;
+use App\Http\Controllers\ReviewController;
+use App\Http\Controllers\TrashController;
+use App\Http\Controllers\ActivityLogController;
+use App\Http\Controllers\ContactMessageController;
 
 /*
 |--------------------------------------------------------------------------
@@ -47,10 +52,20 @@ Route::get('/blog', [PublicController::class, 'blog'])->name('public.blog');
 
 // Authentication Routes
 Route::get('/register', [AuthController::class, 'showRegisterForm'])->name('register');
-Route::post('/register', [AuthController::class, 'register']);
+Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:10,1');
 
 Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login');
-Route::post('/login', [AuthController::class, 'login']);
+Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:10,1');
+
+// Forgot / reset password (sirf guests ke liye)
+Route::middleware('guest')->group(function () {
+    Route::get('/forgot-password', [PasswordResetController::class, 'showForgotForm'])->name('password.request');
+    Route::post('/forgot-password', [PasswordResetController::class, 'sendResetLink'])
+        ->middleware('throttle:5,1')->name('password.email');
+    Route::get('/reset-password/{token}', [PasswordResetController::class, 'showResetForm'])->name('password.reset');
+    Route::post('/reset-password', [PasswordResetController::class, 'reset'])
+        ->middleware('throttle:5,1')->name('password.store');
+});
 
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout'); // ya apka logout route
 
@@ -118,24 +133,36 @@ Route::middleware(['auth'])->group(function () {
 
 
     // 5. Prescription Management
-    Route::resource('prescriptions', PrescriptionController::class)
-        ->only(['index', 'create', 'store', 'show', 'edit', 'update']);
+    // Create / edit: requires 'manage prescriptions' permission (doctor, admin).
+    // Controller additionally restricts creation to doctors and ownership checks on edit.
+    Route::middleware('permission:manage prescriptions')->group(function () {
+        Route::get('/prescriptions/create', [PrescriptionController::class, 'create'])->name('prescriptions.create');
+        Route::post('/prescriptions', [PrescriptionController::class, 'store'])->name('prescriptions.store');
+        Route::get('/prescriptions/{prescription}/edit', [PrescriptionController::class, 'edit'])->name('prescriptions.edit');
+        Route::put('/prescriptions/{prescription}', [PrescriptionController::class, 'update'])->name('prescriptions.update');
+    });
+
+    // Viewing: any logged-in staff; PrescriptionController::authorizeAccess limits what each role sees.
+    Route::get('/prescriptions', [PrescriptionController::class, 'index'])->name('prescriptions.index');
+    Route::get('/prescriptions/{prescription}', [PrescriptionController::class, 'show'])->name('prescriptions.show');
 
     Route::delete('/prescriptions/{prescription}', [PrescriptionController::class, 'destroy'])
         ->middleware('role:admin')
         ->name('prescriptions.destroy');
 
 
-    // 6. Billing & Payments
-    Route::get('/bills', [BillController::class, 'index'])->name('bills.index');
-    Route::get('/bills/create', [BillController::class, 'create'])->name('bills.create');
-    Route::post('/bills', [BillController::class, 'store'])->name('bills.store');
-    Route::get('/bills/{bill}/receipt', [BillController::class, 'receipt'])->name('bills.receipt');
-    Route::get('/bills/{bill}/edit', [BillController::class, 'edit'])->name('bills.edit');
-    Route::put('/bills/{bill}', [BillController::class, 'update'])->name('bills.update');
+    // 6. Billing & Payments (requires 'manage bills': admin, receptionist)
+    Route::middleware('permission:manage bills')->group(function () {
+        Route::get('/bills', [BillController::class, 'index'])->name('bills.index');
+        Route::get('/bills/create', [BillController::class, 'create'])->name('bills.create');
+        Route::post('/bills', [BillController::class, 'store'])->name('bills.store');
+        Route::get('/bills/{bill}/receipt', [BillController::class, 'receipt'])->name('bills.receipt');
+        Route::get('/bills/{bill}/edit', [BillController::class, 'edit'])->name('bills.edit');
+        Route::put('/bills/{bill}', [BillController::class, 'update'])->name('bills.update');
+    });
 
     Route::delete('/bills/{bill}', [BillController::class, 'destroy'])
-        ->middleware('role:admin')
+        ->middleware(['permission:manage bills', 'role:admin'])
         ->name('bills.destroy');
 
 
@@ -166,6 +193,23 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/users', [UserController::class, 'index'])->name('users.index');
         Route::post('/users/{id}/approve', [UserController::class, 'approve'])->name('users.approve');
         Route::delete('/users/{id}', [UserController::class, 'destroy'])->name('users.destroy');
+
+        // Public website moderation: doctor reviews
+        Route::get('/reviews', [ReviewController::class, 'index'])->name('reviews.index');
+        Route::patch('/reviews/{review}/approve', [ReviewController::class, 'approve'])->name('reviews.approve');
+        Route::patch('/reviews/{review}/hide', [ReviewController::class, 'hide'])->name('reviews.hide');
+        Route::delete('/reviews/{review}', [ReviewController::class, 'destroy'])->name('reviews.destroy');
+
+        // Soft-deleted records (restore) aur audit trail
+        Route::get('/trash', [TrashController::class, 'index'])->name('trash.index');
+        Route::patch('/trash/{type}/{id}/restore', [TrashController::class, 'restore'])->name('trash.restore');
+        Route::get('/activity-log', [ActivityLogController::class, 'index'])->name('activity-log.index');
+
+        // Public website contact form messages
+        Route::get('/contact-messages', [ContactMessageController::class, 'index'])->name('contact-messages.index');
+        Route::patch('/contact-messages/{contactMessage}/read', [ContactMessageController::class, 'markRead'])->name('contact-messages.read');
+        Route::patch('/contact-messages/{contactMessage}/unread', [ContactMessageController::class, 'markUnread'])->name('contact-messages.unread');
+        Route::delete('/contact-messages/{contactMessage}', [ContactMessageController::class, 'destroy'])->name('contact-messages.destroy');
     });
 
     Route::middleware(['auth', 'verified'])->group(function () {

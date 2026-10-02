@@ -189,9 +189,10 @@ class PublicController extends Controller
             'comment' => ['nullable', 'string', 'max:1000'],
         ]);
 
-        $doctor->reviews()->create($validated);
+        // Review pehle pending rehta hai; admin approve karega tab public profile par dikhega.
+        $doctor->reviews()->create($validated + ['is_approved' => false]);
 
-        return back()->with('success', 'Thank you! Your review has been posted.');
+        return back()->with('success', 'Thank you! Your review has been submitted and will appear after it is approved by our team.');
     }
 
     public function appointment(Request $request)

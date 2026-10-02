@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\Bill;
 use App\Models\Patient;
 use App\Models\Doctor;
+use App\Http\Requests\StoreBillRequest;
+use App\Http\Requests\UpdateBillRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use \App\Models\Appointment;
@@ -58,20 +60,11 @@ class BillController extends Controller
         ]);
     }
 
-    public function store(Request $request)
+    public function store(StoreBillRequest $request)
     {
         $this->checkDoctor();
 
-        $request->validate([
-            'patient_id' => 'required|exists:patients,id',
-            'doctor_id' => 'required|exists:doctors,id',
-            'appointment_id' => 'nullable|exists:appointments,id', // <-- Yeh add karein
-            'amount' => 'required|numeric',
-            'status' => 'required|string',
-            'bill_date' => 'required|date',
-        ]);
-
-        Bill::create($request->all());
+        Bill::create($request->validated());
 
         return redirect()->route('bills.index')->with('success', 'Bill created successfully.');
     }
@@ -90,19 +83,11 @@ class BillController extends Controller
         ]);
     }
 
-    public function update(Request $request, Bill $bill)
+    public function update(UpdateBillRequest $request, Bill $bill)
     {
         $this->checkDoctor();
 
-        $request->validate([
-            'patient_id' => 'required|exists:patients,id',
-            'doctor_id' => 'required|exists:doctors,id',
-            'amount' => 'required|numeric',
-            'status' => 'required|string',
-            'bill_date' => 'required|date',
-        ]);
-
-        $bill->update($request->all());
+        $bill->update($request->validated());
 
         return redirect()->route('bills.index')->with('success', 'Bill updated successfully.');
     }

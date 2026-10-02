@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\Patient;
 use App\Models\Doctor;
 use App\Models\Appointment;
+use App\Http\Requests\StorePatientRequest;
+use App\Http\Requests\UpdatePatientRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
@@ -87,22 +89,13 @@ class PatientController extends Controller
         return Inertia::render('Patients/Create');
     }
 
-    public function store(Request $request)
+    public function store(StorePatientRequest $request)
     {
         if (!$this->userHasRole(['admin', 'receptionist'])) {
             abort(403, 'Unauthorized action.');
         }
 
-        $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:patients,email',
-            'phone' => 'required|string',
-            'address' => 'nullable|string',
-            'gender' => 'required|in:Male,Female,Other',
-            'dob' => 'nullable|date',
-        ]);
-
-        Patient::create($request->all());
+        Patient::create($request->validated());
 
         return redirect()->route('patients.index')->with('success', 'Patient added successfully.');
     }
@@ -154,22 +147,13 @@ class PatientController extends Controller
         ]);
     }
 
-    public function update(Request $request, Patient $patient)
+    public function update(UpdatePatientRequest $request, Patient $patient)
     {
         if (!$this->userHasRole(['admin', 'receptionist'])) {
             abort(403, 'Unauthorized action.');
         }
 
-        $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:patients,email,' . $patient->id,
-            'phone' => 'required|string',
-            'address' => 'nullable|string',
-            'gender' => 'required|in:Male,Female,Other',
-            'dob' => 'nullable|date',
-        ]);
-
-        $patient->update($request->all());
+        $patient->update($request->validated());
 
         return redirect()->route('patients.index')->with('success', 'Patient updated successfully.');
     }
