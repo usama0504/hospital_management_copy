@@ -7,6 +7,8 @@ use App\Models\Department;
 use App\Models\Doctor;
 use App\Models\Patient;
 use App\Models\Appointment;
+use App\Models\Bill;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -363,13 +365,26 @@ class PublicController extends Controller
             $patient->update(['gender' => $validated['patient_gender']]);
         }
 
-        Appointment::create([
-            'patient_id' => $patient->id,
-            'doctor_id' => $doctor->id,
-            'appointment_date' => $appointmentStart,
-            'status' => 'Pending',
-            'notes' => $validated['notes'] ?? null,
-        ]);
+        // Appointment ke saath bill bhi banta hai (doctor ki consultation fee),
+        // taake dashboard ki Bills list aur receipt mein public booking bhi nazar aaye.
+        DB::transaction(function () use ($patient, $doctor, $appointmentStart, $validated) {
+            $appointment = Appointment::create([
+                'patient_id' => $patient->id,
+                'doctor_id' => $doctor->id,
+                'appointment_date' => $appointmentStart,
+                'status' => 'Pending',
+                'notes' => $validated['notes'] ?? null,
+            ]);
+
+            Bill::create([
+                'patient_id' => $patient->id,
+                'doctor_id' => $doctor->id,
+                'appointment_id' => $appointment->id,
+                'amount' => $doctor->consultation_fee ?? 0,
+                'status' => 'Unpaid',
+                'bill_date' => now()->toDateString(),
+            ]);
+        });
 
         return redirect()->route('public.appointment')->with('success', 'Your appointment request has been received. Our team will contact you shortly to confirm.');
     }

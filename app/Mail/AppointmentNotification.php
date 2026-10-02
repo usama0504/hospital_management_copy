@@ -35,7 +35,7 @@ class AppointmentNotification extends Mailable
         $appointment = $this->appointment;
 
         return new Content(
-            markdown: 'emails.appointment',
+            markdown: 'email.appointment',
             with: [
                 'event' => $this->event,
                 'patientName' => $appointment->patient?->name ?? 'Patient',

@@ -2,8 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\ContactReply;
 use App\Models\ContactMessage;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Inertia\Inertia;
 
 class ContactMessageController extends Controller
@@ -49,6 +52,29 @@ class ContactMessageController extends Controller
         $contactMessage->forceFill(['read_at' => null])->save();
 
         return back();
+    }
+
+    public function reply(Request $request, ContactMessage $contactMessage)
+    {
+        $data = $request->validate([
+            'reply' => ['required', 'string', 'min:3', 'max:5000'],
+        ]);
+
+        try {
+            Mail::to($contactMessage->email)->send(new ContactReply($contactMessage, $data['reply']));
+        } catch (\Throwable $e) {
+            Log::error('Contact reply email failed: ' . $e->getMessage());
+
+            return back()->with('error', 'Email could not be sent. Please check the mail settings in .env.');
+        }
+
+        $contactMessage->forceFill([
+            'reply' => $data['reply'],
+            'replied_at' => now(),
+            'read_at' => $contactMessage->read_at ?? now(),
+        ])->save();
+
+        return back()->with('success', 'Reply sent to ' . $contactMessage->email . '.');
     }
 
     public function destroy(ContactMessage $contactMessage)
