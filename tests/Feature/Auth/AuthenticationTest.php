@@ -3,12 +3,10 @@
 use App\Models\User;
 
 test('login screen can be rendered', function () {
-    $response = $this->get('/login');
-
-    $response->assertStatus(200);
+    $this->get('/login')->assertOk();
 });
 
-test('users can authenticate using the login screen', function () {
+test('approved users can log in', function () {
     $user = User::factory()->create();
 
     $response = $this->post('/login', [
@@ -17,25 +15,51 @@ test('users can authenticate using the login screen', function () {
     ]);
 
     $this->assertAuthenticated();
-    $response->assertRedirect(route('dashboard', absolute: false));
+    $response->assertRedirect(route('dashboard'));
 });
 
-test('users can not authenticate with invalid password', function () {
+test('users waiting for admin approval cannot log in', function () {
+    $user = User::factory()->create();
+    $user->forceFill(['is_approved' => false])->save();
+
+    $this->post('/login', [
+        'email' => $user->email,
+        'password' => 'password',
+    ])->assertSessionHasErrors('email');
+
+    $this->assertGuest();
+});
+
+test('users cannot log in with a wrong password', function () {
     $user = User::factory()->create();
 
     $this->post('/login', [
         'email' => $user->email,
         'password' => 'wrong-password',
-    ]);
+    ])->assertSessionHasErrors('email');
 
     $this->assertGuest();
 });
 
-test('users can logout', function () {
+test('login is locked after 5 failed attempts, even with the right password', function () {
     $user = User::factory()->create();
 
-    $response = $this->actingAs($user)->post('/logout');
+    foreach (range(1, 5) as $attempt) {
+        $this->post('/login', ['email' => $user->email, 'password' => 'wrong-password']);
+    }
+
+    $this->post('/login', [
+        'email' => $user->email,
+        'password' => 'password',
+    ])->assertSessionHasErrors('email');
 
     $this->assertGuest();
-    $response->assertRedirect('/');
+});
+
+test('users can log out', function () {
+    $user = User::factory()->create();
+
+    $this->actingAs($user)->post('/logout')->assertRedirect(route('login'));
+
+    $this->assertGuest();
 });

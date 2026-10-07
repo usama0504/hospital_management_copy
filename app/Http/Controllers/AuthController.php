@@ -7,6 +7,8 @@ use App\Models\Doctor;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 
 class AuthController extends Controller
@@ -65,6 +67,17 @@ class AuthController extends Controller
             'password' => 'required'
         ]);
 
+        // Brute-force protection: max 5 failed attempts per email + IP, then 60 second lockout.
+        $throttleKey = Str::transliterate(Str::lower($credentials['email']).'|'.$request->ip());
+
+        if (RateLimiter::tooManyAttempts($throttleKey, 5)) {
+            $seconds = RateLimiter::availableIn($throttleKey);
+
+            return back()->withErrors([
+                'email' => "Too many login attempts. Please try again in {$seconds} seconds.",
+            ]);
+        }
+
         if (Auth::attempt($credentials)) {
             $user = Auth::user();
 
@@ -76,9 +89,13 @@ class AuthController extends Controller
                 ]);
             }
 
+            RateLimiter::clear($throttleKey);
+
             $request->session()->regenerate();
             return redirect()->intended(route('dashboard'));
         }
+
+        RateLimiter::hit($throttleKey, 60);
 
         return back()->withErrors([
             'email' => 'Invalid credentials.',

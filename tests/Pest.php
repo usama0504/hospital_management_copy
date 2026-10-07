@@ -44,7 +44,35 @@ expect()->extend('toBeOne', function () {
 |
 */
 
-function something()
+use App\Models\Doctor;
+use App\Models\User;
+use Database\Seeders\RolesAndPermissionsSeeder;
+
+/**
+ * Role (admin / doctor / receptionist) ke saath ek approved user banata hai.
+ */
+function userWithRole(string $role, array $attributes = []): User
 {
-    // ..
+    test()->seed(RolesAndPermissionsSeeder::class);
+
+    $user = User::factory()->create($attributes);
+    $user->assignRole($role);
+
+    return $user;
+}
+
+/**
+ * Doctor user + uska Doctor record (PrescriptionController email se match karta hai).
+ *
+ * @return array{0: User, 1: Doctor}
+ */
+function doctorWithUser(): array
+{
+    $user = userWithRole('doctor');
+    $doctor = Doctor::factory()->create([
+        'email' => $user->email,
+        'user_id' => $user->id,
+    ]);
+
+    return [$user, $doctor];
 }

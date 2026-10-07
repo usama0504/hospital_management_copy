@@ -47,8 +47,8 @@ const submit = () => {
                 </div>
 
                 <!-- Success Message Alert (from status prop or session) -->
-                <div v-if="status" class="mb-6 flex items-center bg-emerald-50 border border-emerald-200 text-emerald-800 p-4 rounded-2xl text-xs sm:text-sm font-semibold shadow-sm">
-                    {{ status }}
+                <div v-if="status || $page.props.flash?.success" class="mb-6 flex items-center bg-emerald-50 border border-emerald-200 text-emerald-800 p-4 rounded-2xl text-xs sm:text-sm font-semibold shadow-sm">
+                    {{ status || $page.props.flash.success }}
                 </div>
 
                 <!-- Error Message Alert (Inertia handles form.errors automatically) -->
@@ -74,6 +74,9 @@ const submit = () => {
                             class="w-full bg-gray-50/50 border border-gray-200 rounded-xl px-4 py-3.5 text-sm font-medium text-gray-700 focus:outline-none focus:bg-white focus:border-orange-500 focus:ring-2 focus:ring-orange-500/25 transition" placeholder="••••••••" />
                         <div v-if="form.errors.password" class="text-rose-600 text-xs mt-1 font-semibold">{{ form.errors.password }}</div>
                     </div>
+                    <div class="text-right -mt-2">
+                        <Link :href="route('password.request')" class="text-xs font-bold text-orange-600 hover:text-orange-700 transition">Forgot password?</Link>
+                    </div>
 
                     <!-- Submit Button -->
                     <div class="pt-2">
@@ -94,7 +97,7 @@ const submit = () => {
         </main>
 
         <!-- Bottom Simple Footer -->
-        <<footer class="w-full py-6 px-8 text-center border-t border-gray-100 bg-white/50">
+        <footer class="w-full py-6 px-8 text-center border-t border-gray-100 bg-white/50">
             <p class="text-xs sm:text-sm text-gray-400 font-medium">
                 &copy; {{ new Date().getFullYear() }} Health Care. All rights reserved.
             </p>

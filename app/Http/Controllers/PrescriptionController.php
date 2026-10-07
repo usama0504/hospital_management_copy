@@ -6,6 +6,8 @@ use App\Models\Prescription;
 use App\Models\Patient;
 use App\Models\Doctor;
 use App\Models\Appointment;
+use App\Http\Requests\StorePrescriptionRequest;
+use App\Http\Requests\UpdatePrescriptionRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
@@ -102,7 +104,7 @@ class PrescriptionController extends Controller
         ]);
     }
 
-    public function store(Request $request)
+    public function store(StorePrescriptionRequest $request)
     {
         $user = Auth::user();
 
@@ -117,19 +119,7 @@ class PrescriptionController extends Controller
             abort(403, 'Doctor profile not found.');
         }
 
-        $validated = $request->validate([
-            'patient_id' => 'required|exists:patients,id',
-            'appointment_id' => 'nullable|exists:appointments,id',
-            'prescribed_date' => 'required|date',
-            'diagnosis' => 'required|string',
-            'notes' => 'nullable|string',
-            'items' => 'required|array|min:1',
-            'items.*.medicine_name' => 'required|string',
-            'items.*.dosage' => 'nullable|string',
-            'items.*.frequency' => 'nullable|string',
-            'items.*.duration' => 'nullable|string',
-            'items.*.instructions' => 'nullable|string',
-        ]);
+        $validated = $request->validated();
 
         // Check: patient current doctor ka patient hai ya nahi
         $patientAllowed = Appointment::where('doctor_id', $doctor->id)
@@ -198,22 +188,11 @@ class PrescriptionController extends Controller
         ]);
     }
 
-    public function update(Request $request, Prescription $prescription)
+    public function update(UpdatePrescriptionRequest $request, Prescription $prescription)
     {
         $this->authorizeAccess($prescription);
 
-        $validated = $request->validate([
-            'patient_id' => 'required|exists:patients,id',
-            'prescribed_date' => 'required|date',
-            'diagnosis' => 'required|string',
-            'notes' => 'nullable|string',
-            'items' => 'required|array|min:1',
-            'items.*.medicine_name' => 'required|string',
-            'items.*.dosage' => 'nullable|string',
-            'items.*.frequency' => 'nullable|string',
-            'items.*.duration' => 'nullable|string',
-            'items.*.instructions' => 'nullable|string',
-        ]);
+        $validated = $request->validated();
 
         // Doctor ke liye check: selected patient uska patient hona chahiye
         $doctor = $this->currentDoctor();

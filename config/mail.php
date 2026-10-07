@@ -115,4 +115,13 @@ return [
         'name' => env('MAIL_FROM_NAME', env('APP_NAME', 'Laravel')),
     ],
 
+    /*
+    | Reply-To: user "Reply" dabaye to jawab is address par jaye.
+    | Khali ho to .env ka MAIL_FROM_ADDRESS hi use hota hai.
+    */
+    'reply_to' => [
+        'address' => env('MAIL_REPLY_TO_ADDRESS'),
+        'name' => env('MAIL_REPLY_TO_NAME', env('APP_NAME', 'Laravel')),
+    ],
+
 ];

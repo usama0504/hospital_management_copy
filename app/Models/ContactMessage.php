@@ -16,4 +16,8 @@ class ContactMessage extends Model
         'subject',
         'message',
     ];
+
+    protected $casts = [
+        'read_at' => 'datetime',
+    ];
 }
