@@ -17,7 +17,7 @@ class AuthController extends Controller
         $request->validate([
             'name' => 'required|max:255',
             'email' => 'required|email|unique:users',
-            'password' => 'required|confirmed|min:6',
+            'password' => 'required|confirmed|min:8',
             'role' => 'required|in:doctor,receptionist',
         ]);
 
@@ -36,6 +36,7 @@ class AuthController extends Controller
         // Agar role 'doctor' hai toh doctors table mein bhi entry kar dein
         if ($request->role === 'doctor') {
             Doctor::create([
+                'user_id' => $user->id,
                 'name' => $request->name,
                 'email' => $request->email,
                 'phone' => 'N/A',

@@ -76,3 +76,12 @@ function doctorWithUser(): array
 
     return [$user, $doctor];
 }
+
+/** Portal user (role: patient) + uska linked Patient record. */
+function portalPatient(): array
+{
+    $user = userWithRole('patient');
+    $patient = \App\Models\Patient::factory()->create(['email' => $user->email, 'user_id' => $user->id]);
+
+    return [$user, $patient];
+}

@@ -24,6 +24,10 @@ use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\TrashController;
 use App\Http\Controllers\ActivityLogController;
 use App\Http\Controllers\ContactMessageController;
+use App\Http\Controllers\PortalController;
+use App\Http\Controllers\ManualPaymentController;
+use App\Http\Controllers\PaymentReviewController;
+use App\Http\Controllers\PatientPortalController;
 
 /*
 |--------------------------------------------------------------------------
@@ -75,7 +79,7 @@ Route::post('/logout', [AuthController::class, 'logout'])->name('logout'); // ya
 | Authenticated Routes (Protected by 'auth' middleware)
 |--------------------------------------------------------------------------
 */
-Route::middleware(['auth'])->group(function () {
+Route::middleware(['auth', 'not.patient'])->group(function () {
 
     // 1. Dashboard & Reports
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
@@ -89,6 +93,7 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/patients', [PatientController::class, 'store'])->name('patients.store');
         Route::get('/patients/{patient}/edit', [PatientController::class, 'edit'])->name('patients.edit');
         Route::put('/patients/{patient}', [PatientController::class, 'update'])->name('patients.update');
+        Route::post('/patients/{patient}/portal-invite', [PatientPortalController::class, 'invite'])->name('patients.portal-invite');
     });
   
       Route::get('/patients/{patient}', [PatientController::class, 'show'])
@@ -145,6 +150,7 @@ Route::middleware(['auth'])->group(function () {
     // Viewing: any logged-in staff; PrescriptionController::authorizeAccess limits what each role sees.
     Route::get('/prescriptions', [PrescriptionController::class, 'index'])->name('prescriptions.index');
     Route::get('/prescriptions/{prescription}', [PrescriptionController::class, 'show'])->name('prescriptions.show');
+    Route::get('/prescriptions/{prescription}/pdf', [PrescriptionController::class, 'pdf'])->name('prescriptions.pdf');
 
     Route::delete('/prescriptions/{prescription}', [PrescriptionController::class, 'destroy'])
         ->middleware('role:admin')
@@ -159,6 +165,11 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/bills/{bill}/receipt', [BillController::class, 'receipt'])->name('bills.receipt');
         Route::get('/bills/{bill}/edit', [BillController::class, 'edit'])->name('bills.edit');
         Route::put('/bills/{bill}', [BillController::class, 'update'])->name('bills.update');
+
+        // Patients ki manual JazzCash payments: check karke approve/reject
+        Route::get('/payments', [PaymentReviewController::class, 'index'])->name('payments.index');
+        Route::post('/payments/{payment}/approve', [PaymentReviewController::class, 'approve'])->name('payments.approve');
+        Route::post('/payments/{payment}/reject', [PaymentReviewController::class, 'reject'])->name('payments.reject');
     });
 
     Route::delete('/bills/{bill}', [BillController::class, 'destroy'])
@@ -217,4 +228,30 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/patient-visit/create', [PatientVisitController::class, 'create'])->name('patient.visit.create');
         Route::post('/patient-visit', [PatientVisitController::class, 'store'])->name('patient.visit.store');
     });
+});
+
+/*
+|--------------------------------------------------------------------------
+| Patient Portal (sirf 'patient' role)
+|--------------------------------------------------------------------------
+| Staff routes upar 'not.patient' se band hain; ye group sirf patients ke liye hai.
+*/
+Route::middleware(['auth', 'role:patient'])->prefix('portal')->name('portal.')->group(function () {
+    Route::get('/', [PortalController::class, 'dashboard'])->name('dashboard');
+    Route::get('/appointments', [PortalController::class, 'appointments'])->name('appointments');
+    Route::get('/appointments/create', [PortalController::class, 'createAppointment'])->name('appointments.create');
+    Route::post('/appointments', [PortalController::class, 'storeAppointment'])
+        ->middleware('throttle:20,1')->name('appointments.store');
+    Route::patch('/appointments/{appointment}/cancel', [PortalController::class, 'cancelAppointment'])->name('appointments.cancel');
+    Route::get('/prescriptions', [PortalController::class, 'prescriptions'])->name('prescriptions');
+    Route::get('/prescriptions/{prescription}', [PortalController::class, 'showPrescription'])->name('prescriptions.show');
+    Route::get('/prescriptions/{prescription}/pdf', [PortalController::class, 'prescriptionPdf'])->name('prescriptions.pdf');
+    Route::get('/bills', [PortalController::class, 'bills'])->name('bills');
+    Route::post('/bills/{bill}/pay', [PortalController::class, 'payBill'])
+        ->middleware('throttle:10,1')->name('bills.pay');
+    Route::get('/bills/{bill}/jazzcash', [ManualPaymentController::class, 'show'])->name('bills.jazzcash');
+    Route::post('/bills/{bill}/jazzcash', [ManualPaymentController::class, 'store'])
+        ->middleware('throttle:10,1')->name('bills.jazzcash.store');
+    Route::get('/payments/{payment}/sandbox', [PortalController::class, 'sandboxCheckout'])->name('payments.sandbox');
+    Route::post('/payments/{payment}/sandbox', [PortalController::class, 'sandboxComplete'])->name('payments.sandbox.complete');
 });

@@ -23,7 +23,7 @@ class AuthController extends Controller
         $request->validate([
             'name' => 'required|max:255',
             'email' => 'required|email|unique:users',
-            'password' => 'required|confirmed|min:6',
+            'password' => 'required|confirmed|min:8',
             'role' => 'required|in:doctor,receptionist',
         ]);
 
@@ -43,6 +43,7 @@ class AuthController extends Controller
         // Agar role 'doctor' hai toh doctors table mein bhi entry kar dein
         if ($request->role === 'doctor') {
             Doctor::create([
+                'user_id' => $user->id,
                 'name' => $request->name,
                 'email' => $request->email,
                 'phone' => 'N/A', // Default value kyunki register form mein phone nahi hota
@@ -92,7 +93,7 @@ class AuthController extends Controller
             RateLimiter::clear($throttleKey);
 
             $request->session()->regenerate();
-            return redirect()->intended(route('dashboard'));
+            return redirect()->intended(route($user->hasRole('patient') ? 'portal.dashboard' : 'dashboard'));
         }
 
         RateLimiter::hit($throttleKey, 60);

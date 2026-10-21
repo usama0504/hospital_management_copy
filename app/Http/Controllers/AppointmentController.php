@@ -7,9 +7,11 @@ use App\Models\Patient;
 use App\Models\Doctor;
 use App\Models\Department;
 use App\Models\DoctorAvailability;
+use App\Services\AppointmentSlotService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 
 class AppointmentController extends Controller
@@ -22,7 +24,7 @@ class AppointmentController extends Controller
             return null;
         }
 
-        return Doctor::where('email', $user->email)->first();
+        return Doctor::where('user_id', $user->id)->first();
     }
 
     public function index(Request $request)
@@ -73,7 +75,7 @@ class AppointmentController extends Controller
         ]);
     }
 
-    public function store(Request $request)
+    public function store(Request $request, AppointmentSlotService $slots)
     {
         $doctor = $this->getAuthenticatedDoctor();
         $doctorId = $doctor ? $doctor->id : $request->doctor_id;
@@ -95,75 +97,19 @@ class AppointmentController extends Controller
         }
 
         $appointmentStart = Carbon::parse($request->appointment_date);
-        $appointmentEnd = $appointmentStart->copy()->addMinutes(30);
 
-        if ($appointmentStart->isPast()) {
-            return back()->withInput()->withErrors([
-                'appointment_date' => 'You cannot book a past appointment time.'
+        // Lock + slot check + create ek hi transaction mein: double booking nahi hogi.
+        DB::transaction(function () use ($slots, $doctorId, $appointmentStart, $request) {
+            $slots->lockDoctor((int) $doctorId);
+            $slots->assertAvailable((int) $doctorId, $appointmentStart);
+
+            Appointment::create([
+                'patient_id' => $request->patient_id,
+                'doctor_id' => $doctorId,
+                'appointment_date' => $request->appointment_date,
+                'status' => $request->status,
             ]);
-        }
-
-        $dayOfWeek = $appointmentStart->format('l');
-
-        $availability = DoctorAvailability::where('doctor_id', $doctorId)
-            ->where('day_of_week', $dayOfWeek)
-            ->where('is_active', true)
-            ->first();
-
-        if (!$availability) {
-            return back()->withInput()->withErrors([
-                'appointment_date' => 'Doctor is not available on this day.'
-            ]);
-        }
-
-        $availabilityStart = Carbon::parse(
-            $appointmentStart->format('Y-m-d') . ' ' . $availability->start_time
-        );
-
-        $availabilityEnd = Carbon::parse(
-            $appointmentStart->format('Y-m-d') . ' ' . $availability->end_time
-        );
-
-        if (
-            $appointmentStart < $availabilityStart ||
-            $appointmentEnd > $availabilityEnd
-        ) {
-            return back()->withInput()->withErrors([
-                'appointment_date' => 'Selected time is outside the doctor\'s working hours.'
-            ]);
-        }
-
-        $minutesFromStart = $availabilityStart->diffInMinutes($appointmentStart);
-
-        if ($minutesFromStart % 30 !== 0) {
-            return back()->withInput()->withErrors([
-                'appointment_date' => 'Please select a valid 30-minute time slot.'
-            ]);
-        }
-
-        $overlap = Appointment::where('doctor_id', $doctorId)
-            ->where('status', '!=', 'Cancelled')
-            ->get()
-            ->contains(function ($existing) use ($appointmentStart, $appointmentEnd) {
-                $existingStart = Carbon::parse($existing->appointment_date);
-                $existingEnd = $existingStart->copy()->addMinutes(30);
-
-                return $appointmentStart < $existingEnd &&
-                    $appointmentEnd > $existingStart;
-            });
-
-        if ($overlap) {
-            return back()->withInput()->withErrors([
-                'appointment_date' => 'This doctor already has an appointment during this time.'
-            ]);
-        }
-
-        Appointment::create([
-            'patient_id' => $request->patient_id,
-            'doctor_id' => $doctorId,
-            'appointment_date' => $request->appointment_date,
-            'status' => $request->status,
-        ]);
+        });
 
         return redirect()
             ->route('appointments.index')
@@ -186,7 +132,7 @@ class AppointmentController extends Controller
         ]);
     }
 
-    public function update(Request $request, Appointment $appointment)
+    public function update(Request $request, Appointment $appointment, AppointmentSlotService $slots)
     {
         $validated = $request->validate([
             'patient_id' => 'required|exists:patients,id',
@@ -205,76 +151,18 @@ class AppointmentController extends Controller
         }
 
         $appointmentStart = Carbon::parse($validated['appointment_date']);
-        $appointmentEnd = $appointmentStart->copy()->addMinutes(30);
 
-        if ($appointmentStart->isPast()) {
-            return back()->withInput()->withErrors([
-                'appointment_date' => 'You cannot select a past appointment time.'
+        DB::transaction(function () use ($slots, $validated, $appointmentStart, $appointment) {
+            $slots->lockDoctor((int) $validated['doctor_id']);
+            $slots->assertAvailable((int) $validated['doctor_id'], $appointmentStart, 'appointment_date', $appointment->id);
+
+            $appointment->update([
+                'patient_id' => $validated['patient_id'],
+                'doctor_id' => $validated['doctor_id'],
+                'appointment_date' => $validated['appointment_date'],
+                'status' => $validated['status'],
             ]);
-        }
-
-        $dayOfWeek = $appointmentStart->format('l');
-
-        $availability = DoctorAvailability::where('doctor_id', $doctor->id)
-            ->where('day_of_week', $dayOfWeek)
-            ->where('is_active', true)
-            ->first();
-
-        if (!$availability) {
-            return back()->withInput()->withErrors([
-                'appointment_date' => 'Doctor is not available on this day.'
-            ]);
-        }
-
-        $availabilityStart = Carbon::parse(
-            $appointmentStart->format('Y-m-d') . ' ' . $availability->start_time
-        );
-
-        $availabilityEnd = Carbon::parse(
-            $appointmentStart->format('Y-m-d') . ' ' . $availability->end_time
-        );
-
-        if (
-            $appointmentStart < $availabilityStart ||
-            $appointmentEnd > $availabilityEnd
-        ) {
-            return back()->withInput()->withErrors([
-                'appointment_date' => 'Selected time is outside the doctor\'s working hours.'
-            ]);
-        }
-
-        $minutesFromStart = $availabilityStart->diffInMinutes($appointmentStart);
-
-        if ($minutesFromStart % 30 !== 0) {
-            return back()->withInput()->withErrors([
-                'appointment_date' => 'Please select a valid 30-minute time slot.'
-            ]);
-        }
-
-        $overlap = Appointment::where('doctor_id', $doctor->id)
-            ->where('status', '!=', 'Cancelled')
-            ->where('id', '!=', $appointment->id)
-            ->get()
-            ->contains(function ($existing) use ($appointmentStart, $appointmentEnd) {
-                $existingStart = Carbon::parse($existing->appointment_date);
-                $existingEnd = $existingStart->copy()->addMinutes(30);
-
-                return $appointmentStart < $existingEnd &&
-                    $appointmentEnd > $existingStart;
-            });
-
-        if ($overlap) {
-            return back()->withInput()->withErrors([
-                'appointment_date' => 'This doctor already has an appointment during this time.'
-            ]);
-        }
-
-        $appointment->update([
-            'patient_id' => $validated['patient_id'],
-            'doctor_id' => $validated['doctor_id'],
-            'appointment_date' => $validated['appointment_date'],
-            'status' => $validated['status'],
-        ]);
+        });
 
         return redirect()
             ->route('appointments.index')

@@ -18,7 +18,7 @@ class DoctorAvailabilityController extends Controller
         $user = Auth::user();
 
         $isAdmin = method_exists($user, 'hasRole') && $user->hasRole('admin');
-        $doctor  = Doctor::where('email', $user->email)->first();
+        $doctor  = Doctor::where('user_id', $user->id)->first();
 
         if ($isAdmin) {
             $targetDoctorId = $doctor_id ?? (Doctor::first()?->id);
@@ -70,7 +70,7 @@ class DoctorAvailabilityController extends Controller
                 'end_time'    => ['required', 'after:start_time'],
             ]);
 
-            $doctor = Doctor::where('email', $user->email)->first();
+            $doctor = Doctor::where('user_id', $user->id)->first();
         }
 
         if (!$doctor) {
@@ -103,7 +103,7 @@ class DoctorAvailabilityController extends Controller
             $availability->update(['is_active' => !$availability->is_active,]);
             return back()->with('success', 'Availability status updated successfully!');
         }
-        $doctor = Doctor::where('email', $user->email)->first();
+        $doctor = Doctor::where('user_id', $user->id)->first();
         if (!$doctor || $availability->doctor_id !== $doctor->id) {
             abort(403, 'Access Denied: This is not your slot.');
         }
@@ -123,7 +123,7 @@ class DoctorAvailabilityController extends Controller
             return back()->with('success', 'Availability slot removed successfully!');
         }
 
-        $doctor = Doctor::where('email', $user->email)->first();
+        $doctor = Doctor::where('user_id', $user->id)->first();
 
         if (!$doctor || $availability->doctor_id !== $doctor->id) {
             abort(403, 'Access Denied: This is not your slot.');

@@ -18,7 +18,7 @@ class ProfileController extends Controller
         // Agar user doctor hai toh uska doctor record bhi fetch kar lein
         $doctor = null;
         if (method_exists($user, 'hasRole') && $user->hasRole('doctor')) {
-            $doctor = Doctor::where('email', $user->email)->first();
+            $doctor = Doctor::where('user_id', $user->id)->first();
         }
 
         return response()->json([

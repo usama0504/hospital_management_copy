@@ -8,6 +8,7 @@ use App\Models\Doctor;
 use App\Models\Patient;
 use App\Models\Appointment;
 use App\Models\Bill;
+use App\Services\AppointmentSlotService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -268,7 +269,7 @@ class PublicController extends Controller
         return response()->json(['slots' => $slots]);
     }
 
-    public function appointmentStore(Request $request)
+    public function appointmentStore(Request $request, AppointmentSlotService $slots)
     {
         $validated = $request->validate([
             'department_id' => ['required', 'exists:departments,id'],
@@ -292,58 +293,10 @@ class PublicController extends Controller
         }
 
         $appointmentStart = \Carbon\Carbon::parse($validated['appointment_date'] . ' ' . $validated['appointment_time']);
-        $appointmentEnd = $appointmentStart->copy()->addMinutes(30);
 
-        if ($appointmentStart->isPast()) {
-            return back()->withInput()->withErrors([
-                'appointment_time' => 'You cannot book a past appointment time.'
-            ]);
-        }
-
-        $dayOfWeek = $appointmentStart->format('l');
-
-        $availability = \App\Models\DoctorAvailability::where('doctor_id', $doctor->id)
-            ->where('day_of_week', $dayOfWeek)
-            ->where('is_active', true)
-            ->first();
-
-        if (! $availability) {
-            return back()->withInput()->withErrors([
-                'appointment_time' => 'This doctor is not available on the selected day.'
-            ]);
-        }
-
-        $availabilityStart = \Carbon\Carbon::parse($appointmentStart->format('Y-m-d') . ' ' . $availability->start_time);
-        $availabilityEnd = \Carbon\Carbon::parse($appointmentStart->format('Y-m-d') . ' ' . $availability->end_time);
-
-        if ($appointmentStart < $availabilityStart || $appointmentEnd > $availabilityEnd) {
-            return back()->withInput()->withErrors([
-                'appointment_time' => "Selected time is outside the doctor's working hours ("
-                    . $availabilityStart->format('g:i A') . ' - ' . $availabilityEnd->format('g:i A') . ').'
-            ]);
-        }
-
-        if ($availabilityStart->diffInMinutes($appointmentStart) % 30 !== 0) {
-            return back()->withInput()->withErrors([
-                'appointment_time' => 'Please select a valid 30-minute time slot.'
-            ]);
-        }
-
-        $overlap = Appointment::where('doctor_id', $doctor->id)
-            ->where('status', '!=', 'Cancelled')
-            ->get()
-            ->contains(function ($existing) use ($appointmentStart, $appointmentEnd) {
-                $existingStart = \Carbon\Carbon::parse($existing->appointment_date);
-                $existingEnd = $existingStart->copy()->addMinutes(30);
-
-                return $appointmentStart < $existingEnd && $appointmentEnd > $existingStart;
-            });
-
-        if ($overlap) {
-            return back()->withInput()->withErrors([
-                'appointment_time' => 'This doctor already has an appointment during this time. Please pick another slot.'
-            ]);
-        }
+        // Patient banane se pehle ek jaldi check (taake faltu patient row na bane);
+        // asli, lock-wala check neeche transaction ke andar dobara hota hai.
+        $slots->assertAvailable($doctor->id, $appointmentStart, 'appointment_time');
         // ----------------------------------------------------------------------------------
 
         // Same identity path as the dashboard: every appointment belongs to
@@ -367,7 +320,10 @@ class PublicController extends Controller
 
         // Appointment ke saath bill bhi banta hai (doctor ki consultation fee),
         // taake dashboard ki Bills list aur receipt mein public booking bhi nazar aaye.
-        DB::transaction(function () use ($patient, $doctor, $appointmentStart, $validated) {
+        DB::transaction(function () use ($patient, $doctor, $appointmentStart, $validated, $slots) {
+            $slots->lockDoctor($doctor->id);
+            $slots->assertAvailable($doctor->id, $appointmentStart, 'appointment_time');
+
             $appointment = Appointment::create([
                 'patient_id' => $patient->id,
                 'doctor_id' => $doctor->id,

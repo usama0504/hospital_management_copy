@@ -15,7 +15,7 @@ class PrescriptionController extends Controller
         $user = Auth::user();
 
         if ($user && method_exists($user, 'hasRole') && $user->hasRole('doctor')) {
-            return Doctor::where('email', $user->email)->first();
+            return Doctor::where('user_id', $user->id)->first();
         }
 
         return null;

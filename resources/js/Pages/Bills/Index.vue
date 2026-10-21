@@ -7,6 +7,7 @@ const props = defineProps({
     bills: Object,
     auth: Object,
     filters: Object,
+    pendingPaymentsCount: { type: Number, default: 0 },
 });
 
 const search = ref(props.filters?.search ?? '');
@@ -64,7 +65,13 @@ const deleteBill = (id) => {
                             records</p>
                     </div>
 
-                    <div>
+                    <div class="flex flex-col sm:flex-row gap-2">
+                        <Link :href="route('payments.index')"
+                            class="inline-flex items-center justify-center gap-2 bg-white hover:bg-orange-50 text-orange-600 border border-orange-200 font-bold text-xs px-4 py-2.5 rounded-xl transition duration-200">
+                            JazzCash Payments
+                            <span v-if="pendingPaymentsCount > 0"
+                                class="bg-orange-500 text-white text-[10px] font-black rounded-full px-1.5 py-0.5 leading-none">{{ pendingPaymentsCount }}</span>
+                        </Link>
                         <Link :href="route('bills.create')"
                             class="inline-flex items-center justify-center bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow-lg shadow-orange-500/20 transition duration-200">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1.5" fill="none"

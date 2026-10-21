@@ -19,6 +19,7 @@ class RolesAndPermissionsSeeder extends Seeder
         $admin = Role::firstOrCreate(['name' => 'admin']);
         $doctor = Role::firstOrCreate(['name' => 'doctor']);
         $receptionist = Role::firstOrCreate(['name' => 'receptionist']);
+        $patient = Role::firstOrCreate(['name' => 'patient']);
 
         // Admin: full access to everything
         $admin->syncPermissions([
@@ -40,5 +41,8 @@ class RolesAndPermissionsSeeder extends Seeder
         $doctor->syncPermissions([
             $managePrescriptions,
         ]);
+
+        // Patient (portal user): koi staff permission nahi. Sirf apna data portal se dekhta hai.
+        $patient->syncPermissions([]);
     }
 }

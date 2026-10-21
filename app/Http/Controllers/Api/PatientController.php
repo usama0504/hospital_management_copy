@@ -16,7 +16,7 @@ class PatientController extends Controller
         $user = $request->user();
 
         if (method_exists($user, 'hasRole') && $user->hasRole('doctor')) {
-            $doctor = Doctor::where('email', $user->email)->first();
+            $doctor = Doctor::where('user_id', $user->id)->first();
 
             if ($doctor) {
                 $patientIds = Appointment::where('doctor_id', $doctor->id)
@@ -40,15 +40,16 @@ class PatientController extends Controller
     // 2. Store New Patient
     public function store(Request $request)
     {
-        $request->validate([
+        $validated = $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:patients,email',
             'phone' => 'required|string',
+            'gender' => 'nullable|in:Male,Female,Other',
             'address' => 'nullable|string',
             'dob' => 'nullable|date',
         ]);
 
-        $patient = Patient::create($request->all());
+        $patient = Patient::create($validated);
 
         return response()->json([
             'status' => 'success',
@@ -69,15 +70,16 @@ class PatientController extends Controller
     // 4. Update Patient
     public function update(Request $request, Patient $patient)
     {
-        $request->validate([
+        $validated = $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:patients,email,' . $patient->id,
             'phone' => 'required|string',
+            'gender' => 'nullable|in:Male,Female,Other',
             'address' => 'nullable|string',
             'dob' => 'nullable|date',
         ]);
 
-        $patient->update($request->all());
+        $patient->update($validated);
 
         return response()->json([
             'status' => 'success',

@@ -29,7 +29,7 @@ class DoctorController extends Controller
             'email' => 'required|email|unique:users,email|unique:doctors,email',
             'phone' => 'required|string',
             'specialization' => 'required|string',
-            'password' => 'required|string|min:6', // Admin password set karega
+            'password' => 'required|string|min:8', // Admin password set karega
         ]);
 
         // 1. User create karein taake doctor login kar sakay
@@ -73,14 +73,14 @@ class DoctorController extends Controller
     // 4. Doctor aur linked User details update karne ke liye
     public function update(Request $request, Doctor $doctor)
     {
-        $request->validate([
+        $validated = $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:doctors,email,' . $doctor->id,
             'phone' => 'required|string',
             'specialization' => 'required|string',
         ]);
 
-        $doctor->update($request->all());
+        $doctor->update($validated);
 
         // Agar doctors table mein user_id link hai toh user table ko bhi update karein
         if ($doctor->user_id) {

@@ -45,6 +45,11 @@ return new class extends Migration
 
         // appointment_date must hold date AND time (dashboard code does
         // Carbon::parse($appointment->appointment_date) and compares times).
+        // SHOW COLUMNS sirf MySQL/MariaDB par chalta hai; SQLite (tests) par skip.
+        if (! in_array(DB::connection()->getDriverName(), ['mysql', 'mariadb'], true)) {
+            return;
+        }
+
         $col = collect(DB::select("SHOW COLUMNS FROM appointments WHERE Field = 'appointment_date'"))->first();
         if ($col && stripos($col->Type, 'datetime') === false) {
             Schema::table('appointments', function (Blueprint $table) {

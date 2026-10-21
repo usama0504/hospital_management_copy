@@ -65,7 +65,7 @@ class DoctorController extends Controller
             'phone' => 'required|string',
             'gender' => 'required|in:Male,Female,Other',
             'specialization' => 'required|string',
-            'password' => 'required|string|min:6', 
+            'password' => 'required|string|min:8', 
             'department_id' => 'nullable|exists:departments,id',
             'consultation_fee' => 'nullable|numeric|min:0',
             'photo_url' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',

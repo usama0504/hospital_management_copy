@@ -47,4 +47,17 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
+
+    // Doctor ka profile user_id se link hota hai (email se nahi), taake email
+    // badalne par doctor ka access na toote.
+    public function doctor()
+    {
+        return $this->hasOne(Doctor::class);
+    }
+
+    // Patient portal: is user ka patient record
+    public function patient()
+    {
+        return $this->hasOne(Patient::class);
+    }
 }

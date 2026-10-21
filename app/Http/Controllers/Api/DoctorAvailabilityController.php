@@ -21,13 +21,13 @@ class DoctorAvailabilityController extends Controller
             }
 
             if (!$isDoctorUser) {
-                $doctor = Doctor::where('email', $user->email)->first();
+                $doctor = Doctor::where('user_id', $user->id)->first();
                 $isDoctorUser = !empty($doctor);
             }
         }
 
         if ($isDoctorUser) {
-            $doctor = Doctor::where('email', $user->email)->first();
+            $doctor = Doctor::where('user_id', $user->id)->first();
             $targetDoctorId = $doctor ? $doctor->id : $user->id;
         } else {
             $targetDoctorId = $doctor_id ?? $user->id;
@@ -60,7 +60,7 @@ class DoctorAvailabilityController extends Controller
             $targetDoctorId = $request->doctor_id;
         } else {
             // 2. Agar doctor khud login hai toh uski apni email se doctor profile find karein
-            $doctor = Doctor::where('email', $user->email)->first();
+            $doctor = Doctor::where('user_id', $user->id)->first();
 
             if (!$doctor) {
                 return response()->json([

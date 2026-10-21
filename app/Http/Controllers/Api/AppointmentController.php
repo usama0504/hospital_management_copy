@@ -7,8 +7,10 @@ use App\Models\Appointment;
 use App\Models\Patient;
 use App\Models\Doctor;
 use App\Models\DoctorAvailability;
+use App\Services\AppointmentSlotService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 
 class AppointmentController extends Controller
@@ -19,7 +21,7 @@ class AppointmentController extends Controller
         $user = Auth::user();
 
         if (method_exists($user, 'hasRole') && $user->hasRole('doctor')) {
-            $doctor = Doctor::where('email', $user->email)->first();
+            $doctor = Doctor::where('user_id', $user->id)->first();
 
             if ($doctor) {
                 $appointments = Appointment::where('doctor_id', $doctor->id)->with('patient', 'doctor')->latest()->paginate(10);
@@ -44,7 +46,7 @@ class AppointmentController extends Controller
         $user = Auth::user();
 
         if (method_exists($user, 'hasRole') && $user->hasRole('doctor')) {
-            $doctors = Doctor::where('email', $user->email)->get();
+            $doctors = Doctor::where('user_id', $user->id)->get();
         } else {
             $currentDay = Carbon::now()->format('l');
 
@@ -63,13 +65,13 @@ class AppointmentController extends Controller
     }
 
     // 3. Nayi appointment save karne ke liye
-    public function store(Request $request)
+    public function store(Request $request, AppointmentSlotService $slots)
     {
         $user = Auth::user();
         $doctorId = $request->doctor_id;
 
         if (method_exists($user, 'hasRole') && $user->hasRole('doctor')) {
-            $doctor = Doctor::where('email', $user->email)->first();
+            $doctor = Doctor::where('user_id', $user->id)->first();
             if ($doctor) {
                 $doctorId = $doctor->id;
             }
@@ -89,25 +91,19 @@ class AppointmentController extends Controller
         }
 
         $appointmentDate = Carbon::parse($request->appointment_date);
-        $dayOfWeek = $appointmentDate->format('l');
 
-        $isAvailable = DoctorAvailability::where('doctor_id', $doctorId)
-            ->where('day_of_week', $dayOfWeek)
-            ->exists();
+        // Web jaisi hi checks: past time, working hours, 30-min slot, overlap.
+        $appointment = DB::transaction(function () use ($slots, $doctorId, $appointmentDate, $request) {
+            $slots->lockDoctor((int) $doctorId);
+            $slots->assertAvailable((int) $doctorId, $appointmentDate);
 
-        if (!$isAvailable) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Doctor is not available on ' . $dayOfWeek . '!'
-            ], 422);
-        }
-
-        $appointment = Appointment::create([
-            'patient_id' => $request->patient_id,
-            'doctor_id' => $doctorId,
-            'appointment_date' => $request->appointment_date,
-            'status' => $request->status,
-        ]);
+            return Appointment::create([
+                'patient_id' => $request->patient_id,
+                'doctor_id' => $doctorId,
+                'appointment_date' => $request->appointment_date,
+                'status' => $request->status,
+            ]);
+        });
 
         return response()->json([
             'status' => 'success',
@@ -126,16 +122,23 @@ class AppointmentController extends Controller
     }
 
     // 5. Appointment update karne ke liye
-    public function update(Request $request, Appointment $appointment)
+    public function update(Request $request, Appointment $appointment, AppointmentSlotService $slots)
     {
-        $request->validate([
+        $validated = $request->validate([
             'patient_id' => 'required|exists:patients,id',
             'doctor_id' => 'required|exists:doctors,id',
             'appointment_date' => 'required|date',
             'status' => 'required|string',
         ]);
 
-        $appointment->update($request->all());
+        $start = Carbon::parse($validated['appointment_date']);
+
+        DB::transaction(function () use ($slots, $validated, $start, $appointment) {
+            $slots->lockDoctor((int) $validated['doctor_id']);
+            $slots->assertAvailable((int) $validated['doctor_id'], $start, 'appointment_date', $appointment->id);
+
+            $appointment->update($validated);
+        });
 
         return response()->json([
             'status' => 'success',

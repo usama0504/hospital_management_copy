@@ -38,15 +38,15 @@ class BillController extends Controller
     {
         $this->checkDoctor($request);
 
-        $request->validate([
+        $validated = $request->validate([
             'patient_id' => 'required|exists:patients,id',
             'doctor_id' => 'required|exists:doctors,id',
-            'amount' => 'required|numeric',
+            'amount' => 'required|numeric|min:0',
             'status' => 'required|string',
             'bill_date' => 'required|date',
         ]);
 
-        $bill = Bill::create($request->all());
+        $bill = Bill::create($validated);
 
         return response()->json([
             'status' => 'success',
@@ -73,15 +73,15 @@ class BillController extends Controller
     {
         $this->checkDoctor($request);
 
-        $request->validate([
+        $validated = $request->validate([
             'patient_id' => 'required|exists:patients,id',
             'doctor_id' => 'required|exists:doctors,id',
-            'amount' => 'required|numeric',
+            'amount' => 'required|numeric|min:0',
             'status' => 'required|string',
             'bill_date' => 'required|date',
         ]);
 
-        $bill->update($request->all());
+        $bill->update($validated);
 
         return response()->json([
             'status' => 'success',

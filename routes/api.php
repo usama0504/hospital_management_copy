@@ -28,8 +28,11 @@ Route::post('/register', [AuthController::class, 'register'])->middleware('throt
 |--------------------------------------------------------------------------
 | Protected API Routes (Requires Sanctum Bearer Token)
 |--------------------------------------------------------------------------
+| Role/permission rules web.php jaisi hi hain. Pehle yahan sirf 'auth:sanctum'
+| tha, is wajah se koi bhi logged-in user (doctor/receptionist) users approve
+| ya delete, doctors create/delete kar sakta tha.
 */
-Route::middleware('auth:sanctum')->group(function () {
+Route::middleware(['auth:sanctum', 'not.patient'])->group(function () {
 
     // Auth Logout Route (Token revoke karne ke liye)
     Route::post('/logout', [AuthController::class, 'logout']);
@@ -39,52 +42,68 @@ Route::middleware('auth:sanctum')->group(function () {
         return $request->user();
     });
 
-    // User Management Routes
-    Route::get('/users', [UserController::class, 'index']);
-    Route::patch('/users/{id}/approve', [UserController::class, 'approve']);
-    Route::delete('/users/{id}', [UserController::class, 'destroy']);
+    // User Management Routes (Admin only)
+    Route::middleware('role:admin')->group(function () {
+        Route::get('/users', [UserController::class, 'index']);
+        Route::patch('/users/{id}/approve', [UserController::class, 'approve']);
+        Route::delete('/users/{id}', [UserController::class, 'destroy']);
+    });
 
     // Appointment Management Routes
-    Route::get('/appointments/create-data', [AppointmentController::class, 'createData']);
-    Route::get('/appointments/{appointment}', [AppointmentController::class, 'show']);
     Route::get('/appointments', [AppointmentController::class, 'index']);
-    Route::post('/appointments', [AppointmentController::class, 'store']);
-    Route::put('/appointments/{appointment}', [AppointmentController::class, 'update']);
-    Route::delete('/appointments/{appointment}', [AppointmentController::class, 'destroy']);
+    Route::middleware('permission:manage appointments')->group(function () {
+        Route::get('/appointments/create-data', [AppointmentController::class, 'createData']);
+        Route::post('/appointments', [AppointmentController::class, 'store']);
+        Route::put('/appointments/{appointment}', [AppointmentController::class, 'update']);
+    });
+    Route::get('/appointments/{appointment}', [AppointmentController::class, 'show']);
+    Route::delete('/appointments/{appointment}', [AppointmentController::class, 'destroy'])
+        ->middleware('role:admin');
 
     // Patient Management Routes
     Route::get('/patients', [PatientController::class, 'index']);
-    Route::post('/patients', [PatientController::class, 'store']);
+    Route::middleware('permission:manage patients')->group(function () {
+        Route::post('/patients', [PatientController::class, 'store']);
+        Route::put('/patients/{patient}', [PatientController::class, 'update']);
+    });
     Route::get('/patients/{patient}', [PatientController::class, 'show']);
-    Route::put('/patients/{patient}', [PatientController::class, 'update']);
-    Route::delete('/patients/{patient}', [PatientController::class, 'destroy']);
+    Route::delete('/patients/{patient}', [PatientController::class, 'destroy'])
+        ->middleware('role:admin');
 
-    // Bill Management Routes
-    Route::get('/bills', [BillController::class, 'index']);
-    Route::post('/bills', [BillController::class, 'store']);
-    Route::get('/bills/{bill}', [BillController::class, 'show']);
-    Route::put('/bills/{bill}', [BillController::class, 'update']);
-    Route::delete('/bills/{bill}', [BillController::class, 'destroy']);
-    Route::get('/bills/{bill}/receipt', [BillController::class, 'receipt']);
+    // Bill Management Routes (admin + receptionist; delete sirf admin)
+    Route::middleware('permission:manage bills')->group(function () {
+        Route::get('/bills', [BillController::class, 'index']);
+        Route::post('/bills', [BillController::class, 'store']);
+        Route::get('/bills/{bill}', [BillController::class, 'show']);
+        Route::put('/bills/{bill}', [BillController::class, 'update']);
+        Route::get('/bills/{bill}/receipt', [BillController::class, 'receipt']);
+        Route::delete('/bills/{bill}', [BillController::class, 'destroy'])
+            ->middleware('role:admin');
+    });
 
     // Prescription Management Routes
     Route::get('/prescriptions', [PrescriptionController::class, 'index']);
-    Route::post('/prescriptions', [PrescriptionController::class, 'store']);
+    Route::middleware('permission:manage prescriptions')->group(function () {
+        Route::post('/prescriptions', [PrescriptionController::class, 'store']);
+        Route::put('/prescriptions/{prescription}', [PrescriptionController::class, 'update']);
+    });
     Route::get('/prescriptions/{prescription}', [PrescriptionController::class, 'show']);
-    Route::put('/prescriptions/{prescription}', [PrescriptionController::class, 'update']);
-    Route::delete('/prescriptions/{prescription}', [PrescriptionController::class, 'destroy']);
+    Route::delete('/prescriptions/{prescription}', [PrescriptionController::class, 'destroy'])
+        ->middleware('role:admin');
 
-    // Doctor Availability Routes
+    // Doctor Availability Routes (controller khud role ke hisaab se limit karta hai)
     Route::get('/doctor-availabilities/{doctor_id?}', [DoctorAvailabilityController::class, 'index']);
     Route::post('/doctor-availabilities', [DoctorAvailabilityController::class, 'store']);
     Route::delete('/doctor-availabilities/{id}', [DoctorAvailabilityController::class, 'destroy']);
 
-    // Doctor Management Routes
+    // Doctor Management Routes (list/detail sab ke liye, create/edit/delete sirf admin)
     Route::get('/doctors', [DoctorController::class, 'index']);
-    Route::post('/doctors', [DoctorController::class, 'store']);
+    Route::middleware('role:admin')->group(function () {
+        Route::post('/doctors', [DoctorController::class, 'store']);
+        Route::put('/doctors/{doctor}', [DoctorController::class, 'update']);
+        Route::delete('/doctors/{doctor}', [DoctorController::class, 'destroy']);
+    });
     Route::get('/doctors/{doctor}', [DoctorController::class, 'show']);
-    Route::put('/doctors/{doctor}', [DoctorController::class, 'update']);
-    Route::delete('/doctors/{doctor}', [DoctorController::class, 'destroy']);
 
     // Profile Management Routes
     Route::get('/profile', [ProfileController::class, 'show']);

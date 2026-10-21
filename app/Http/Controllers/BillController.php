@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Bill;
+use App\Models\Payment;
 use App\Models\Patient;
 use App\Models\Doctor;
 use App\Http\Requests\StoreBillRequest;
@@ -42,6 +43,9 @@ class BillController extends Controller
         return Inertia::render('Bills/Index', [
             'bills' => $bills,
             'filters' => ['search' => $search, 'status' => $status],
+            'pendingPaymentsCount' => Payment::where('gateway', Payment::GATEWAY_JAZZCASH_MANUAL)
+                ->where('status', Payment::PENDING)
+                ->count(),
         ]);
     }
 

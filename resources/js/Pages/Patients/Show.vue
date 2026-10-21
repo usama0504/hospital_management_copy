@@ -1,5 +1,5 @@
 <script setup>
-import { Link } from '@inertiajs/vue3';
+import { Link, router } from '@inertiajs/vue3';
 import { computed } from 'vue';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 
@@ -30,6 +30,14 @@ const age = computed(() => {
     if (m < 0 || (m === 0 && now.getDate() < dob.getDate())) years--;
     return years;
 });
+
+const invitePortal = () => {
+    const msg = props.patient?.user_id
+        ? 'Send the portal password link to this patient again?'
+        : 'Create a portal account for this patient and email them a link to set a password?';
+    if (!confirm(msg)) return;
+    router.post(route('patients.portal-invite', props.patient.id), {}, { preserveScroll: true });
+};
 
 const appointments = computed(() => props.patient?.appointments ?? []);
 const prescriptions = computed(() => props.patient?.prescriptions ?? []);
@@ -62,6 +70,15 @@ const statusClass = (status) => {
         <div class="py-6 sm:py-8">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
 
+                <div v-if="$page.props.flash?.success"
+                    class="rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-700 text-xs font-semibold px-4 py-3">
+                    {{ $page.props.flash.success }}
+                </div>
+                <div v-if="$page.props.flash?.error"
+                    class="rounded-xl border border-rose-200 bg-rose-50 text-rose-700 text-xs font-semibold px-4 py-3">
+                    {{ $page.props.flash.error }}
+                </div>
+
                 <!-- Header -->
                 <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     <div>
@@ -69,6 +86,10 @@ const statusClass = (status) => {
                         <p class="text-xs text-gray-500 font-medium mt-0.5">Complete profile and medical history.</p>
                     </div>
                     <div class="flex items-center gap-2">
+                        <button v-if="canManagePatients" @click="invitePortal"
+                            class="text-xs font-bold text-orange-600 hover:text-orange-700 transition bg-orange-50 hover:bg-orange-100 px-4 py-2.5 rounded-xl border border-orange-200">
+                            {{ patient.user_id ? 'Resend Portal Link' : 'Invite to Portal' }}
+                        </button>
                         <Link v-if="canManagePatients" :href="route('patients.edit', patient.id)"
                             class="text-xs font-bold text-white bg-orange-500 hover:bg-orange-600 transition px-4 py-2.5 rounded-xl shadow-md shadow-orange-500/20">
                             Edit Patient

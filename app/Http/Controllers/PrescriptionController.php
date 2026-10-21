@@ -6,6 +6,7 @@ use App\Models\Prescription;
 use App\Models\Patient;
 use App\Models\Doctor;
 use App\Models\Appointment;
+use App\Services\PrescriptionPdf;
 use App\Http\Requests\StorePrescriptionRequest;
 use App\Http\Requests\UpdatePrescriptionRequest;
 use Illuminate\Http\Request;
@@ -20,7 +21,7 @@ class PrescriptionController extends Controller
         $user = Auth::user();
 
         if ($user && method_exists($user, 'hasRole') && $user->hasRole('doctor')) {
-            return Doctor::where('email', $user->email)->first();
+            return Doctor::where('user_id', $user->id)->first();
         }
 
         return null;
@@ -168,6 +169,14 @@ class PrescriptionController extends Controller
         return Inertia::render('Prescriptions/Show', [
             'prescription' => $prescription,
         ]);
+    }
+
+    // PDF download (admin, apni prescriptions wala doctor, receptionist)
+    public function pdf(Prescription $prescription, PrescriptionPdf $pdf)
+    {
+        $this->authorizeAccess($prescription, allowReceptionist: true);
+
+        return $pdf->download($prescription);
     }
 
     public function edit(Prescription $prescription)

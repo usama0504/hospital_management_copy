@@ -48,7 +48,7 @@ class PatientController extends Controller
 
         // Agar user Doctor hai, toh sirf uske appointment wale patients show hon
         if ($user && method_exists($user, 'hasRole') && $user->hasRole('doctor')) {
-            $doctor = Doctor::where('email', $user->email)->first();
+            $doctor = Doctor::where('user_id', $user->id)->first();
 
             if ($doctor) {
                 $patientIds = Appointment::where('doctor_id', $doctor->id)
@@ -107,7 +107,7 @@ class PatientController extends Controller
 
         // Doctor sirf apne patients ki details dekh sakta hai
         if ($isDoctor) {
-            $doctor = Doctor::where('email', $user->email)->first();
+            $doctor = Doctor::where('user_id', $user->id)->first();
 
             $hasAccess = $doctor && Appointment::where('doctor_id', $doctor->id)
                 ->where('patient_id', $patient->id)
